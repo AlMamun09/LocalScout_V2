@@ -1,4 +1,4 @@
-namespace LocalScout.Web.Models
+namespace LocalScout.Web.ViewModels
 {
     public class ErrorViewModel
     {

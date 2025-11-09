@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using LocalScout.Web.Models;
+using LocalScout.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LocalScout.Web.Controllers
