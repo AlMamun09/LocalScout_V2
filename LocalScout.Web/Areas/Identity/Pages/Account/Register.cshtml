@@ -1,72 +1,436 @@
 ﻿@page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Register";
+  ViewData["Title"] = "Register as a User";
+  Layout = "_AuthLayout.cshtml";
 }
 
-<h1>@ViewData["Title"]</h1>
+@section Styles {
+  <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+}
 
-<div class="row">
-    <div class="col-md-4">
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Create a new account.</h2>
-            <hr />
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.FullName" class="form-control" aria-required="true" placeholder="John Doe" />
-                <label asp-for="Input.FullName">Full Name</label>
-                <span asp-validation-for="Input.FullName" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email</label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.Password">Password</label>
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
-                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-            </div>
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </form>
+@section LeftPanelLink {
+  <p style="margin: 0;">
+    Already have an account?
+    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Log in here</a>
+  </p>
+}
+
+<div class="registration-type-buttons">
+  <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="btn btn-user active">
+    <i class="fas fa-user"></i>
+    <span>User</span>
+  </a>
+  <a asp-page="./RegisterProvider" asp-route-returnUrl="@Model.ReturnUrl" class="btn btn-provider">
+    <i class="fas fa-briefcase"></i>
+    <span>Provider</span>
+  </a>
+</div>
+
+<div class="fade-in">
+  <h3 class="auth-heading">Register as a User</h3>
+  <p class="auth-subheading">Join LocalScout and discover trusted local services</p>
+
+  <!-- Progress Indicator -->
+  <div class="progress-container">
+    <div class="progress-line" id="progressLine"></div>
+    <div class="step active" data-step="1">
+      <div class="step-circle">
+        <span>1</span>
+      </div>
+      <div class="step-label">Account</div>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
-                    <div>
-                        <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
-                        </p>
-                    </div>
-                }
-                else
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
-                                }
-                            </p>
-                        </div>
-                    </form>
-                }
-            }
-        </section>
+    <div class="step" data-step="2">
+      <div class="step-circle">
+        <span>2</span>
+      </div>
+      <div class="step-label">Personal</div>
     </div>
+  </div>
+
+  <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+    <!-- Step 1: Account Information -->
+    <div class="form-step active" data-step="1">
+      <div class="form-group">
+        <label asp-for="Input.FullName">Full Name</label>
+        <div class="input-with-icon">
+          <i class="fas fa-user"></i>
+          <input asp-for="Input.FullName" class="form-control" placeholder="Enter your full name" />
+        </div>
+        <span asp-validation-for="Input.FullName" class="text-danger"></span>
+      </div>
+
+      <div class="form-group">
+        <label asp-for="Input.Email">Email Address</label>
+        <div class="input-with-icon">
+          <i class="fas fa-envelope"></i>
+          <input asp-for="Input.Email" class="form-control" placeholder="your.email@example.com"
+            autocomplete="username" />
+        </div>
+        <span asp-validation-for="Input.Email" class="text-danger"></span>
+      </div>
+
+      <div class="form-group">
+        <label asp-for="Input.Password">Password</label>
+        <div class="input-with-icon">
+          <i class="fas fa-lock"></i>
+          <input asp-for="Input.Password" class="form-control" placeholder="Create a strong password"
+            autocomplete="new-password" type="password" id="passwordInput" />
+        </div>
+        <div class="password-strength" id="passwordStrength">
+          <div class="password-strength-bar" id="passwordStrengthBar"></div>
+        </div>
+        <div class="password-strength-text" id="passwordStrengthText"></div>
+        <span asp-validation-for="Input.Password" class="text-danger"></span>
+      </div>
+
+      <div class="form-group">
+        <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+        <div class="input-with-icon">
+          <i class="fas fa-lock"></i>
+          <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="Re-enter your password"
+            autocomplete="new-password" type="password" id="confirmPasswordInput" />
+        </div>
+        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn-next" onclick="nextStep()">
+          Next
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Personal Details -->
+    <div class="form-step" data-step="2">
+      <div class="form-group">
+        <label asp-for="Input.PhoneNumber">Phone Number</label>
+        <div class="input-with-icon">
+          <i class="fas fa-phone"></i>
+          <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
+        </div>
+        <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+      </div>
+
+      <div class="form-group">
+        <label asp-for="Input.Address">Address</label>
+        <div class="input-with-icon">
+          <i class="fas fa-map-marker-alt"></i>
+          <input asp-for="Input.Address" class="form-control" placeholder="Enter your address" />
+        </div>
+        <span asp-validation-for="Input.Address" class="text-danger"></span>
+      </div>
+
+      <div class="form-group">
+        <label asp-for="Input.Gender">Gender</label>
+        <div class="gender-options">
+          <div class="gender-option">
+            <input type="radio" asp-for="Input.Gender" value="Male" id="genderMale" />
+            <label for="genderMale">
+              <i class="fas fa-mars"></i>
+              Male
+            </label>
+          </div>
+          <div class="gender-option">
+            <input type="radio" asp-for="Input.Gender" value="Female" id="genderFemale" />
+            <label for="genderFemale">
+              <i class="fas fa-venus"></i>
+              Female
+            </label>
+          </div>
+          <div class="gender-option">
+            <input type="radio" asp-for="Input.Gender" value="Other" id="genderOther" />
+            <label for="genderOther">
+              <i class="fas fa-genderless"></i>
+              Other
+            </label>
+          </div>
+        </div>
+        <span asp-validation-for="Input.Gender" class="text-danger"></span>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn-prev" onclick="prevStep()">
+          <i class="fas fa-arrow-left"></i>
+          Back
+        </button>
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <i class="fas fa-check"></i>
+          Complete Registration
+        </button>
+      </div>
+    </div>
+  </form>
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+  <partial name="_ValidationScriptsPartial" />
+  <script>
+    let currentStep = 1;
+    const totalSteps = 2;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      updateProgress();
+      initializePasswordStrength();
+      initializeValidation();
+    });
+
+    function nextStep() {
+      // Validate account information before proceeding
+      if (validateAccountInfo()) {
+        if (currentStep < totalSteps) {
+          document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('completed');
+          document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+          document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+
+          currentStep++;
+
+          document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+          document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+
+          updateProgress();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+
+        currentStep--;
+
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('completed');
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+
+        updateProgress();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function updateProgress() {
+      const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+      document.getElementById('progressLine').style.width = progress + '%';
+    }
+
+    // Validate Account Information (Step 1)
+    function validateAccountInfo() {
+      let isValid = true;
+      const step1 = document.querySelector('.form-step[data-step="1"]');
+
+      // Full Name validation
+      const fullName = document.getElementById('Input_FullName');
+      if (!fullName.value.trim()) {
+        isValid = false;
+        fullName.classList.add('is-invalid');
+        fullName.classList.remove('is-valid');
+        showError(fullName, 'Full name is required');
+      } else {
+        fullName.classList.remove('is-invalid');
+        fullName.classList.add('is-valid');
+        hideError(fullName);
+      }
+
+      // Email validation
+      const email = document.getElementById('Input_Email');
+      const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+      if (!email.value.trim()) {
+        isValid = false;
+        email.classList.add('is-invalid');
+        email.classList.remove('is-valid');
+        showError(email, 'Email is required');
+      } else if (!emailRegex.test(email.value)) {
+        isValid = false;
+        email.classList.add('is-invalid');
+        email.classList.remove('is-valid');
+        showError(email, 'Please enter a valid email address');
+      } else {
+        email.classList.remove('is-invalid');
+        email.classList.add('is-valid');
+        hideError(email);
+      }
+
+      // Password validation
+      const password = document.getElementById('passwordInput');
+      if (!password.value) {
+        isValid = false;
+        password.classList.add('is-invalid');
+        password.classList.remove('is-valid');
+        showError(password, 'Password is required');
+      } else if (password.value.length < 6) {
+        isValid = false;
+        password.classList.add('is-invalid');
+        password.classList.remove('is-valid');
+        showError(password, 'Password must be at least 6 characters');
+      } else {
+        password.classList.remove('is-invalid');
+        password.classList.add('is-valid');
+        hideError(password);
+      }
+
+      // Confirm Password validation
+      const confirmPassword = document.getElementById('confirmPasswordInput');
+      if (!confirmPassword.value) {
+        isValid = false;
+        confirmPassword.classList.add('is-invalid');
+        confirmPassword.classList.remove('is-valid');
+        showError(confirmPassword, 'Please confirm your password');
+      } else if (confirmPassword.value !== password.value) {
+        isValid = false;
+        confirmPassword.classList.add('is-invalid');
+        confirmPassword.classList.remove('is-valid');
+        showError(confirmPassword, 'Passwords do not match');
+      } else {
+        confirmPassword.classList.remove('is-invalid');
+        confirmPassword.classList.add('is-valid');
+        hideError(confirmPassword);
+      }
+
+      return isValid;
+    }
+
+    // Validate Personal Details (Step 2) - Called on form submit
+    function validatePersonalDetails() {
+      let isValid = true;
+
+      // Phone Number validation
+      const phone = document.getElementById('Input_PhoneNumber');
+      if (!phone.value.trim()) {
+        isValid = false;
+        phone.classList.add('is-invalid');
+        phone.classList.remove('is-valid');
+        showError(phone, 'Phone number is required');
+      } else {
+        phone.classList.remove('is-invalid');
+        phone.classList.add('is-valid');
+        hideError(phone);
+      }
+
+      // Address validation
+      const address = document.getElementById('Input_Address');
+      if (!address.value.trim()) {
+        isValid = false;
+        address.classList.add('is-invalid');
+        address.classList.remove('is-valid');
+        showError(address, 'Address is required');
+      } else {
+        address.classList.remove('is-invalid');
+        address.classList.add('is-valid');
+        hideError(address);
+      }
+
+      return isValid;
+    }
+
+    function showError(input, message) {
+      const errorSpan = input.closest('.form-group').querySelector('.text-danger');
+      if (errorSpan && !errorSpan.hasAttribute('data-valmsg-for')) {
+        errorSpan.textContent = message;
+      }
+    }
+
+    function hideError(input) {
+      const errorSpan = input.closest('.form-group').querySelector('.text-danger');
+      if (errorSpan && !errorSpan.hasAttribute('data-valmsg-for')) {
+        errorSpan.textContent = '';
+      }
+    }
+
+    function initializePasswordStrength() {
+      const passwordInput = document.getElementById('passwordInput');
+      const strengthBar = document.getElementById('passwordStrengthBar');
+      const strengthText = document.getElementById('passwordStrengthText');
+      const strengthContainer = document.getElementById('passwordStrength');
+
+      passwordInput.addEventListener('input', function () {
+        const password = this.value;
+
+        if (password.length === 0) {
+          strengthContainer.classList.remove('show');
+          return;
+        }
+
+        strengthContainer.classList.add('show');
+
+        let strength = 0;
+
+        if (password.length >= 8) strength += 25;
+        if (/[a-z]/.test(password)) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) strength += 25;
+
+        strengthBar.style.width = strength + '%';
+
+        if (strength <= 25) {
+          strengthBar.style.backgroundColor = '#dc3545';
+          strengthText.style.color = '#dc3545';
+          strengthText.textContent = 'Weak';
+        } else if (strength <= 50) {
+          strengthBar.style.backgroundColor = '#ffc107';
+          strengthText.style.color = '#ffc107';
+          strengthText.textContent = 'Fair';
+        } else if (strength <= 75) {
+          strengthBar.style.backgroundColor = '#17a2b8';
+          strengthText.style.color = '#17a2b8';
+          strengthText.textContent = 'Good';
+        } else {
+          strengthBar.style.backgroundColor = '#28a745';
+          strengthText.style.color = '#28a745';
+          strengthText.textContent = 'Strong';
+        }
+      });
+    }
+
+    function initializeValidation() {
+      // Real-time validation
+      document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('blur', function () {
+          if (currentStep === 1) {
+            validateAccountInfo();
+          }
+        });
+
+        input.addEventListener('input', function () {
+          if (this.classList.contains('is-invalid') && this.value.trim()) {
+            this.classList.remove('is-invalid');
+          }
+        });
+      });
+
+      // Confirm password real-time validation
+      const confirmPassword = document.getElementById('confirmPasswordInput');
+      const password = document.getElementById('passwordInput');
+
+      confirmPassword.addEventListener('input', function () {
+        if (this.value && this.value === password.value) {
+          this.classList.remove('is-invalid');
+          this.classList.add('is-valid');
+          hideError(this);
+        }
+      });
+    }
+
+    // Validate personal details before form submission
+    document.getElementById('registerForm').addEventListener('submit', function (e) {
+      if (currentStep === 2 && !validatePersonalDetails()) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
+    // Prevent Enter key from submitting form unexpectedly
+    document.getElementById('registerForm').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
+        e.preventDefault();
+        if (currentStep < totalSteps) {
+          nextStep();
+        }
+      }
+    });
+  </script>
 }

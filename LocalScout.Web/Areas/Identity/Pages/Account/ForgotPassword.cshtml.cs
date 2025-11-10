@@ -24,9 +24,9 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
 
         public ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender)
         {
-      _userManager = userManager;
+            _userManager = userManager;
             _emailSender = emailSender;
-}
+        }
 
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used

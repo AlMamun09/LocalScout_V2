@@ -1,0 +1,129 @@
+﻿@page
+@model RegisterConfirmationModel
+@{
+  ViewData["Title"] = "Confirm Your Email";
+  Layout = "_AuthLayout.cshtml";
+}
+
+@section Styles {
+  <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+  <style>
+    .info-icon {
+      font-size: 4rem;
+      color: #007bff;
+      margin-bottom: 20px;
+      animation: infoPulse 2s ease infinite;
+    }
+
+    @@keyframes infoPulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .info-message {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .info-message h3 {
+      color: #007bff;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .info-message p {
+      color: #6c757d;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .dev-link {
+      background-color: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+    }
+
+    .dev-link p {
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      color: #856404;
+    }
+
+    .dev-link a {
+      color: #007bff;
+      font-weight: 600;
+      text-decoration: none;
+      word-break: break-all;
+    }
+  </style>
+}
+
+@section LeftPanelLink {
+  <p style="margin: 0;">
+    Already confirmed?
+    <a asp-page="./Login">Log in here</a>
+  </p>
+}
+
+<div class="fade-in">
+  <div class="info-message">
+    <div class="info-icon">
+      <i class="fas fa-envelope"></i>
+    </div>
+
+    @if (Model.DisplayConfirmAccountLink)
+    {
+      <h3>Check Your Email (Development Mode)</h3>
+      <p>
+        This app is running in development mode.<br />
+        Normally, this would be sent to your email.
+      </p>
+
+      <div class="dev-link">
+        <p><strong><i class="fas fa-exclamation-triangle"></i> Development Mode:</strong></p>
+        <p>Click the link below to confirm your account:</p>
+        <a id="confirm-link" href="@Model.EmailConfirmationUrl" class="btn btn-next"
+          style="width: 100%; margin-top: 10px;">
+          <i class="fas fa-check-circle"></i>
+          Confirm Email Now
+        </a>
+      </div>
+
+      <div class="form-group mt-3">
+        <a asp-page="./Login" class="btn btn-prev" style="width: 100%;">
+          <i class="fas fa-arrow-left"></i>
+          Back to Login
+        </a>
+      </div>
+    }
+    else
+    {
+      <h3>Check Your Email!</h3>
+      <p>
+        We've sent a confirmation link to your email address.<br />
+        Please check your inbox and click the link to verify your account.
+      </p>
+      <p style="font-size: 0.85rem; color: #888;">
+        <i class="fas fa-info-circle"></i>
+        Didn't receive the email? Check your spam folder.
+      </p>
+
+      <div class="form-group mt-4">
+        <a asp-page="./Login" class="btn btn-next" style="width: 100%;">
+          <i class="fas fa-arrow-left"></i>
+          Back to Login
+        </a>
+      </div>
+    }
+  </div>
+</div>
