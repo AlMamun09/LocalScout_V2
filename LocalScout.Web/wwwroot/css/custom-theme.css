@@ -1,0 +1,247 @@
+﻿/*
+ * LocalScout Custom Theme
+ * Overrides Bootstrap and AdminLTE defaults with your new color palette.
+ * Palette: #F9F7F7, #DBE2EF, #3F72AF, #112D4E
+ */
+
+:root {
+  --color-primary: #3f72af; /* Medium Blue */
+  --color-primary-dark: #112d4e; /* Dark Navy Blue */
+  --color-primary-light: #dbe2ef; /* Light Blue-Lavender */
+  --color-background: #f9f7f7; /* Almost White */
+  --color-text-light: #f9f7f7;
+  --color-text-dark: #112d4e;
+  --color-secondary: #495057; /* Neutral gray */
+}
+
+/* --- AdminLTE Overrides --- */
+
+/* Main Sidebar (Dark) */
+.main-sidebar.sidebar-dark-primary {
+  background-color: var(--color-primary-dark);
+}
+
+/* Brand Link Styling */
+.brand-link {
+  background-color: var(--color-primary-dark) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand-link .brand-image {
+  opacity: 1 !important;
+  max-height: 33px;
+  width: auto;
+}
+
+.brand-link .brand-text {
+  color: #ffffff !important;
+  font-weight: 400 !important;
+}
+
+.brand-link:hover .brand-text {
+  color: var(--color-primary-light) !important;
+}
+
+/* Sidebar Active Links */
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {
+  background-color: var(--color-primary);
+}
+
+/* Top Navbar */
+.main-header.navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--color-primary-light);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.main-header .navbar-nav {
+  align-items: center;
+}
+
+.main-header .nav-item {
+  display: flex;
+  align-items: center;
+}
+
+.main-header .nav-link {
+  color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+}
+
+.main-header .nav-link:hover {
+  color: var(--color-primary);
+}
+
+/* Push Menu Button (Hamburger) */
+.main-header .nav-link.text-primary {
+  color: var(--color-primary) !important;
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+}
+
+.main-header .nav-link.text-primary:hover {
+  color: var(--color-primary-dark) !important;
+}
+
+/* Home Button in Navbar */
+.main-header .btn-outline-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.75rem;
+  margin-left: 0.5rem;
+  line-height: 1;
+}
+
+/* --- Sidebar User Panel Styling --- */
+.user-panel .image img {
+  width: 2.1rem;
+  height: 2.1rem;
+  object-fit: cover;
+}
+
+.user-panel .info a {
+  color: #c2c7d0;
+  transition: color 0.3s ease;
+  text-decoration: none;
+}
+
+.user-panel .info a:hover {
+  color: #ffffff;
+}
+
+/* --- Navbar Dropdown Styling --- */
+.dropdown-item-form {
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown-item-form button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  color: #212529;
+}
+
+.dropdown-item-form button:hover {
+  background-color: #f8f9fa;
+  color: #16181b;
+}
+
+/* Home Button Styling */
+.btn-outline-primary {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(63, 114, 175, 0.3);
+}
+
+.btn-outline-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(63, 114, 175, 0.3);
+}
+
+/* --- Bootstrap Overrides --- */
+
+body {
+  background-color: var(--color-background);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-light);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: var(--color-text-light);
+  box-shadow: 0 4px 8px rgba(17, 45, 78, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(17, 45, 78, 0.3);
+}
+
+/* Secondary Buttons */
+.btn-secondary {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #343a40;
+  border-color: #343a40;
+  box-shadow: 0 4px 8px rgba(52, 58, 64, 0.3);
+}
+
+/* Outline Secondary Buttons */
+.btn-outline-secondary {
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #ffffff;
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  border-radius: 0.5rem;
+}
+
+/* Links */
+a {
+  color: var(--color-primary);
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+.page-item.active .page-link {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Focus States */
+.btn:focus,
+.btn-primary:focus,
+.btn-secondary:focus,
+.btn-outline-primary:focus,
+.btn-outline-secondary:focus {
+  box-shadow: 0 0 0 0.2rem rgba(63, 114, 175, 0.25);
+}

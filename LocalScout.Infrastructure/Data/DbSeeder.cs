@@ -1,4 +1,5 @@
 using LocalScout.Domain.Entities;
+using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,7 +13,7 @@ namespace LocalScout.Infrastructure.Data
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             // Define roles
-            string[] roleNames = { "Admin", "User", "Provider" };
+            string[] roleNames = { RoleNames.Admin, RoleNames.User, RoleNames.ServiceProvider };
 
             // Create roles if they don't exist
             foreach (var roleName in roleNames)
@@ -43,7 +44,7 @@ namespace LocalScout.Infrastructure.Data
                 var result = await userManager.CreateAsync(newAdmin, "Admin@123");
                 if (result.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(newAdmin, "Admin");
+                    await userManager.AddToRoleAsync(newAdmin, RoleNames.Admin);
                 }
             }
         }

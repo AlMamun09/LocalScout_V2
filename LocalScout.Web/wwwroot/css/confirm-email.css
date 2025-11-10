@@ -1,51 +1,63 @@
 /* Confirm Email Page Styles */
 
 .success-icon {
-    font-size: 4rem;
-    color: #28a745;
-    margin-bottom: 20px;
+  font-size: 4rem;
+  color: #28a745;
+  margin-bottom: 20px;
   animation: successPulse 1s ease infinite;
 }
 
 .error-icon {
-    font-size: 4rem;
-    color: #dc3545;
-    margin-bottom: 20px;
-    animation: errorShake 0.5s ease;
+  font-size: 4rem;
+  color: #dc3545;
+  margin-bottom: 20px;
+  animation: errorShake 0.5s ease;
 }
 
 @keyframes successPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 @keyframes errorShake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
 }
 
 .message-container {
-    text-align: center;
-    padding: 20px 0;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .message-container h3 {
-font-weight: 700;
- margin-bottom: 15px;
+  font-weight: 700;
+  margin-bottom: 15px;
 }
 
 .message-container p {
-    color: #6c757d;
-    font-size: 0.9rem;
-    line-height: 1.6;
-    margin-bottom: 20px;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
 }
 
 .success-text {
-    color: #28a745;
+  color: #28a745;
 }
 
 .error-text {
-    color: #dc3545;
+  color: #dc3545;
 }
