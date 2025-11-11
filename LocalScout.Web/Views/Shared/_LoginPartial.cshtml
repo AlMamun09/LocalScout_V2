@@ -7,43 +7,59 @@
     var currentUser = await UserManager.GetUserAsync(User);
 }
 
-<ul class="navbar-nav">
-    @if (SignInManager.IsSignedIn(User))
-    {
-        <!-- User Profile Dropdown -->
-        <li class="nav-item dropdown">
-            <a class="nav-link" data-bs-toggle="dropdown" href="#" aria-expanded="false">
-                <i class="far fa-user"></i>
-                <span class="d-none d-md-inline ml-1">@(currentUser?.FullName ?? User.Identity?.Name ?? "User")</span>
-            </a>
-            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+@if (SignInManager.IsSignedIn(User))
+{
+    <!-- User Profile Dropdown (Authenticated Users) -->
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+           data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="far fa-user"></i>
+            <span class="d-none d-md-inline ms-1">@(currentUser?.FullName ?? User.Identity?.Name ?? "User")</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <li>
                 <a asp-area="Identity" asp-page="/Account/Manage/Index" class="dropdown-item">
-                    <i class="fas fa-user-edit mr-2"></i> Manage Profile
+                    <i class="fas fa-user-edit me-2"></i>Manage Profile
                 </a>
-                <div class="dropdown-divider"></div>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
                 <form asp-area="Identity" asp-page="/Account/Logout"
-                    asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post"
-                    class="dropdown-item-form">
+                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })"
+                      method="post" class="dropdown-item-form">
                     <button type="submit" class="dropdown-item">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
                     </button>
                 </form>
-            </div>
-        </li>
-    }
-    else
-    {
-        <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">
-                <i class="fas fa-user-plus"></i>
-                <span class="d-none d-md-inline ml-1">Register</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">
-                <i class="fas fa-sign-in-alt"></i>
-                <span class="d-none d-md-inline ml-1">Login</span>
-            </a>
-        </li>
-    }
-</ul>
+            </li>
+        </ul>
+    </li>
+}
+else
+{
+    <!-- Account Actions Dropdown (Non-Authenticated Users) -->
+    <li class="nav-item dropdown">
+        <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" id="accountDropdown"
+           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-user-circle me-1"></i>Account
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+            <li>
+                <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Login">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register">
+                    <i class="fas fa-user-plus me-2"></i>Register
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item" asp-area="Identity" asp-page="/Account/RegisterProvider">
+                    <i class="fas fa-user-tie me-2"></i>Become a Provider
+                </a>
+            </li>
+        </ul>
+    </li>
+}

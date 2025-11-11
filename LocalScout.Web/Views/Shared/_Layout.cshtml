@@ -6,62 +6,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - LocalScout</title>
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <!-- Bootstrap -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <!-- Your Custom Theme -->
     <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
     <!-- Your Site CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
+    <!-- Main Header/Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
+        <div class="container-fluid px-4">
+            <!-- Brand Logo -->
+            <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo"
+                    style="height: 35px; width: auto; margin-right: 10px;" />
+                <span class="fw-bold text-primary">LocalScout</span>
+            </a>
 
-                <!-- 1. Brand Logo (Your Request) -->
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo" style="height: 30px; width: auto;" />
-                    LocalScout
-                </a>
+            <!-- Mobile Toggle Button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-                <!-- 3. Login/Register or Profile (Right Side) -->
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                    </li>
+            <!-- Navbar Content -->
+            <div class="collapse navbar-collapse" id="mainNavbar">
 
+                <ul class="navbar-nav me-auto">
                 </ul>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex">
+                <form class="d-flex my-2 my-lg-0" style="max-width: 450px; width: 100%;" role="search">
+                    <div class="input-group">
+                        <input class="form-control" type="search" placeholder="Search for services..." aria-label="Search">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
 
-                    <!-- 2. Central Search Bar (Your Request) -->
-                    <form class="d-flex mx-auto" style="width: 50%;">
-                        <input class="form-control me-2" type="search"
-                            placeholder="Search for services (e.g., 'plumber')" aria-label="Search">
-                        <button class="btn btn-primary" type="submit">Search</button>
-                    </form>
-
-
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
                     <partial name="_LoginPartial" />
+                </ul>
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="mb-4">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light border-top mt-auto py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-primary">LocalScout</h5>
+                    <p class="text-muted small">
+                        Connecting you with trusted local service providers in your area.
+                    </p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-decoration-none text-muted">About Us</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Services</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Contact</a></li>
+                        <li><a asp-area="" asp-controller="Home" asp-action="Privacy"
+                                class="text-decoration-none text-muted">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h6>Connect With Us</h6>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
-        </nav>
-    </header>
-
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - LocalScout - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <hr class="my-3">
+            <div class="text-center text-muted small">
+                &copy; 2025 LocalScout. All rights reserved.
+            </div>
         </div>
     </footer>
 
