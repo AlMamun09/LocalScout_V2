@@ -3,7 +3,8 @@
 }
 
 <!-- Hero Section (Bootstrap-based, compact) -->
-<div class="position-relative d-flex align-items-center justify-content-center" style="min-height:65vh; margin-top:-1rem;">
+<div class="position-relative d-flex align-items-center justify-content-center"
+    style="min-height:65vh; margin-top:-1rem;">
     <div class="position-absolute inset-0" id="hero-gradient"></div>
 
     <div class="container position-relative z-1">
@@ -23,14 +24,13 @@
                 <!-- Search Bar -->
                 <div class="mx-auto" style="max-width:760px;">
                     <form action="/search" method="get">
-                        <div class="input-group shadow-lg" style="background:white; border-radius:50px; overflow:hidden;">
-                            <input type="text"
-                                   name="query"
-                                   class="form-control border-0 py-3 px-4"
-                                   placeholder="What service do you need?"
-                                   aria-label="Search for services"
-                                   style="background:white; color:#333; font-size:1rem;" />
-                            <button class="btn btn-primary fw-semibold px-4" type="submit" style="border-top-right-radius:50px; border-bottom-right-radius:50px;">
+                        <div class="input-group shadow-lg"
+                            style="background:white; border-radius:50px; overflow:hidden;">
+                            <input type="text" name="query" class="form-control border-0 py-3 px-4"
+                                placeholder="What service do you need?" aria-label="Search for services"
+                                style="background:white; color:#333; font-size:1rem;" />
+                            <button class="btn btn-primary fw-semibold px-4" type="submit"
+                                style="border-top-right-radius:50px; border-bottom-right-radius:50px;">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
@@ -52,7 +52,8 @@
                         <i class="fas fa-search fa-3x text-primary"></i>
                     </div>
                     <h3 class="h6 fw-semibold text-dark mb-1">Find Local Pros</h3>
-                    <p class="text-muted mb-0 small">Browse trusted service providers in your area with verified reviews.</p>
+                    <p class="text-muted mb-0 small">Browse trusted service providers in your area with verified
+                        reviews.</p>
                 </div>
             </div>
 
@@ -101,32 +102,32 @@
         /* Compact search input and button - FIXED VISIBILITY */
         .compact-input {
             background: white !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             transition: transform .2s ease, box-shadow .2s ease;
         }
 
-            .compact-input:focus-within {
-                transform: translateY(-2px);
-                box-shadow: 0 15px 50px rgba(0,0,0,0.4);
-            }
+        .compact-input:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+        }
 
-            .compact-input .form-control {
-                padding: 1rem 1.5rem;
-                font-size: 1.05rem;
-                height: auto;
-                background: white !important;
-                color: #333 !important;
-            }
+        .compact-input .form-control {
+            padding: 1rem 1.5rem;
+            font-size: 1.05rem;
+            height: auto;
+            background: white !important;
+            color: #333 !important;
+        }
 
-                .compact-input .form-control::placeholder {
-                    color: #999 !important;
-                    opacity: 1;
-                }
+        .compact-input .form-control::placeholder {
+            color: #999 !important;
+            opacity: 1;
+        }
 
-                .compact-input .form-control:focus {
-                    background: white !important;
-                    box-shadow: none;
-                }
+        .compact-input .form-control:focus {
+            background: white !important;
+            box-shadow: none;
+        }
 
         .compact-btn {
             padding: 1rem 2rem;
@@ -139,14 +140,14 @@
             border: none;
         }
 
-            .compact-btn:hover {
-                background: #0284c7;
-            }
+        .compact-btn:hover {
+            background: #0284c7;
+        }
 
-            /* Make the search icon visible and centered */
-            .compact-btn i {
-                font-size: 1.2rem;
-            }
+        /* Make the search icon visible and centered */
+        .compact-btn i {
+            font-size: 1.2rem;
+        }
 
         /* Compact features */
         .compact-features {
@@ -158,13 +159,13 @@
             transition: transform 0.3s ease;
         }
 
-            .feature-card:hover {
-                transform: translateY(-5px);
-            }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
 
-            .feature-card .fa-3x {
-                font-size: 2.5rem;
-            }
+        .feature-card .fa-3x {
+            font-size: 2.5rem;
+        }
 
         /* Smaller screens: reduce hero size */
         @@media (max-width: 767.98px) {
@@ -184,10 +185,10 @@
                 border-radius: 25px;
             }
 
-                .compact-input .form-control {
-                    padding: 0.875rem 1.25rem;
-                    font-size: 1rem;
-                }
+            .compact-input .form-control {
+                padding: 0.875rem 1.25rem;
+                font-size: 1rem;
+            }
 
             .compact-btn {
                 padding: 0.875rem 1.5rem;
@@ -215,11 +216,11 @@
                 overflow: hidden;
             }
 
-                .compact-input .form-control {
-                    border-radius: 15px 15px 0 0;
-                    width: 100%;
-                    padding: 0.875rem 1rem;
-                }
+            .compact-input .form-control {
+                border-radius: 15px 15px 0 0;
+                width: 100%;
+                padding: 0.875rem 1rem;
+            }
 
             .compact-btn {
                 width: 100%;
@@ -227,9 +228,9 @@
                 padding: 0.875rem;
             }
 
-                .compact-btn i {
-                    margin: 0;
-                }
+            .compact-btn i {
+                margin: 0;
+            }
         }
     </style>
 }

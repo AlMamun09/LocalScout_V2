@@ -1,58 +1,58 @@
 @page
 @model ConfirmEmailModel
 @{
-ViewData["Title"] = Model.StatusMessage?.Contains("Error") == true ? "Email Confirmation Error" : "Email Confirmed";
-Layout = "_AuthLayout.cshtml";
+   ViewData["Title"] = Model.StatusMessage?.Contains("Error") == true ? "Email Confirmation Error" : "Email Confirmed";
+   Layout = "_AuthLayout.cshtml";
 }
 @section Styles {
-<link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/confirm-email.css" asp-append-version="true" />
+   <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+   <link rel="stylesheet" href="~/css/confirm-email.css" asp-append-version="true" />
 }
 @section LeftPanelLink {
-<p style="margin: 0;">
-   Ready to start? 
-   <a asp-page="./Login">Log in here</a>
-</p>
+   <p style="margin: 0;">
+      Ready to start?
+      <a asp-page="./Login">Log in here</a>
+   </p>
 }
 <div class="fade-in">
    <div class="message-container">
       @if (Model.StatusMessage?.Contains("Error") == true)
       {
-      <div class="error-icon">
-         <i class="fas fa-times-circle"></i>
-      </div>
-      <h3 class="error-text">Email Confirmation Failed</h3>
-      <p>
-         @Model.StatusMessage
-      </p>
-      <p style="font-size: 0.85rem; color: #888;">
-         <i class="fas fa-info-circle"></i> 
-         The confirmation link may have expired or is invalid.<br />
-         Please try registering again or contact support.
-      </p>
-      <div class="form-group mt-4">
-         <a asp-page="./Register" class="btn btn-next" style="width: 100%;">
-         <i class="fas fa-user-plus"></i>
-         Register Again
-         </a>
-      </div>
+         <div class="error-icon">
+            <i class="fas fa-times-circle"></i>
+         </div>
+         <h3 class="error-text">Email Confirmation Failed</h3>
+         <p>
+            @Model.StatusMessage
+         </p>
+         <p style="font-size: 0.85rem; color: #888;">
+            <i class="fas fa-info-circle"></i>
+            The confirmation link may have expired or is invalid.<br />
+            Please try registering again or contact support.
+         </p>
+         <div class="form-group mt-4">
+            <a asp-page="./Register" class="btn btn-next" style="width: 100%;">
+               <i class="fas fa-user-plus"></i>
+               Register Again
+            </a>
+         </div>
       }
       else
       {
-      <div class="success-icon">
-         <i class="fas fa-check-circle"></i>
-      </div>
-      <h3 class="success-text">Email Confirmed Successfully!</h3>
-      <p>
-         @Model.StatusMessage<br />
-         Your account is now active and ready to use.
-      </p>
-      <div class="form-group mt-4">
-         <a asp-page="./Login" class="btn btn-submit" style="width: 100%;">
-         <i class="fas fa-sign-in-alt"></i>
-         Log In Now
-         </a>
-      </div>
+         <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+         </div>
+         <h3 class="success-text">Email Confirmed Successfully!</h3>
+         <p>
+            @Model.StatusMessage<br />
+            Your account is now active and ready to use.
+         </p>
+         <div class="form-group mt-4">
+            <a asp-page="./Login" class="btn btn-submit" style="width: 100%;">
+               <i class="fas fa-sign-in-alt"></i>
+               Log In Now
+            </a>
+         </div>
       }
    </div>
 </div>
