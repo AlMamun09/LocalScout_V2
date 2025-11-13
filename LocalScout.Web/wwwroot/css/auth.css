@@ -342,6 +342,22 @@
   padding-left: 35px;
 }
 
+/* Prevent validation tick from overlapping the Use My Location button */
+.input-with-icon #addressInput {
+  padding-right: 160px; /* reserve extra space for the button and any icons */
+}
+.input-with-icon #addressInput.is-valid {
+  background-image: none !important; /* hide tick to avoid overlap with the button */
+}
+/* Make sure the button sits above the input and is consistently positioned */
+.input-with-icon #useLocationBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
 /* Heading styling */
 .auth-heading {
   font-size: 1.3rem;
@@ -349,9 +365,14 @@
   color: #333;
   margin-bottom: 5px;
   background: linear-gradient(135deg, #007bff, #0056b3);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* Standard property */
   background-clip: text;
+  /* Webkit prefix for browser compatibility */
+  -webkit-background-clip: text;
+  /* Text fill color for webkit browsers */
+  -webkit-text-fill-color: transparent;
+  /* Fallback color if gradient not supported */
+  color: #007bff;
 }
 
 .auth-subheading {
@@ -465,4 +486,58 @@
   .form-group {
     margin-bottom: 0.7rem;
   }
+}
+
+/* Location Features */
+#useLocationBtn {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+#useLocationBtn:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+#useLocationBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#addressSuggestions {
+  margin-top: 4px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+#addressSuggestions .list-group-item {
+  border: none;
+  border-bottom: 1px solid #f1f1f1;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#addressSuggestions .list-group-item:last-child {
+  border-bottom: none;
+}
+
+#addressSuggestions .list-group-item:hover {
+  background-color: #f8f9fa;
+  transform: translateX(4px);
+}
+
+#addressSuggestions .list-group-item:active {
+  background-color: #e9ecef;
+}
+
+#addressSuggestions .list-group-item i {
+  color: #007bff;
 }

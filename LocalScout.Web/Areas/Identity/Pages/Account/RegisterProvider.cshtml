@@ -153,9 +153,19 @@
         <label asp-for="Input.Address">Address</label>
         <div class="input-with-icon">
           <i class="fas fa-map-marker-alt"></i>
-          <input asp-for="Input.Address" class="form-control" placeholder="Enter your address" />
+          <input asp-for="Input.Address" class="form-control" placeholder="Enter your address" id="addressInput" />
+          <button type="button" class="btn btn-sm btn-outline-primary" id="useLocationBtn">
+            Use My Location
+          </button>
         </div>
         <span asp-validation-for="Input.Address" class="text-danger"></span>
+        <!-- Autocomplete dropdown -->
+        <div id="addressSuggestions" class="list-group"
+          style="display: none; position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; width: calc(100% - 30px);">
+        </div>
+        <!-- Hidden fields for coordinates -->
+        <input type="hidden" asp-for="Input.Latitude" id="latitudeInput" />
+        <input type="hidden" asp-for="Input.Longitude" id="longitudeInput" />
       </div>
 
       <div class="button-group">
@@ -207,13 +217,189 @@
   <script>
     let currentStep = 1;
     const totalSteps = 3;
+    let addressSuggestionsTimeout;
 
     document.addEventListener('DOMContentLoaded', function () {
       updateProgress();
       initializePasswordStrength();
       initializeValidation();
+      initializeLocationFeatures();
     });
 
+    // ========== LOCATION FEATURES ==========
+    function initializeLocationFeatures() {
+      const addressInput = document.getElementById('addressInput');
+      const useLocationBtn = document.getElementById('useLocationBtn');
+      const suggestionsDiv = document.getElementById('addressSuggestions');
+
+      // Use My Location button click
+      useLocationBtn.addEventListener('click', requestPreciseLocation);
+
+      // Address input for autocomplete
+      addressInput.addEventListener('input', function () {
+        clearTimeout(addressSuggestionsTimeout);
+        const query = this.value.trim();
+
+        if (query.length < 3) {
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+
+        addressSuggestionsTimeout = setTimeout(() => {
+          searchAddress(query);
+        }, 500);
+      });
+
+      // Hide suggestions when clicking outside
+      document.addEventListener('click', function (e) {
+        if (!addressInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+          suggestionsDiv.style.display = 'none';
+        }
+      });
+    }
+
+    async function requestPreciseLocation() {
+      const useLocationBtn = document.getElementById('useLocationBtn');
+      const addressInput = document.getElementById('addressInput');
+
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        return;
+      }
+
+      // Show loading state
+      useLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
+      useLocationBtn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+
+          console.log(`Location obtained: Lat ${latitude}, Lon ${longitude}, Accuracy: ${accuracy}m`);
+
+          // Call reverse geocoding API
+          try {
+            const response = await fetch('/api/location/reverse-geocode', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ latitude, longitude })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+
+              // Autofill address
+              addressInput.value = data.displayName;
+
+              // Store coordinates
+              document.getElementById('latitudeInput').value = latitude;
+              document.getElementById('longitudeInput').value = longitude;
+
+              // Mark address field as valid
+              addressInput.classList.remove('is-invalid');
+              addressInput.classList.add('is-valid');
+
+            } else {
+              throw new Error('Failed to get address');
+            }
+          } catch (error) {
+            console.error('Reverse geocoding error:', error);
+            alert('Could not retrieve address. Please enter manually.');
+            addressInput.focus();
+          } finally {
+            // Reset button
+            useLocationBtn.innerHTML = 'Use My Location';
+            useLocationBtn.disabled = false;
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+
+          let errorMessage = 'Unable to get your location. ';
+
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += 'You denied location access. Please enter your address manually or use autocomplete.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += 'Location information is unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage += 'The request timed out.';
+              break;
+            default:
+              errorMessage += 'An unknown error occurred.';
+          }
+
+          alert(errorMessage);
+          addressInput.focus();
+
+          // Reset button
+          useLocationBtn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
+          useLocationBtn.disabled = false;
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    async function searchAddress(query) {
+      const suggestionsDiv = document.getElementById('addressSuggestions');
+
+      try {
+        const response = await fetch(`/api/location/search?query=${encodeURIComponent(query)}`);
+
+        if (!response.ok) throw new Error('Search failed');
+
+        const suggestions = await response.json();
+
+        if (suggestions.length === 0) {
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+
+        // Display suggestions
+        suggestionsDiv.innerHTML = suggestions.map(s => `
+                    <button type="button" class="list-group-item list-group-item-action"
+                 onclick="selectAddress('${s.displayName.replace(/'/g, "\\'")}', ${s.latitude}, ${s.longitude})">
+            <i class="fas fa-map-marker-alt me-2"></i>${s.displayName}
+                    </button>
+                  `).join('');
+
+        suggestionsDiv.style.display = 'block';
+      } catch (error) {
+        console.error('Address search error:', error);
+        suggestionsDiv.style.display = 'none';
+      }
+    }
+
+    function selectAddress(displayName, latitude, longitude) {
+      const addressInput = document.getElementById('addressInput');
+      const suggestionsDiv = document.getElementById('addressSuggestions');
+
+      // Fill in the address
+      addressInput.value = displayName;
+
+      // Store coordinates
+      document.getElementById('latitudeInput').value = latitude;
+      document.getElementById('longitudeInput').value = longitude;
+
+      // Mark as valid
+      addressInput.classList.remove('is-invalid');
+      addressInput.classList.add('is-valid');
+
+      // Hide suggestions
+      suggestionsDiv.style.display = 'none';
+    }
+
+    // ========== STEP NAVIGATION ==========
     function nextStep() {
       // Validate based on current step
       let isValid = false;
@@ -259,6 +445,7 @@
       document.getElementById('progressLine').style.width = progress + '%';
     }
 
+    // ========== VALIDATION ==========
     // Validate Account Information (Step 1)
     function validateAccountInfo() {
       let isValid = true;
@@ -334,7 +521,7 @@
         phone.classList.add('is-valid');
       }
 
-      const address = document.getElementById('Input_Address');
+      const address = document.getElementById('addressInput');
       if (!address.value.trim()) {
         isValid = false;
         address.classList.add('is-invalid');
@@ -347,6 +534,7 @@
       return isValid;
     }
 
+    // ========== PASSWORD STRENGTH ==========
     function initializePasswordStrength() {
       const passwordInput = document.getElementById('passwordInput');
       const strengthBar = document.getElementById('passwordStrengthBar');

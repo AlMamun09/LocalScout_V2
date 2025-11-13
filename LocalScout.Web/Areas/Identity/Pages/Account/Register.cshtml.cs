@@ -83,6 +83,10 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             [Display(Name = "Address")]
             public string Address { get; set; }
 
+            // Latitude and Longitude for precise location
+            public double? Latitude { get; set; }
+            public double? Longitude { get; set; }
+
             [Display(Name = "Gender")]
             public string Gender { get; set; }
 
@@ -139,6 +143,8 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                 user.FullName = Input.FullName;
                 user.PhoneNumber = Input.PhoneNumber;
                 user.Address = Input.Address;
+                user.Latitude = Input.Latitude;
+                user.Longitude = Input.Longitude;
                 user.Gender = Input.Gender;
                 user.CreatedAt = DateTime.UtcNow;
                 user.BusinessName = Input.BusinessName;

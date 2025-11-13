@@ -1,3 +1,4 @@
+using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Data;
 using LocalScout.Infrastructure.Services;
@@ -20,14 +21,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Configure Identity with ApplicationUser
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+builder
+    .Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
         options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequiredLength = 6;
+        options.Password.RequiredLength = 3;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders()
@@ -35,6 +37,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 // Register EmailSender
 builder.Services.AddTransient<IEmailSender, EmailService>();
+
+// Register LocationService
+builder.Services.AddHttpClient<ILocationService, LocationService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
