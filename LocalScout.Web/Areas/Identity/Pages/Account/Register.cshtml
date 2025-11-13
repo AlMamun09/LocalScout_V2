@@ -1,628 +1,301 @@
 ﻿@page
 @model RegisterModel
 @{
-  ViewData["Title"] = "Register as a User";
-  Layout = "_AuthLayout.cshtml";
-}
-
-@section Styles {
-  <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    ViewData["Title"] = "Register as a User";
+    Layout = "_AuthLayout.cshtml";
 }
 
 @section LeftPanelLink {
-  <p style="margin: 0;">
-    Already have an account?
-    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Log in here</a>
-  </p>
+    <p class="m-0">
+        Already have an account?
+        <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl"
+            class="text-white no-underline font-semibold pb-0.5 hover:opacity-80 transition-opacity">Log in here</a>
+    </p>
 }
 
-<div class="registration-type-buttons">
-  <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="btn btn-user active">
-    <i class="fas fa-user"></i>
-    <span>User</span>
-  </a>
-  <a asp-page="./RegisterProvider" asp-route-returnUrl="@Model.ReturnUrl" class="btn btn-provider">
-    <i class="fas fa-briefcase"></i>
-    <span>Provider</span>
-  </a>
+<div class="flex gap-2 mb-3">
+    <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl"
+        class="flex-1 rounded-xl px-3 py-2.5 font-semibold transition-all border-2 bg-gradient-to-br from-blue-500 to-blue-700 text-white border-blue-500 shadow-lg flex items-center justify-center gap-2.5 no-underline text-sm">
+        <i class="fas fa-user text-base"></i>
+        <span>User</span>
+    </a>
+    <a asp-page="./RegisterProvider" asp-route-returnUrl="@Model.ReturnUrl"
+        class="flex-1 rounded-xl px-3 py-2.5 font-semibold transition-all border-2 border-gray-200 bg-white text-gray-600 hover:border-gray-200 hover:text-gray-600 flex items-center justify-center gap-2.5 no-underline text-sm">
+        <i class="fas fa-briefcase text-base"></i>
+        <span>Provider</span>
+    </a>
 </div>
 
-<div class="fade-in">
-  <h3 class="auth-heading">Register as a User</h3>
-  <p class="auth-subheading">Join LocalScout and discover trusted local services</p>
+<div class="overflow-hidden" style="max-height: calc(100vh - 160px);">
+    <div class="overflow-y-auto h-full scrollbar-none" data-registration-form data-total-steps="2">
+        <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-700 mb-1">
+            Register as a User</h3>
+        <p class="text-gray-600 text-xs mb-3">Join LocalScout and discover trusted local services</p>
 
-  <!-- Progress Indicator -->
-  <div class="progress-container">
-    <div class="progress-line" id="progressLine"></div>
-    <div class="step active" data-step="1">
-      <div class="step-circle">
-        <span>1</span>
-      </div>
-      <div class="step-label">Account</div>
+        <!-- Progress Indicator -->
+        <div class="flex justify-between mb-4 relative px-4">
+            <div class="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -z-10"></div>
+            <div class="absolute top-4 left-0 h-0.5 bg-gradient-to-r from-blue-500 to-blue-700 transition-all duration-400 -z-10"
+                id="progressLine" style="width: 0%;"></div>
+
+            <div class="step active flex flex-col items-center flex-1 relative" data-step="1">
+                <div
+                    class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold transition-all relative z-10 text-sm step-circle">
+                    <span>1</span>
+                </div>
+                <div class="mt-1.5 text-[0.7rem] font-medium text-gray-600 text-center step-label">Account</div>
+            </div>
+
+            <div class="step flex flex-col items-center flex-1 relative" data-step="2">
+                <div
+                    class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold transition-all relative z-10 text-sm step-circle">
+                    <span>2</span>
+                </div>
+                <div class="mt-1.5 text-[0.7rem] font-medium text-gray-600 text-center step-label">Personal</div>
+            </div>
+        </div>
+
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+            <!-- Step 1: Account Information -->
+            <div class="form-step active" data-step="1">
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.FullName" class="font-semibold text-gray-700 mb-1 text-xs block">Full
+                        Name</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input asp-for="Input.FullName"
+                            class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
+                            placeholder="Enter your full name" />
+                    </div>
+                    <span asp-validation-for="Input.FullName" class="text-danger text-[0.65rem] mt-0.5 block"></span>
+                </div>
+
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.Email" class="font-semibold text-gray-700 mb-1 text-xs block">Email
+                        Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input asp-for="Input.Email"
+                            class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
+                            placeholder="your.email@example.com" autocomplete="username" />
+                    </div>
+                    <span asp-validation-for="Input.Email" class="text-danger text-[0.65rem] mt-0.5 block"></span>
+                </div>
+
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.Password"
+                        class="font-semibold text-gray-700 mb-1 text-xs block">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input asp-for="Input.Password"
+                            class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
+                            placeholder="Create a strong password" autocomplete="new-password" type="password"
+                            id="passwordInput" />
+                    </div>
+                    <div class="mt-1 h-0.75 bg-gray-200 rounded-sm overflow-hidden hidden" id="passwordStrength">
+                        <div class="h-full transition-all rounded-sm" id="passwordStrengthBar"></div>
+                    </div>
+                    <div class="text-[0.65rem] mt-0.5 font-medium" id="passwordStrengthText"></div>
+                    <span asp-validation-for="Input.Password" class="text-danger text-[0.65rem] mt-0.5 block"></span>
+                </div>
+
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.ConfirmPassword"
+                        class="font-semibold text-gray-700 mb-1 text-xs block">Confirm Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input asp-for="Input.ConfirmPassword"
+                            class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
+                            placeholder="Re-enter your password" autocomplete="new-password" type="password"
+                            id="confirmPasswordInput" />
+                    </div>
+                    <span asp-validation-for="Input.ConfirmPassword"
+                        class="text-danger text-[0.65rem] mt-0.5 block"></span>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <button type="button"
+                        class="flex-1 rounded-lg px-5 py-2.5 font-semibold border-0 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:from-blue-700 hover:to-blue-900 hover:-translate-y-0.5 hover:shadow-lg"
+                        onclick="nextStep()">
+                        <span>Next</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Personal Details -->
+            <div class="form-step" data-step="2">
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.PhoneNumber" class="font-semibold text-gray-700 mb-1 text-xs block">Phone
+                        Number</label>
+                    <div class="relative">
+                        <i class="fas fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input asp-for="Input.PhoneNumber"
+                            class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
+                            placeholder="Enter your phone number" />
+                    </div>
+                    <span asp-validation-for="Input.PhoneNumber" class="text-danger text-[0.65rem] mt-0.5 block"></span>
+                </div>
+
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.Address"
+                        class="font-semibold text-gray-700 mb-1 text-xs block">Address</label>
+                    <div class="relative">
+                        <i
+                            class="fas fa-map-marker-alt absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input asp-for="Input.Address"
+                            class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
+                            placeholder="Enter your address" id="addressInput" style="padding-right: 160px;" />
+                        <button type="button"
+                            class="btn btn-sm btn-outline-primary absolute right-2.5 top-1/2 -translate-y-1/2 z-10 text-[0.7rem] px-2 py-1 rounded-md whitespace-nowrap transition-all"
+                            id="useLocationBtn">
+                            Use My Location
+                        </button>
+                    </div>
+                    <span asp-validation-for="Input.Address" class="text-danger text-[0.65rem] mt-0.5 block"></span>
+
+                    <!-- Autocomplete dropdown -->
+                    <div id="addressSuggestions"
+                        class="list-group mt-1 border border-gray-300 rounded-lg shadow-lg bg-white absolute z-[1000] max-h-[200px] overflow-y-auto hidden"
+                        style="width: calc(100% - 30px);"></div>
+
+                    <!-- Hidden fields for coordinates -->
+                    <input type="hidden" asp-for="Input.Latitude" id="latitudeInput" />
+                    <input type="hidden" asp-for="Input.Longitude" id="longitudeInput" />
+                </div>
+
+                <div class="form-group mb-3.5 relative">
+                    <label asp-for="Input.Gender" class="font-semibold text-gray-700 mb-1 text-xs block">Gender</label>
+                    <div class="flex gap-2 mt-1.5">
+                        <div class="flex-1">
+                            <input type="radio" asp-for="Input.Gender" value="Male" id="genderMale" class="hidden" />
+                            <label for="genderMale"
+                                class="flex items-center justify-center px-2 py-2 border-2 border-gray-200 rounded-lg cursor-pointer transition-all font-medium gap-2 text-xs hover:border-blue-500 hover:-translate-y-0.5">
+                                <i class="fas fa-mars"></i>
+                                <span>Male</span>
+                            </label>
+                        </div>
+                        <div class="flex-1">
+                            <input type="radio" asp-for="Input.Gender" value="Female" id="genderFemale"
+                                class="hidden" />
+                            <label for="genderFemale"
+                                class="flex items-center justify-center px-2 py-2 border-2 border-gray-200 rounded-lg cursor-pointer transition-all font-medium gap-2 text-xs hover:border-blue-500 hover:-translate-y-0.5">
+                                <i class="fas fa-venus"></i>
+                                <span>Female</span>
+                            </label>
+                        </div>
+                        <div class="flex-1">
+                            <input type="radio" asp-for="Input.Gender" value="Other" id="genderOther" class="hidden" />
+                            <label for="genderOther"
+                                class="flex items-center justify-center px-2 py-2 border-2 border-gray-200 rounded-lg cursor-pointer transition-all font-medium gap-2 text-xs hover:border-blue-500 hover:-translate-y-0.5">
+                                <i class="fas fa-genderless"></i>
+                                <span>Other</span>
+                            </label>
+                        </div>
+                    </div>
+                    <span asp-validation-for="Input.Gender" class="text-danger text-[0.65rem] mt-0.5 block"></span>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <button type="button"
+                        class="rounded-lg px-4 py-2.5 font-semibold border-0 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm bg-gray-600 text-white hover:bg-gray-700 hover:-translate-y-0.5 hover:shadow-lg flex-[0_0_90px]"
+                        onclick="prevStep()">
+                        <i class="fas fa-arrow-left text-xs"></i>
+                        <span>Back</span>
+                    </button>
+                    <button type="submit"
+                        class="flex-1 rounded-lg px-5 py-2.5 font-semibold border-0 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm bg-gradient-to-br from-green-500 to-green-700 text-white hover:from-green-700 hover:to-green-900 hover:-translate-y-0.5 hover:shadow-lg"
+                        id="submitBtn">
+                        <i class="fas fa-check text-xs"></i>
+                        <span>Complete Registration</span>
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
-    <div class="step" data-step="2">
-      <div class="step-circle">
-        <span>2</span>
-      </div>
-      <div class="step-label">Personal</div>
-    </div>
-  </div>
-
-  <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-
-    <!-- Step 1: Account Information -->
-    <div class="form-step active" data-step="1">
-      <div class="form-group">
-        <label asp-for="Input.FullName">Full Name</label>
-        <div class="input-with-icon">
-          <i class="fas fa-user"></i>
-          <input asp-for="Input.FullName" class="form-control" placeholder="Enter your full name" />
-        </div>
-        <span asp-validation-for="Input.FullName" class="text-danger"></span>
-      </div>
-
-      <div class="form-group">
-        <label asp-for="Input.Email">Email Address</label>
-        <div class="input-with-icon">
-          <i class="fas fa-envelope"></i>
-          <input asp-for="Input.Email" class="form-control" placeholder="your.email@example.com"
-            autocomplete="username" />
-        </div>
-        <span asp-validation-for="Input.Email" class="text-danger"></span>
-      </div>
-
-      <div class="form-group">
-        <label asp-for="Input.Password">Password</label>
-        <div class="input-with-icon">
-          <i class="fas fa-lock"></i>
-          <input asp-for="Input.Password" class="form-control" placeholder="Create a strong password"
-            autocomplete="new-password" type="password" id="passwordInput" />
-        </div>
-        <div class="password-strength" id="passwordStrength">
-          <div class="password-strength-bar" id="passwordStrengthBar"></div>
-        </div>
-        <div class="password-strength-text" id="passwordStrengthText"></div>
-        <span asp-validation-for="Input.Password" class="text-danger"></span>
-      </div>
-
-      <div class="form-group">
-        <label asp-for="Input.ConfirmPassword">Confirm Password</label>
-        <div class="input-with-icon">
-          <i class="fas fa-lock"></i>
-          <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="Re-enter your password"
-            autocomplete="new-password" type="password" id="confirmPasswordInput" />
-        </div>
-        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-      </div>
-
-      <div class="button-group">
-        <button type="button" class="btn-next" onclick="nextStep()">
-          Next
-          <i class="fas fa-arrow-right"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 2: Personal Details -->
-    <div class="form-step" data-step="2">
-      <div class="form-group">
-        <label asp-for="Input.PhoneNumber">Phone Number</label>
-        <div class="input-with-icon">
-          <i class="fas fa-phone"></i>
-          <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
-        </div>
-        <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
-      </div>
-
-      <div class="form-group">
-        <label asp-for="Input.Address">Address</label>
-        <div class="input-with-icon">
-          <i class="fas fa-map-marker-alt"></i>
-          <input asp-for="Input.Address" class="form-control" placeholder="Enter your address" id="addressInput" />
-          <button type="button" class="btn btn-sm btn-outline-primary" id="useLocationBtn">
-            Use My Location
-          </button>
-        </div>
-        <span asp-validation-for="Input.Address" class="text-danger"></span>
-        <!-- Autocomplete dropdown -->
-        <div id="addressSuggestions" class="list-group"
-          style="display: none; position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; width: calc(100% - 30px);">
-        </div>
-        <!-- Hidden fields for coordinates -->
-        <input type="hidden" asp-for="Input.Latitude" id="latitudeInput" />
-        <input type="hidden" asp-for="Input.Longitude" id="longitudeInput" />
-      </div>
-
-      <div class="form-group">
-        <label asp-for="Input.Gender">Gender</label>
-        <div class="gender-options">
-          <div class="gender-option">
-            <input type="radio" asp-for="Input.Gender" value="Male" id="genderMale" />
-            <label for="genderMale">
-              <i class="fas fa-mars"></i>
-              Male
-            </label>
-          </div>
-          <div class="gender-option">
-            <input type="radio" asp-for="Input.Gender" value="Female" id="genderFemale" />
-            <label for="genderFemale">
-              <i class="fas fa-venus"></i>
-              Female
-            </label>
-          </div>
-          <div class="gender-option">
-            <input type="radio" asp-for="Input.Gender" value="Other" id="genderOther" />
-            <label for="genderOther">
-              <i class="fas fa-genderless"></i>
-              Other
-            </label>
-          </div>
-        </div>
-        <span asp-validation-for="Input.Gender" class="text-danger"></span>
-      </div>
-
-      <div class="button-group">
-        <button type="button" class="btn-prev" onclick="prevStep()">
-          <i class="fas fa-arrow-left"></i>
-          Back
-        </button>
-        <button type="submit" class="btn-submit" id="submitBtn">
-          <i class="fas fa-check"></i>
-          Complete Registration
-        </button>
-      </div>
-    </div>
-  </form>
 </div>
 
 @section Scripts {
-  <partial name="_ValidationScriptsPartial" />
-  <script>
-    let currentStep = 1;
-    const totalSteps = 2;
-    let locationPermissionDenied = false;
-    let addressSuggestionsTimeout;
+    <partial name="_ValidationScriptsPartial" />
+    <script type="module" src="~/js/registration-form.js"></script>
 
-    document.addEventListener('DOMContentLoaded', function () {
-      updateProgress();
-      initializePasswordStrength();
-      initializeValidation();
-      initializeLocationFeatures();
-    });
-
-    // ========== LOCATION FEATURES ==========
-    function initializeLocationFeatures() {
-      const addressInput = document.getElementById('addressInput');
-      const useLocationBtn = document.getElementById('useLocationBtn');
-      const suggestionsDiv = document.getElementById('addressSuggestions');
-
-      // Use My Location button click
-      useLocationBtn.addEventListener('click', requestPreciseLocation);
-
-      // Address input for autocomplete
-      addressInput.addEventListener('input', function () {
-        clearTimeout(addressSuggestionsTimeout);
-        const query = this.value.trim();
-
-        if (query.length < 3) {
-          suggestionsDiv.style.display = 'none';
-          return;
+    <style>
+        /* Step indicator styles with better visibility */
+        .step.active .step-circle {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.15);
+            font-weight: 700;
         }
 
-        addressSuggestionsTimeout = setTimeout(() => {
-          searchAddress(query);
-        }, 500);
-      });
-
-      // Hide suggestions when clicking outside
-      document.addEventListener('click', function (e) {
-        if (!addressInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
-          suggestionsDiv.style.display = 'none';
-        }
-      });
-    }
-
-    async function requestPreciseLocation() {
-      const useLocationBtn = document.getElementById('useLocationBtn');
-      const addressInput = document.getElementById('addressInput');
-
-      if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser');
-        return;
-      }
-
-      // Show loading state
-      useLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
-      useLocationBtn.disabled = true;
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-          const accuracy = position.coords.accuracy;
-
-          console.log(`Location obtained: Lat ${latitude}, Lon ${longitude}, Accuracy: ${accuracy}m`);
-
-          // Call reverse geocoding API
-          try {
-            const response = await fetch('/api/location/reverse-geocode', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ latitude, longitude })
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-
-              // Autofill address
-              addressInput.value = data.displayName;
-
-              // Store coordinates
-              document.getElementById('latitudeInput').value = latitude;
-              document.getElementById('longitudeInput').value = longitude;
-
-              // Mark address field as valid
-              addressInput.classList.remove('is-invalid');
-              addressInput.classList.add('is-valid');
-
-
-            } else {
-              throw new Error('Failed to get address');
-            }
-          } catch (error) {
-            console.error('Reverse geocoding error:', error);
-            alert('Could not retrieve address. Please enter manually.');
-            addressInput.focus();
-          } finally {
-            // Reset button
-            useLocationBtn.innerHTML = 'Use My Location';
-            useLocationBtn.disabled = false;
-          }
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          locationPermissionDenied = true;
-
-          let errorMessage = 'Unable to get your location. ';
-
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage += 'You denied location access. Please enter your address manually or use autocomplete.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage += 'Location information is unavailable.';
-              break;
-            case error.TIMEOUT:
-              errorMessage += 'The request timed out.';
-              break;
-            default:
-              errorMessage += 'An unknown error occurred.';
-          }
-
-          alert(errorMessage);
-          addressInput.focus();
-
-          // Reset button
-          useLocationBtn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
-          useLocationBtn.disabled = false;
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    }
-
-    async function searchAddress(query) {
-      const suggestionsDiv = document.getElementById('addressSuggestions');
-
-      try {
-        const response = await fetch(`/api/location/search?query=${encodeURIComponent(query)}`);
-
-        if (!response.ok) throw new Error('Search failed');
-
-        const suggestions = await response.json();
-
-        if (suggestions.length === 0) {
-          suggestionsDiv.style.display = 'none';
-          return;
+        .step.completed .step-circle {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+            font-weight: 700;
         }
 
-        // Display suggestions
-        suggestionsDiv.innerHTML = suggestions.map(s => `
-                      <button type="button" class="list-group-item list-group-item-action"
-                       onclick="selectAddress('${s.displayName.replace(/'/g, "\\'")}', ${s.latitude}, ${s.longitude})">
-                          <i class="fas fa-map-marker-alt me-2"></i>${s.displayName}
-                           </button>
-                       `).join('');
-
-        suggestionsDiv.style.display = 'block';
-      } catch (error) {
-        console.error('Address search error:', error);
-        suggestionsDiv.style.display = 'none';
-      }
-    }
-
-    function selectAddress(displayName, latitude, longitude) {
-      const addressInput = document.getElementById('addressInput');
-      const suggestionsDiv = document.getElementById('addressSuggestions');
-
-      // Fill in the address
-      addressInput.value = displayName;
-
-      // Store coordinates
-      document.getElementById('latitudeInput').value = latitude;
-      document.getElementById('longitudeInput').value = longitude;
-
-      // Mark as valid
-      addressInput.classList.remove('is-invalid');
-      addressInput.classList.add('is-valid');
-
-      // Hide suggestions
-      suggestionsDiv.style.display = 'none';
-    }
-
-    // ========== STEP NAVIGATION ==========
-    function nextStep() {
-      // Validate account information before proceeding
-      if (validateAccountInfo()) {
-        if (currentStep < totalSteps) {
-          document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('completed');
-          document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
-          document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
-
-          currentStep++;
-
-          document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
-          document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
-
-          updateProgress();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }
-    }
-
-    function prevStep() {
-      if (currentStep > 1) {
-        document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
-        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
-
-        currentStep--;
-
-        document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
-        document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('completed');
-        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
-
-        updateProgress();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-
-    function updateProgress() {
-      const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
-      document.getElementById('progressLine').style.width = progress + '%';
-    }
-
-    // ========== VALIDATION ==========
-    // Validate Account Information (Step 1)
-    function validateAccountInfo() {
-      let isValid = true;
-      const step1 = document.querySelector('.form-step[data-step="1"]');
-
-      // Full Name validation
-      const fullName = document.getElementById('Input_FullName');
-      if (!fullName.value.trim()) {
-        isValid = false;
-        fullName.classList.add('is-invalid');
-        fullName.classList.remove('is-valid');
-        showError(fullName, 'Full name is required');
-      } else {
-        fullName.classList.remove('is-invalid');
-        fullName.classList.add('is-valid');
-        hideError(fullName);
-      }
-
-      // Email validation
-      const email = document.getElementById('Input_Email');
-      const atChar = String.fromCharCode(64);
-      const emailRegex = new RegExp('^[^\\s' + atChar + ']+' + atChar + '[^\\s' + atChar + ']+\\.[^\\s' + atChar + ']+$');
-      if (!email.value.trim()) {
-        isValid = false;
-        email.classList.add('is-invalid');
-        email.classList.remove('is-valid');
-        showError(email, 'Email is required');
-      } else if (!emailRegex.test(email.value)) {
-        isValid = false;
-        email.classList.add('is-invalid');
-        email.classList.remove('is-valid');
-        showError(email, 'Please enter a valid email address');
-      } else {
-        email.classList.remove('is-invalid');
-        email.classList.add('is-valid');
-        hideError(email);
-      }
-
-      // Password validation
-      const password = document.getElementById('passwordInput');
-      if (!password.value) {
-        isValid = false;
-        password.classList.add('is-invalid');
-        password.classList.remove('is-valid');
-        showError(password, 'Password is required');
-      } else if (password.value.length < 6) {
-        isValid = false;
-        password.classList.add('is-invalid');
-        password.classList.remove('is-valid');
-        showError(password, 'Password must be at least 6 characters');
-      } else {
-        password.classList.remove('is-invalid');
-        password.classList.add('is-valid');
-        hideError(password);
-      }
-
-      // Confirm Password validation
-      const confirmPassword = document.getElementById('confirmPasswordInput');
-      if (!confirmPassword.value) {
-        isValid = false;
-        confirmPassword.classList.add('is-invalid');
-        confirmPassword.classList.remove('is-valid');
-        showError(confirmPassword, 'Please confirm your password');
-      } else if (confirmPassword.value !== password.value) {
-        isValid = false;
-        confirmPassword.classList.add('is-invalid');
-        confirmPassword.classList.remove('is-valid');
-        showError(confirmPassword, 'Passwords do not match');
-      } else {
-        confirmPassword.classList.remove('is-invalid');
-        confirmPassword.classList.add('is-valid');
-        hideError(confirmPassword);
-      }
-
-      return isValid;
-    }
-
-    // Validate Personal Details (Step 2) - Called on form submit
-    function validatePersonalDetails() {
-      let isValid = true;
-
-      // Phone Number validation
-      const phone = document.getElementById('Input_PhoneNumber');
-      if (!phone.value.trim()) {
-        isValid = false;
-        phone.classList.add('is-invalid');
-        phone.classList.remove('is-valid');
-        showError(phone, 'Phone number is required');
-      } else {
-        phone.classList.remove('is-invalid');
-        phone.classList.add('is-valid');
-        hideError(phone);
-      }
-
-      // Address validation
-      const address = document.getElementById('addressInput');
-      if (!address.value.trim()) {
-        isValid = false;
-        address.classList.add('is-invalid');
-        address.classList.remove('is-valid');
-        showError(address, 'Address is required');
-      } else {
-        address.classList.remove('is-invalid');
-        address.classList.add('is-valid');
-        hideError(address);
-      }
-
-      return isValid;
-    }
-
-    function showError(input, message) {
-      const errorSpan = input.closest('.form-group').querySelector('.text-danger');
-      if (errorSpan && !errorSpan.hasAttribute('data-valmsg-for')) {
-        errorSpan.textContent = message;
-      }
-    }
-
-    function hideError(input) {
-      const errorSpan = input.closest('.form-group').querySelector('.text-danger');
-      if (errorSpan && !errorSpan.hasAttribute('data-valmsg-for')) {
-        errorSpan.textContent = '';
-      }
-    }
-
-    // ========== PASSWORD STRENGTH ==========
-    function initializePasswordStrength() {
-      const passwordInput = document.getElementById('passwordInput');
-      const strengthBar = document.getElementById('passwordStrengthBar');
-      const strengthText = document.getElementById('passwordStrengthText');
-      const strengthContainer = document.getElementById('passwordStrength');
-
-      passwordInput.addEventListener('input', function () {
-        const password = this.value;
-
-        if (password.length === 0) {
-          strengthContainer.classList.remove('show');
-          return;
+        .step.active .step-label {
+            color: #007bff;
+            font-weight: 600;
         }
 
-        strengthContainer.classList.add('show');
-
-        let strength = 0;
-
-        if (password.length >= 8) strength += 25;
-        if (/[a-z]/.test(password)) strength += 25;
-        if (/[A-Z]/.test(password)) strength += 25;
-        if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) strength += 25;
-
-        strengthBar.style.width = strength + '%';
-
-        if (strength <= 25) {
-          strengthBar.style.backgroundColor = '#dc3545';
-          strengthText.style.color = '#dc3545';
-          strengthText.textContent = 'Weak';
-        } else if (strength <= 50) {
-          strengthBar.style.backgroundColor = '#ffc107';
-          strengthText.style.color = '#ffc107';
-          strengthText.textContent = 'Fair';
-        } else if (strength <= 75) {
-          strengthBar.style.backgroundColor = '#17a2b8';
-          strengthText.style.color = '#17a2b8';
-          strengthText.textContent = 'Good';
-        } else {
-          strengthBar.style.backgroundColor = '#28a745';
-          strengthText.style.color = '#28a745';
-          strengthText.textContent = 'Strong';
+        .step-circle {
+            font-size: 0.875rem;
+            line-height: 1;
+            background-color: #ffffff;
+            border-color: #e5e7eb;
+            color: #4b5563;
         }
-      });
-    }
 
-    function initializeValidation() {
-      // Real-time validation
-      document.querySelectorAll('input').forEach(input => {
-        input.addEventListener('blur', function () {
-          if (currentStep === 1) {
-            validateAccountInfo();
-          }
-        });
-
-        input.addEventListener('input', function () {
-          if (this.classList.contains('is-invalid') && this.value.trim()) {
-            this.classList.remove('is-invalid');
-          }
-        });
-      });
-
-      // Confirm password real-time validation
-      const confirmPassword = document.getElementById('confirmPasswordInput');
-      const password = document.getElementById('passwordInput');
-
-      confirmPassword.addEventListener('input', function () {
-        if (this.value && this.value === password.value) {
-          this.classList.remove('is-invalid');
-          this.classList.add('is-valid');
-          hideError(this);
+        /* Gender radio button checked state */
+        input[type="radio"]:checked+label {
+            border-color: #007bff !important;
+            background-color: rgba(0, 123, 255, 0.05);
+            color: #007bff;
         }
-      });
-    }
 
-    // Validate personal details before form submission
-    document.getElementById('registerForm').addEventListener('submit', function (e) {
-      if (currentStep === 2 && !validatePersonalDetails()) {
-        e.preventDefault();
-        return false;
-      }
-    });
-
-    // Prevent Enter key from submitting form unexpectedly
-    document.getElementById('registerForm').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
-        e.preventDefault();
-        if (currentStep < totalSteps) {
-          nextStep();
+        /* Password strength show state */
+        #passwordStrength.show {
+            display: block !important;
         }
-      }
-    });
-  </script>
+
+        /* Scrollbar hide */
+        .scrollbar-none::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        .scrollbar-none {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        /* Address suggestions styling */
+        #addressSuggestions .list-group-item {
+            border: none;
+            border-bottom: 1px solid #f1f1f1;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #addressSuggestions .list-group-item:last-child {
+            border-bottom: none;
+        }
+
+        #addressSuggestions .list-group-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(4px);
+        }
+
+        #addressSuggestions .list-group-item i {
+            color: #007bff;
+        }
+    </style>
 }

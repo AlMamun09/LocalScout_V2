@@ -2,235 +2,125 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>@ViewData["Title"] - LocalScout</title>
-  <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LocalScout</title>
 
-    body {
-      background-color: #f8f9fa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 8px;
-      overflow: hidden;
-    }
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#007bff',
+                        'primary-dark': '#0056b3',
+                    }
+                }
+            }
+        }
+    </script>
 
-    .auth-container {
-      display: flex;
-      background-color: #fff;
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      max-width: 1080px;
-      width: 100%;
-      height: 96vh;
-      max-height: 96vh;
-    }
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    .auth-left {
-      background: linear-gradient(135deg, #0062cc, #007bff);
-      color: #fff;
-      padding: 35px 25px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      text-align: center;
-      width: 36%;
-      position: relative;
-    }
+    <style>
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
 
-    /* Back to Home button inside auth-left */
-    .back-to-home-left {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-    }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
 
-    .back-to-home-left a {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: rgba(255, 255, 255, 0.9);
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 8px 12px;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      background-color: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
+        @@keyframes successPulse {
 
-    .back-to-home-left a:hover {
-      color: #fff;
-      background-color: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
-      transform: translateX(-2px);
-    }
+            0%,
+            100% {
+                transform: scale(1);
+            }
 
-    .back-to-home-left a i {
-      font-size: 0.9rem;
-    }
+            50% {
+                transform: scale(1.05);
+            }
+        }
 
-    .auth-left-content {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      flex: 1;
-    }
+        .form-step {
+            display: none;
+            animation: slideIn 0.4s ease;
+        }
 
-    .auth-left img {
-      max-width: 120px;
-      margin-bottom: 12px;
-    }
+        .form-step.active {
+            display: block;
+        }
 
-    .auth-left h3 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
+        .step.completed .step-circle {
+            animation: successPulse 0.6s ease;
+        }
 
-    .auth-left p {
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
+        /* Bootstrap form validation compatibility */
+        .form-control.is-valid {
+            border-color: #28a745;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
 
-    .auth-left-link {
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 0.9rem;
-    }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+    </style>
 
-    .auth-left-link a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: 600;
-      border-bottom: none;
-      padding-bottom: 2px;
-      transition: all 0.3s;
-    }
-
-    .auth-left-link a:hover {
-      opacity: 0.8;
-    }
-
-    .auth-right {
-      padding: 25px 35px;
-      width: 64%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      overflow-y: hidden;
-      overflow-x: hidden;
-      max-height: 96vh;
-    }
-
-    /* Responsive */
-    @@media (max-width: 768px) {
-      .back-to-home-left {
-        top: 15px;
-        left: 15px;
-      }
-
-      .back-to-home-left a {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-      }
-
-      .back-to-home-left a i {
-        font-size: 0.85rem;
-      }
-
-      .auth-container {
-        flex-direction: column;
-        max-height: none;
-        height: auto;
-      }
-
-      .auth-left {
-        width: 100%;
-        padding: 25px 15px;
-        padding-top: 50px;
-      }
-
-      .auth-right {
-        width: 100%;
-        padding: 20px 15px;
-        max-height: none;
-      }
-
-      body {
-        padding: 5px;
-        overflow: auto;
-      }
-    }
-
-    @@media (max-width: 576px) {
-      .back-to-home-left {
-        top: 10px;
-        left: 10px;
-      }
-
-      .back-to-home-left a {
-        padding: 5px 8px;
-        font-size: 0.75rem;
-        gap: 4px;
-      }
-    }
-  </style>
-  @await RenderSectionAsync("Styles", required: false)
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 
-<body>
-  <div class="auth-container">
-    <!-- Left Column -->
-    <div class="auth-left">
-      <!-- Back to Home button -->
-      <div class="back-to-home-left">
-        <a href="/">
-          <i class="fas fa-home"></i>
-          <span>Back to Home</span>
-        </a>
-      </div>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen m-0 p-2 overflow-hidden">
+    <div class="flex bg-white rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full"
+        style="height: 96vh; max-height: 96vh;">
+        <!-- Left Column -->
+        <div
+            class="bg-gradient-to-br from-blue-700 to-blue-500 text-white p-8 flex flex-col justify-between items-center text-center w-full md:w-[36%] relative">
+            <!-- Back to Home button -->
+            <div class="absolute top-5 left-5">
+                <a href="/"
+                    class="inline-flex items-center gap-2 text-white/90 no-underline text-sm font-semibold px-3 py-2 rounded-lg transition-all duration-300 bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 hover:-translate-x-0.5">
+                    <i class="fas fa-home text-sm"></i>
+                    <span>Back to Home</span>
+                </a>
+            </div>
 
-      <!-- Main content centered -->
-      <div class="auth-left-content">
-        <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo" />
-        <h3>Welcome to LocalScout</h3>
-        <p>Find trusted local professionals right in your neighborhood.</p>
+            <!-- Main content centered -->
+            <div class="flex flex-col justify-center items-center flex-1">
+                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo" class="max-w-[120px] mb-3" />
+                <h3 class="text-2xl font-bold mb-2">Welcome to LocalScout</h3>
+                <p class="text-base leading-relaxed mb-5">Find trusted local professionals right in your neighborhood.
+                </p>
 
-        @if (IsSectionDefined("LeftPanelLink"))
-        {
-          <div class="auth-left-link">
-            @RenderSection("LeftPanelLink", required: false)
-          </div>
-        }
-      </div>
+                @if (IsSectionDefined("LeftPanelLink"))
+                {
+                    <div class="mt-4 pt-4 border-t border-white/20 text-sm">
+                        @RenderSection("LeftPanelLink", required: false)
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Right Column (Renders the specific page) -->
+        <div class="p-6 md:p-8 w-full md:w-[64%] flex flex-col justify-center overflow-y-hidden overflow-x-hidden"
+            style="max-height: 96vh;">
+            @RenderBody()
+        </div>
     </div>
 
-    <!-- Right Column (Renders the specific page) -->
-    <div class="auth-right">
-      @RenderBody()
-    </div>
-  </div>
-
-  <script src="~/lib/jquery/dist/jquery.min.js"></script>
-  <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-  @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 
 </html>
