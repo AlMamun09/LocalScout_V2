@@ -24,3 +24,11 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.localscout-logo {
+    font-family: "Luckiest Guy", cursive;
+    font-weight: 900;
+    font-size: 1.7rem;
+    letter-spacing: 1px;
+    color: #3F72AF !important;
+}

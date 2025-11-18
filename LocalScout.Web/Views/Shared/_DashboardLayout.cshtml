@@ -17,7 +17,7 @@
 
     <!-- Google Font: Source Sans Pro (AdminLTE Default) -->
     <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <!-- AdminLTE Theme style -->
@@ -26,6 +26,17 @@
     <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
     <!-- site.css for any global overrides -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, h1, h2, h3, h4, h5, h6, p, button, input {
+            font-family: 'Poppins', sans-serif !important;
+        }
+    </style>
+
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -50,19 +61,22 @@
             </ul>
 
             <!-- Center Search Bar -->
-            <div class="d-none d-md-flex justify-content-center flex-grow-1 mx-3">
-                <form class="form-inline" style="width: 100%; max-width: 500px;">
-                    <div class="input-group input-group-sm w-100">
-                        <input class="form-control form-control-navbar" type="search"
-                            placeholder="Search for services..." aria-label="Search">
-                        <div class="input-group-append">
-                            <button class="btn btn-navbar" type="submit">
-                                <i class="fas fa-search"></i>
-                            </button>
+            @if (!(ViewData["HideNavbarSearch"] is bool hide && hide))
+            {
+                <div class="d-none d-md-flex justify-content-center flex-grow-1 mx-3">
+                    <form class="form-inline" style="width: 100%; max-width: 500px;" asp-controller="Home" asp-action="Search" method="get">
+                        <div class="input-group input-group-sm w-100">
+                            <input class="form-control form-control-navbar" type="search" name="query"
+                                   placeholder="Search for services..." aria-label="Search">
+                            <div class="input-group-append">
+                                <button class="btn btn-navbar" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </form>
-            </div>
+                    </form>
+                </div>
+            }
 
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto align-items-center">
@@ -93,10 +107,13 @@
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
-            <a asp-controller="Home" asp-action="Index" class="brand-link">
-                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo" class="brand-image">
-                <span class="brand-text">Local Scout</span>
+            <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo"
+                     style="height: 35px; width: auto; margin-right: 10px;" />
+
+                <span class="localscout-logo">LocalScout</span>
             </a>
+
 
             <!-- Sidebar -->
             <div class="sidebar">
@@ -110,7 +127,7 @@
                         else
                         {
                             <img src="~/adminlte/dist/img/user2-160x160.jpg" class="img-circle elevation-2"
-                                alt="User Image">
+                                 alt="User Image">
                         }
                     </div>
                     <div class="info">

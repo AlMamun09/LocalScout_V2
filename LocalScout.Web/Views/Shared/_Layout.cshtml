@@ -1,4 +1,10 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using LocalScout.Domain.Entities
+@using LocalScout.Infrastructure.Constants
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -14,45 +20,211 @@
     <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
     <!-- Your Site CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, h1, h2, h3, h4, h5, h6, p, button, input {
+            font-family: 'Poppins', sans-serif !important;
+        }
+    </style>
+
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
+
     <!-- Main Header/Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
         <div class="container-fluid px-4">
+
             <!-- Brand Logo -->
             <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
                 <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo"
-                    style="height: 35px; width: auto; margin-right: 10px;" />
-                <span class="fw-bold text-primary">LocalScout</span>
+                     style="height: 35px; width: auto; margin-right: 10px;" />
+
+                <span class="localscout-logo">LocalScout</span>
             </a>
+
+
 
             <!-- Mobile Toggle Button -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                    aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <!-- Navbar Content -->
             <div class="collapse navbar-collapse" id="mainNavbar">
 
-                <ul class="navbar-nav me-auto">
-                </ul>
+                <!-- Left Spacer -->
+                <ul class="navbar-nav me-auto"></ul>
 
-                <form class="d-flex my-2 my-lg-0" style="max-width: 450px; width: 100%;" role="search">
-                    <div class="input-group">
-                        <input class="form-control" type="search" placeholder="Search for services..."
-                            aria-label="Search">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
+                <!-- Center Search Bar (Hidden on Home Page) -->
+                @if (!(ViewData["HideNavbarSearch"] is bool hide && hide))
+                {
+                    <div class="d-none d-md-flex justify-content-center flex-grow-1 mx-3">
+                        <form class="d-flex my-2 my-lg-0" style="max-width: 450px; width: 100%;" role="search" asp-controller="Home" asp-action="Search" method="get">
+                            <div class="input-group">
+                                <input class="form-control" type="search" name="query" placeholder="Search for services..." aria-label="Search">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                }
 
+                <!-- Right Navbar Links -->
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
-                    <partial name="_LoginPartial" />
+
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        var user = await UserManager.GetUserAsync(User);
+                        var userAvatar = !string.IsNullOrEmpty(user?.ProfilePictureUrl)
+                        ? user.ProfilePictureUrl
+                        : "/adminlte/dist/img/user2-160x160.jpg"; // Default placeholder
+
+                        // --- Helper Functions for Highlighting Active Links ---
+                        string GetActiveClass(string controller, string action)
+                        {
+                            var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+                            var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+                            if (string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return "active bg-light text-primary fw-bold";
+                            }
+                            return "text-dark";
+                        }
+
+                        string GetIconClass(string controller, string action)
+                        {
+                            var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+                            var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+                            return (string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase))
+                            ? "text-primary" : "text-secondary";
+                        }
+                        // ----------------------------------------------------
+
+                        <!-- 1. Notification Bell -->
+                        <li class="nav-item dropdown me-3">
+                            <a class="nav-link position-relative text-secondary" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="far fa-bell fa-lg"></i>
+                                <span class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                    3
+                                    <span class="visually-hidden">unread messages</span>
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="notificationDropdown" style="width: 300px;">
+                                <li><h6 class="dropdown-header">Notifications</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#">
+                                        <div class="bg-light rounded-circle p-2"><i class="fas fa-info text-primary"></i></div>
+                                        <div>
+                                            <p class="mb-0 small fw-bold">Welcome back!</p>
+                                            <p class="mb-0 small text-muted">Find a service near you.</p>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center small text-primary" href="#">View All</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- 2. User Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="@userAvatar" alt="Profile" class="rounded-circle border" width="35" height="35" style="object-fit: cover;">
+                                <span class="d-none d-lg-inline fw-medium text-dark">@user?.FullName</span>
+                            </a>
+
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userDropdown" style="min-width: 250px;">
+
+                                <!-- Header -->
+                                <li class="px-3 py-2 bg-light border-bottom mb-2">
+                                    <span class="d-block fw-bold text-dark">@user?.FullName</span>
+                                    <small class="text-muted">@User?.Identity?.Name</small>
+                                </li>
+
+                                <!-- Service Provider Menu -->
+                                @if (User.IsInRole(RoleNames.ServiceProvider))
+                                {
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Provider", "Index")" asp-controller="Provider" asp-action="Index">
+                                            <i class="fas fa-tachometer-alt me-2 @GetIconClass("Provider", "Index")"></i> Provider Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Service", "Manage")" asp-controller="Service" asp-action="Manage">
+                                            <i class="fas fa-briefcase me-2 @GetIconClass("Service", "Manage")"></i> Manage Services
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Booking", "ProviderBookings")" asp-controller="Booking" asp-action="ProviderBookings">
+                                            <i class="fas fa-calendar-check me-2 @GetIconClass("Booking", "ProviderBookings")"></i> Manage Bookings
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Payment", "History")" asp-controller="Payment" asp-action="History">
+                                            <i class="fas fa-file-invoice-dollar me-2 @GetIconClass("Payment", "History")"></i> Payment History
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+
+                                <!-- Regular User Menu -->
+                                @if (!User.IsInRole(RoleNames.ServiceProvider) && !User.IsInRole(RoleNames.Admin))
+                                {
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("User", "Dashboard")" asp-controller="User" asp-action="Dashboard">
+                                            <i class="fas fa-tachometer-alt me-2 @GetIconClass("User", "Dashboard")"></i> My Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Booking", "MyBookings")" asp-controller="Booking" asp-action="MyBookings">
+                                            <i class="fas fa-calendar-alt me-2 @GetIconClass("Booking", "MyBookings")"></i> My Bookings
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Review", "MyReviews")" asp-controller="Review" asp-action="MyReviews">
+                                            <i class="fas fa-star me-2 @GetIconClass("Review", "MyReviews")"></i> My Reviews
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 @GetActiveClass("Payment", "UserHistory")" asp-controller="Payment" asp-action="UserHistory">
+                                            <i class="fas fa-history me-2 @GetIconClass("Payment", "UserHistory")"></i> Payment History
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+
+                                <!-- Common Profile Links -->
+                                <li>
+                                    <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Manage/Index">
+                                        <i class="fas fa-user-edit me-2 text-secondary"></i> Manage Profile
+                                    </a>
+                                </li>
+
+                                <!-- Logout -->
+                                <li>
+                                    <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                                        <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start">
+                                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <partial name="_LoginPartial" />
+                        </li>
+                    }
+
                 </ul>
 
             </div>
@@ -60,7 +232,8 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="mb-4">
+    <!-- 'flex-shrink-0' ensures content pushes footer down. No default padding here. -->
+    <main class="flex-shrink-0">
         @RenderBody()
     </main>
 
@@ -80,25 +253,19 @@
                         <li><a href="#" class="text-decoration-none text-muted">About Us</a></li>
                         <li><a href="#" class="text-decoration-none text-muted">Services</a></li>
                         <li><a href="#" class="text-decoration-none text-muted">Contact</a></li>
-                        <li><a asp-area="" asp-controller="Home" asp-action="Privacy"
-                                class="text-decoration-none text-muted">Privacy Policy</a></li>
+                        <li>
+                            <a asp-area="" asp-controller="Home" asp-action="Privacy"
+                               class="text-decoration-none text-muted">Privacy Policy</a>
+                        </li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-3">
                     <h6>Connect With Us</h6>
                     <div class="d-flex gap-2">
-                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-linkedin-in"></i></a>
                     </div>
                 </div>
             </div>
@@ -109,6 +276,7 @@
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

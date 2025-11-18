@@ -1,15 +1,10 @@
 ﻿@{
-    /*
-    * This file automatically selects the correct layout.
-    * If the user is logged in (authenticated), show the AdminLTE dashboard.
-    * If they are not logged in, show the public-facing layout.
-    */
-    if (User.Identity?.IsAuthenticated == true)
+    // Default layout
+    Layout = "_Layout";
+
+    // Check if user is logged in AND is an Admin
+    if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
     {
         Layout = "_DashboardLayout";
-    }
-    else
-    {
-        Layout = "_Layout";
     }
 }

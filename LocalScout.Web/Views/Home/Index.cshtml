@@ -1,236 +1,102 @@
 ﻿@{
     ViewData["Title"] = "Find Local Service Providers";
+    ViewData["HideNavbarSearch"] = true;
 }
 
-<!-- Hero Section (Bootstrap-based, compact) -->
-<div class="position-relative d-flex align-items-center justify-content-center"
-    style="min-height:65vh; margin-top:-1rem;">
-    <div class="position-absolute inset-0" id="hero-gradient"></div>
+<div class="position-relative d-flex align-items-center justify-content-center w-100 overflow-hidden"
+     style="min-height: 75vh; background: radial-gradient(circle at 50% 100%, #1a202c 10%, #020617 90%);">
 
-    <div class="container position-relative z-1">
-        <div class="row justify-content-center text-center">
+    <div class="container position-relative z-1 text-center py-5">
+        <div class="row justify-content-center">
             <div class="col-lg-10 col-xl-8">
 
-                <!-- Headline -->
-                <h1 class="fw-bold text-white mb-4" style="font-size:3.25rem; line-height:1.1;">
+                <h1 class="display-4 text-white mb-3"
+                    style="font-weight: 700; letter-spacing: -0.5px;">
                     Find Trusted Local Experts in Your Neighbourhood
                 </h1>
 
-                <!-- Subheadline -->
-                <p class="text-white-50 mb-5" style="font-size:1.25rem; font-weight:300;">
+
+                <p class="text-white-50 mb-5 mx-auto"
+                   style="max-width: 700px; font-weight: 300; font-size: 1.1rem;">
                     From home repairs to creative design, hire verified professionals who get the job done right.
                 </p>
 
-                <!-- Search Bar -->
-                <div class="mx-auto" style="max-width:760px;">
-                    <form action="/search" method="get">
-                        <div class="input-group shadow-lg"
-                            style="background:white; border-radius:50px; overflow:hidden;">
-                            <input type="text" name="query" class="form-control border-0 py-3 px-4"
-                                placeholder="What service do you need?" aria-label="Search for services"
-                                style="background:white; color:#333; font-size:1rem;" />
-                            <button class="btn btn-primary fw-semibold px-4" type="submit"
-                                style="border-top-right-radius:50px; border-bottom-right-radius:50px;">
-                                <i class="fas fa-search"></i>
+
+                <div class="mx-auto mt-4" style="max-width: 720px;">
+                    <form asp-controller="Home" asp-action="Search" method="get">
+
+                        <div class="d-flex align-items-center rounded-pill shadow-lg p-1"
+                             style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px);">
+
+                            <input type="text" name="query"
+                                   class="form-control border-0 shadow-none bg-transparent px-4 text-white"
+                                   placeholder="What service do you need?"
+                                   style="height: 55px; font-size: 1.1rem;">
+
+                            <button class="btn btn-primary rounded-pill px-4 fw-bold m-1" type="submit"
+                                    style="height: 48px; min-width: 120px;">
+                                Search
                             </button>
+
                         </div>
                     </form>
                 </div>
-
+                <style>
+                    .form-control::placeholder {
+                        color: rgba(255,255,255, 0.7) !important;
+                    }
+                </style>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Features Section (compact to fit viewport) -->
-<section class="bg-white compact-features">
-    <div class="container">
-        <div class="row g-3">
+<section class="bg-white">
+    <div class="container py-4">
+        <div class="row g-4">
+
             <div class="col-md-4">
-                <div class="text-center p-3 h-100 shadow-sm rounded feature-card">
-                    <div class="mb-2">
-                        <i class="fas fa-search fa-3x text-primary"></i>
+                <div class="card h-100 border-0 shadow-sm text-center p-4">
+                    <div class="card-body">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-search fa-3x"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Find Local Pros</h5>
+                        <p class="card-text text-muted">
+                            Browse trusted service providers in your area with verified reviews.
+                        </p>
                     </div>
-                    <h3 class="h6 fw-semibold text-dark mb-1">Find Local Pros</h3>
-                    <p class="text-muted mb-0 small">Browse trusted service providers in your area with verified
-                        reviews.</p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="text-center p-3 h-100 shadow-sm rounded feature-card">
-                    <div class="mb-2">
-                        <i class="fas fa-calendar-check fa-3x text-primary"></i>
+                <div class="card h-100 border-0 shadow-sm text-center p-4">
+                    <div class="card-body">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-calendar-check fa-3x"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Book Instantly</h5>
+                        <p class="card-text text-muted">
+                            Schedule appointments with professionals quickly and easily.
+                        </p>
                     </div>
-                    <h3 class="h6 fw-semibold text-dark mb-1">Book Instantly</h3>
-                    <p class="text-muted mb-0 small">Schedule appointments with professionals quickly and easily.</p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="text-center p-3 h-100 shadow-sm rounded feature-card">
-                    <div class="mb-2">
-                        <i class="fas fa-shield-alt fa-3x text-primary"></i>
+                <div class="card h-100 border-0 shadow-sm text-center p-4">
+                    <div class="card-body">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-shield-alt fa-3x"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Safe &amp; Secure</h5>
+                        <p class="card-text text-muted">
+                            All service providers are verified and rated by real customers.
+                        </p>
                     </div>
-                    <h3 class="h6 fw-semibold text-dark mb-1">Safe &amp; Secure</h3>
-                    <p class="text-muted mb-0 small">All service providers are verified and rated by real customers.</p>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
-
-@section Styles {
-    <style>
-        /* Gradient and stacking */
-        #hero-gradient {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            background: radial-gradient(125% 125% at 50% 100%, #000000 40%, #010133 100%);
-        }
-
-        .z-1 {
-            z-index: 1;
-        }
-
-        /* Hero section - better vertical centering */
-        .position-relative.d-flex {
-            min-height: 70vh;
-        }
-
-        /* Compact search input and button - FIXED VISIBILITY */
-        .compact-input {
-            background: white !important;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            transition: transform .2s ease, box-shadow .2s ease;
-        }
-
-        .compact-input:focus-within {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
-        }
-
-        .compact-input .form-control {
-            padding: 1rem 1.5rem;
-            font-size: 1.05rem;
-            height: auto;
-            background: white !important;
-            color: #333 !important;
-        }
-
-        .compact-input .form-control::placeholder {
-            color: #999 !important;
-            opacity: 1;
-        }
-
-        .compact-input .form-control:focus {
-            background: white !important;
-            box-shadow: none;
-        }
-
-        .compact-btn {
-            padding: 1rem 2rem;
-            font-size: 1.05rem;
-            border-radius: 0 40px 40px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #0ea5e9;
-            border: none;
-        }
-
-        .compact-btn:hover {
-            background: #0284c7;
-        }
-
-        /* Make the search icon visible and centered */
-        .compact-btn i {
-            font-size: 1.2rem;
-        }
-
-        /* Compact features */
-        .compact-features {
-            padding: 2rem 0 2rem;
-        }
-
-        .feature-card {
-            padding: 1.5rem;
-            transition: transform 0.3s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .feature-card .fa-3x {
-            font-size: 2.5rem;
-        }
-
-        /* Smaller screens: reduce hero size */
-        @@media (max-width: 767.98px) {
-            .position-relative.d-flex {
-                min-height: 60vh;
-            }
-
-            h1 {
-                font-size: 2rem !important;
-            }
-
-            .lead {
-                font-size: 1rem !important;
-            }
-
-            .compact-input {
-                border-radius: 25px;
-            }
-
-            .compact-input .form-control {
-                padding: 0.875rem 1.25rem;
-                font-size: 1rem;
-            }
-
-            .compact-btn {
-                padding: 0.875rem 1.5rem;
-                border-radius: 0 25px 25px 0;
-            }
-
-            .compact-features {
-                padding: 1.5rem 0;
-            }
-
-            .feature-card {
-                padding: 1.25rem;
-            }
-        }
-
-        /* Very small screens: stack input and button */
-        @@media (max-width: 480px) {
-            .position-relative.d-flex {
-                min-height: 50vh;
-            }
-
-            .compact-input {
-                flex-direction: column;
-                border-radius: 15px;
-                overflow: hidden;
-            }
-
-            .compact-input .form-control {
-                border-radius: 15px 15px 0 0;
-                width: 100%;
-                padding: 0.875rem 1rem;
-            }
-
-            .compact-btn {
-                width: 100%;
-                border-radius: 0 0 15px 15px;
-                padding: 0.875rem;
-            }
-
-            .compact-btn i {
-                margin: 0;
-            }
-        }
-    </style>
-}

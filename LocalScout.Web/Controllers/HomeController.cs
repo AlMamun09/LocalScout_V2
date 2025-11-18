@@ -15,6 +15,11 @@ namespace LocalScout.Web.Controllers
 
         public IActionResult Index()
         {
+            //if (User?.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+            //{
+            //    return RedirectToAction("Index", "Admin");
+            //}
+
             return View();
         }
 
@@ -26,7 +31,12 @@ namespace LocalScout.Web.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(
+                new ErrorViewModel
+                {
+                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                }
+            );
         }
     }
 }
