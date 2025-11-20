@@ -4,6 +4,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using LocalScout.Domain.Entities;
+using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -118,6 +119,18 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+
+                    // --- NEW REDIRECT LOGIC ---
+                    var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
+
+                    if (user != null)
+                    {
+                        if (await _signInManager.UserManager.IsInRoleAsync(user, RoleNames.Admin))
+                        {
+                            return RedirectToAction("Index", "Admin", new { area = "" });
+                        }
+                    }
+
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)

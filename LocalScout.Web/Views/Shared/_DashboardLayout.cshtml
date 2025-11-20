@@ -15,28 +15,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - LocalScout Dashboard</title>
 
-    <!-- Google Font: Source Sans Pro (AdminLTE Default) -->
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <!-- AdminLTE Theme style -->
-    <link rel="stylesheet" href="~/adminlte/dist/css/adminlte.min.css" />
-    <!-- Your Custom Theme -->
-    <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
-    <!-- site.css for any global overrides -->
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, h1, h2, h3, h4, h5, h6, p, button, input {
-            font-family: 'Poppins', sans-serif !important;
-        }
-    </style>
+    <link rel="stylesheet" href="~/adminlte/dist/css/adminlte.min.css" />
 
+    <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -44,9 +31,7 @@
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="wrapper">
 
-        <!-- Top Navbar (Fixed) -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-            <!-- Left navbar links -->
             <ul class="navbar-nav align-items-center">
                 <li class="nav-item">
                     <a class="nav-link text-primary" data-widget="pushmenu" href="#" role="button">
@@ -60,27 +45,8 @@
                 </li>
             </ul>
 
-            <!-- Center Search Bar -->
-            @if (!(ViewData["HideNavbarSearch"] is bool hide && hide))
-            {
-                <div class="d-none d-md-flex justify-content-center flex-grow-1 mx-3">
-                    <form class="form-inline" style="width: 100%; max-width: 500px;" asp-controller="Home" asp-action="Search" method="get">
-                        <div class="input-group input-group-sm w-100">
-                            <input class="form-control form-control-navbar" type="search" name="query"
-                                   placeholder="Search for services..." aria-label="Search">
-                            <div class="input-group-append">
-                                <button class="btn btn-navbar" type="submit">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            }
 
-            <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto align-items-center">
-                <!-- Notifications Dropdown Menu -->
                 <li class="nav-item dropdown">
                     <a class="nav-link" data-bs-toggle="dropdown" href="#">
                         <i class="far fa-bell"></i>
@@ -93,64 +59,49 @@
                             <i class="fas fa-envelope mr-2"></i> 4 new messages
                             <span class="float-right text-muted text-sm">3 mins</span>
                         </a>
-                        <!-- Add more notifications here -->
                         <div class="dropdown-divider"></div>
                         <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
                     </div>
                 </li>
 
-                <!-- User Profile Dropdown -->
                 <partial name="_LoginPartial" />
             </ul>
         </nav>
-        <!-- /.navbar -->
-        <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <!-- Brand Logo -->
-            <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
-                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo"
-                     style="height: 35px; width: auto; margin-right: 10px;" />
 
-                <span class="localscout-logo">LocalScout</span>
+            <a asp-controller="Home" asp-action="Index" class="brand-link">
+                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo"
+                     class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">LocalScout</span>
             </a>
 
-
-            <!-- Sidebar -->
             <div class="sidebar">
-                <!-- Sidebar user panel (optional) -->
+
                 <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                     <div class="image">
                         @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
                         {
-                            <img src="@currentUser.ProfilePictureUrl" class="img-circle elevation-2" alt="User Image">
+                            <img src="@currentUser.ProfilePictureUrl" class="img-circle elevation-2" alt="User Image" style="width: 2.1rem; height: 2.1rem; object-fit: cover;">
                         }
                         else
                         {
-                            <img src="~/adminlte/dist/img/user2-160x160.jpg" class="img-circle elevation-2"
-                                 alt="User Image">
+                            <img src="~/adminlte/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image">
                         }
                     </div>
                     <div class="info">
-                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="d-block" title="Manage Profile">
+                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="d-block">
                             @(currentUser?.FullName ?? User.Identity?.Name ?? "Guest")
                         </a>
                     </div>
                 </div>
 
-                <!-- Sidebar Menu -->
                 <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
-                        data-accordion="false">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
-                        <!--
-                                ROLE-BASED NAVIGATION
-                                This is where we check the user's role and show the correct links.
-                        -->
                         @if (User.IsInRole(RoleNames.Admin))
                         {
-                            <!-- --- ADMIN MENU --- -->
                             <li class="nav-item">
-                                <a href="#" class="nav-link active">
+                                <a asp-controller="Admin" asp-action="Index" class="nav-link active">
                                     <i class="nav-icon fas fa-tachometer-alt"></i>
                                     <p>Admin Dashboard</p>
                                 </a>
@@ -188,7 +139,6 @@
                         }
                         else if (User.IsInRole(RoleNames.ServiceProvider))
                         {
-                            <!-- --- SERVICE PROVIDER MENU --- -->
                             <li class="nav-item">
                                 <a href="#" class="nav-link active">
                                     <i class="nav-icon fas fa-home-alt"></i>
@@ -228,7 +178,6 @@
                         }
                         else
                         {
-                            <!-- --- REGULAR USER MENU --- -->
                             <li class="nav-item">
                                 <a href="#" class="nav-link active">
                                     <i class="nav-icon fas fa-home-alt"></i>
@@ -266,39 +215,26 @@
                                 </a>
                             </li>
                         }
-
                     </ul>
                 </nav>
-                <!-- /.sidebar-menu -->
             </div>
-            <!-- /.sidebar -->
         </aside>
 
-        <!-- Content Wrapper. Contains page content -->
         <div class="content-wrapper">
-            <!-- Main content -->
             <section class="content p-3">
                 <div class="container-fluid">
                     @RenderBody()
-                </div><!-- /.container-fluid -->
+                </div>
             </section>
-            <!-- /.content -->
         </div>
-        <!-- /.content-wrapper -->
-
         <footer class="main-footer">
             <strong>Copyright &copy; 2025 <a href="#">LocalScout</a>.</strong>
             All rights reserved.
         </footer>
 
     </div>
-    <!-- ./wrapper -->
-    <!-- REQUIRED SCRIPTS -->
-    <!-- jQuery -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <!-- Bootstrap 4 (AdminLTE requires this) -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- AdminLTE App -->
     <script src="~/adminlte/dist/js/adminlte.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
