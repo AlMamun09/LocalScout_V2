@@ -167,6 +167,9 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                 user.BusinessName = Input.BusinessName;
                 user.Description = Input.Description;
                 user.CreatedAt = DateTime.UtcNow;
+                // Set default values for new providers
+                user.IsActive = true; // Active by default
+                user.IsVerified = false; // Needs admin verification
 
                 var result = await _userManager.CreateAsync(user, Input.Password);
 

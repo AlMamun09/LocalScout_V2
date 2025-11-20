@@ -10,8 +10,4 @@
     <ProjectReference Include="..\LocalScout.Domain\LocalScout.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="DTOs\" />
-  </ItemGroup>
-
 </Project>

@@ -1,0 +1,160 @@
+﻿@model IEnumerable<LocalScout.Application.DTOs.UserDto>
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "User Management";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">User Management</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Users List</h3>
+            </div>
+            <div class="card-body">
+                <table id="usersTable" class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <img src="@(user.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")"
+                                        class="img-circle img-size-32 mr-2" style="object-fit:cover;">
+                                    @user.FullName
+                                </td>
+                                <td>@user.Email</td>
+                                <td>
+                                    <span
+                                        class="badge @(user.Role == "Admin" ? "badge-danger" : (user.Role == "ServiceProvider" ? "badge-info" : "badge-secondary"))">
+                                        @user.Role
+                                    </span>
+                                </td>
+                                <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <span class="badge @(user.IsActive ? "badge-success" : "badge-warning") status-badge">
+                                        @(user.IsActive ? "Active" : "Blocked")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="viewUserDetails('@user.Id')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success") btn-status"
+                                        onclick="toggleUserStatus('@user.Id', this)">
+                                        <i class="fas @(user.IsActive ? "fa-ban" : "fa-check")"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="modal-user-details">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">User Details</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="user-details-content">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var dataTable;
+
+        $(function () {
+            // Initialize DataTable
+            dataTable = $("#usersTable").DataTable({
+                "responsive": true,
+                "autoWidth": false,
+                "pageLength": 10
+            });
+        });
+
+        // --- View Details ---
+        function viewUserDetails(id) {
+            $('#modal-user-details').modal('show');
+            $('#user-details-content').html('<div class="text-center"><div class="spinner-border text-primary"></div></div>');
+
+            AjaxClient.get('@Url.Action("GetUserDetails", "Admin")?id=' + id,
+                function (response) { $('#user-details-content').html(response); },
+                function () { $('#user-details-content').html('<p class="text-danger">Error loading data.</p>'); }
+            );
+        }
+
+        // --- Toggle Status (Block/Unblock) ---
+        function toggleUserStatus(id, btn) {
+            var $btn = $(btn);
+            var isActive = $btn.hasClass('btn-danger');
+            var action = isActive ? "Block" : "Unblock";
+            var confirmColor = isActive ? '#d33' : '#28a745';
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to ${action} this user. They will be removed from this list.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: `Yes, ${action}!`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performStatusUpdate(id, $btn);
+                }
+            });
+        }
+
+        function performStatusUpdate(id, $btn) {
+            AjaxClient.post('@Url.Action("ToggleUserStatus", "Admin")', { id: id },
+                function (response) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 1500,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+
+                    var row = $btn.parents('tr');
+                    dataTable.row(row).remove().draw();
+                },
+                function (xhr) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Failed to update status',
+                        icon: 'error',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+                }
+            );
+        }
+    </script>
+}

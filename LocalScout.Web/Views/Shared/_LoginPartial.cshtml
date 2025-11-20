@@ -1,35 +1,128 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using LocalScout.Domain.Entities
+@using LocalScout.Infrastructure.Constants
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
 @{
     var currentUser = await UserManager.GetUserAsync(User);
+    var userRole = "User";
+
+    if (SignInManager.IsSignedIn(User))
+    {
+        if (User.IsInRole(RoleNames.Admin)) { userRole = "Administrator"; }
+        else if (User.IsInRole(RoleNames.ServiceProvider)) { userRole = "Service Provider"; }
+    }
 }
 
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
-            aria-expanded="false" data-bs-strategy="fixed">
-            <i class="far fa-user me-2"></i>
-            <span class="d-none d-md-inline ms-1">@(currentUser?.FullName ?? User.Identity?.Name ?? "User")</span>
+        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
+           data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="d-none d-md-inline text-dark font-weight-medium">@(currentUser?.FullName ?? "User")</span>
         </a>
-        <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+
+        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right dropdown-menu-end border-0 shadow" aria-labelledby="userDropdown" style="min-width: 260px;">
+
+            <li class="px-3 py-3 bg-light border-bottom">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3">
+                        @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
+                        {
+                            <img src="@currentUser.ProfilePictureUrl" class="img-circle elevation-1" alt="User Image"
+                                 style="width: 40px; height: 40px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="bg-white text-secondary rounded-circle d-flex justify-content-center align-items-center elevation-1 border"
+                                 style="width: 40px; height: 40px; font-weight:bold; font-size: 1.2rem;">
+                                @(currentUser?.FullName?.Substring(0, 1).ToUpper() ?? "U")
+                            </div>
+                        }
+                    </div>
+
+                    <div class="flex-grow-1 overflow-hidden">
+                        <h6 class="m-0 font-weight-bold text-dark text-truncate">@currentUser?.FullName</h6>
+                        <small class="text-muted d-block text-truncate">@currentUser?.Email</small>
+                        <span class="badge bg-secondary text-white mt-1" style="font-size: 10px; opacity: 0.7;">@userRole</span>
+                    </div>
+                </div>
+            </li>
+
+            @if (User.IsInRole(RoleNames.Admin))
+            {
+                <li>
+                    <a asp-area="" asp-controller="Admin" asp-action="Index" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-tachometer-alt mr-2" style="width: 20px;"></i> Admin Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Admin" asp-action="Users" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-users mr-2" style="width: 20px;"></i> User Management
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Admin" asp-action="Reports" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-chart-pie mr-2" style="width: 20px;"></i> Reports
+                    </a>
+                </li>
+            }
+            else if (User.IsInRole(RoleNames.ServiceProvider))
+            {
+                <li>
+                    <a asp-area="" asp-controller="Provider" asp-action="Index" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-tachometer-alt mr-2" style="width: 20px;"></i> My Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Booking" asp-action="ProviderBookings" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-calendar-check mr-2" style="width: 20px;"></i> My Bookings
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Payment" asp-action="History" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-history mr-2" style="width: 20px;"></i> Payment History
+                    </a>
+                </li>
+            }
+            else
+            {
+                <li>
+                    <a asp-area="" asp-controller="User" asp-action="Dashboard" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-tachometer-alt mr-2" style="width: 20px;"></i> My Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Booking" asp-action="MyBookings" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-calendar-alt mr-2" style="width: 20px;"></i> My Bookings
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Review" asp-action="MyReviews" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-star mr-2" style="width: 20px;"></i> My Reviews
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Payment" asp-action="UserHistory" class="dropdown-item py-2 text-secondary">
+                        <i class="fas fa-history mr-2" style="width: 20px;"></i> Payment History
+                    </a>
+                </li>
+            }
+
+            <li><hr class="dropdown-divider my-1"></li>
+
             <li>
-                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="dropdown-item">
-                    <i class="fas fa-user-edit me-2"></i>Manage Profile
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="dropdown-item py-2 text-secondary">
+                    <i class="fas fa-user-cog mr-2" style="width: 20px;"></i> Manage Profile
                 </a>
             </li>
-            <li>
-                <hr class="dropdown-divider">
-            </li>
+
             <li>
                 <form asp-area="Identity" asp-page="/Account/Logout"
-                    asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post"
-                    class="dropdown-item-form">
-                    <button type="submit" class="dropdown-item">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="dropdown-item-form">
+                    <button type="submit" class="dropdown-item py-2 text-danger font-weight-bold">
+                        <i class="fas fa-sign-out-alt mr-2" style="width: 20px;"></i> Logout
                     </button>
                 </form>
             </li>
@@ -40,26 +133,24 @@ else
 {
     <li class="nav-item dropdown">
         <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" id="accountDropdown" role="button"
-            data-bs-toggle="dropdown" aria-expanded="false" data-bs-strategy="fixed">
-            <i class="fas fa-user-circle me-1"></i>Account
+           data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-user-circle mr-1"></i> Account
         </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+        <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end border-0 shadow" aria-labelledby="accountDropdown">
             <li>
-                <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Login">
-                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Login">
+                    <i class="fas fa-sign-in-alt mr-2 text-secondary"></i> Login
                 </a>
             </li>
             <li>
-                <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register">
-                    <i class="fas fa-user-plus me-2"></i>Register
+                <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Register">
+                    <i class="fas fa-user-plus mr-2 text-secondary"></i> Register
                 </a>
             </li>
+            <li><div class="dropdown-divider"></div></li>
             <li>
-                <hr class="dropdown-divider">
-            </li>
-            <li>
-                <a class="dropdown-item" asp-area="Identity" asp-page="/Account/RegisterProvider">
-                    <i class="fas fa-user-tie me-2"></i>Become a Provider
+                <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/RegisterProvider">
+                    <i class="fas fa-user-tie mr-2 text-secondary"></i> Become a Provider
                 </a>
             </li>
         </ul>

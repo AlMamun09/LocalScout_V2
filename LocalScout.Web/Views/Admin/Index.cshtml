@@ -1,29 +1,421 @@
 ﻿@{
-    ViewData["Title"] = "Admin Dashboard";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+  ViewData["Title"] = "Admin Dashboard";
+  Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+@section Styles {
+  <style>
+    .small-box {
+      border-radius: 0.25rem;
+      position: relative;
+      display: block;
+      margin-bottom: 20px;
+      box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .2);
+    }
+
+    .small-box>.inner {
+      padding: 10px;
+    }
+
+    .small-box h3 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0 0 10px;
+      padding: 0;
+      white-space: nowrap;
+    }
+
+    .small-box p {
+      font-size: 1rem;
+    }
+
+    .small-box .icon {
+      color: rgba(0, 0, 0, .15);
+      z-index: 0;
+    }
+
+    .small-box .icon>i {
+      font-size: 90px;
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      transition: transform .3s linear;
+    }
+
+    .small-box:hover .icon>i {
+      transform: scale(1.1);
+    }
+
+    .small-box-footer {
+      background-color: rgba(0, 0, 0, .1);
+      color: rgba(255, 255, 255, .8);
+      display: block;
+      padding: 3px 0;
+      position: relative;
+      text-align: center;
+      text-decoration: none;
+      z-index: 10;
+    }
+
+    .small-box-footer:hover {
+      background-color: rgba(0, 0, 0, .15);
+      color: #fff;
+    }
+  </style>
 }
 
 <div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0">Admin Dashboard</h1>
-            </div>
-        </div>
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1 class="m-0">Admin Dashboard</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+          <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+      </div>
     </div>
+  </div>
 </div>
 
 <section class="content">
-    <div class="container-fluid">
+  <div class="container-fluid">
 
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Welcome</h3>
-            </div>
-            <div class="card-body">
-                Start managing your users and services from the sidebar.
-            </div>
+    <!-- Info boxes -->
+    <div class="row">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3 id="totalUsers">...</h3>
+            <p>Total Users</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <a asp-action="ActiveUsers" class="small-box-footer">
+            View All <i class="fas fa-arrow-circle-right"></i>
+          </a>
         </div>
+      </div>
 
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3 id="activeUsers">...</h3>
+            <p>Active Users</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <a asp-action="ActiveUsers" class="small-box-footer">
+            Manage <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+          <div class="inner">
+            <h3 id="blockedUsers" class="text-white">...</h3>
+            <p class="text-white">Blocked Users</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-user-slash"></i>
+          </div>
+          <a asp-action="BlockedUsers" class="small-box-footer">
+            View Details <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+          <div class="inner">
+            <h3 id="newUsersToday">...</h3>
+            <p>New Users Today</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <a asp-action="ActiveUsers" class="small-box-footer">
+            View All <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
     </div>
+
+    <!-- Provider Statistics -->
+    <div class="row">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+          <div class="inner">
+            <h3 id="totalProviders">...</h3>
+            <p>Total Providers</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-user-tie"></i>
+          </div>
+          <a asp-action="ActiveProviders" class="small-box-footer">
+            View All <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-teal">
+          <div class="inner">
+            <h3 id="activeProviders">...</h3>
+            <p>Active Providers</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <a asp-action="ActiveProviders" class="small-box-footer">
+            Manage <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-secondary">
+          <div class="inner">
+            <h3 id="blockedProviders">...</h3>
+            <p>Blocked Providers</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-ban"></i>
+          </div>
+          <a asp-action="BlockedProviders" class="small-box-footer">
+            View Details <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-orange">
+          <div class="inner">
+            <h3 id="pendingVerifications">...</h3>
+            <p>Pending Verifications</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <a asp-action="VerificationRequests" class="small-box-footer">
+            Review <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header border-transparent">
+            <h3 class="card-title">Recent Users</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table m-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="recentUsers">
+                  <tr>
+                    <td colspan="4" class="text-center">
+                      <div class="spinner-border spinner-border-sm text-primary"></div>
+                      Loading...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer clearfix">
+            <a asp-action="ActiveUsers" class="btn btn-sm btn-primary float-right">View All Users</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header border-transparent">
+            <h3 class="card-title">Recent Service Providers</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table m-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Business</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="recentProviders">
+                  <tr>
+                    <td colspan="4" class="text-center">
+                      <div class="spinner-border spinner-border-sm text-primary"></div>
+                      Loading...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer clearfix">
+            <a asp-action="ActiveProviders" class="btn btn-sm btn-primary float-right">View All Providers</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-bolt mr-1"></i>
+              Quick Actions
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3">
+                <a asp-action="ActiveUsers" class="btn btn-app bg-success">
+                  <i class="fas fa-users"></i> Manage Users
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a asp-action="ActiveProviders" class="btn btn-app bg-info">
+                  <i class="fas fa-user-tie"></i> Manage Providers
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a asp-action="VerificationRequests" class="btn btn-app bg-warning">
+                  <span class="badge bg-danger" id="verificationBadge">0</span>
+                  <i class="fas fa-check-circle"></i> Verifications
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a href="#" class="btn btn-app bg-primary">
+                  <i class="fas fa-chart-pie"></i> View Reports
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </section>
+
+@section Scripts {
+  <script>
+    $(function () {
+      loadDashboardStats();
+    });
+
+    function loadDashboardStats() {
+      // Load statistics via AJAX
+      $.ajax({
+        url: '@Url.Action("GetDashboardStats", "Admin")',
+        type: 'GET',
+        success: function (data) {
+          // Update user statistics
+          $('#totalUsers').text(data.totalUsers || 0);
+          $('#activeUsers').text(data.activeUsers || 0);
+          $('#blockedUsers').text(data.blockedUsers || 0);
+          $('#newUsersToday').text(data.newUsersToday || 0);
+
+          // Update provider statistics
+          $('#totalProviders').text(data.totalProviders || 0);
+          $('#activeProviders').text(data.activeProviders || 0);
+          $('#blockedProviders').text(data.blockedProviders || 0);
+          $('#pendingVerifications').text(data.pendingVerifications || 0);
+          $('#verificationBadge').text(data.pendingVerifications || 0);
+
+          // Load recent users
+          loadRecentUsers(data.recentUsers);
+          loadRecentProviders(data.recentProviders);
+        },
+        error: function () {
+          // Set default values on error
+          $('.small-box h3').text('0');
+          $('#recentUsers').html('<tr><td colspan="4" class="text-center text-danger">Failed to load data</td></tr>');
+          $('#recentProviders').html('<tr><td colspan="4" class="text-center text-danger">Failed to load data</td></tr>');
+        }
+      });
+    }
+
+    function loadRecentUsers(users) {
+      if (!users || users.length === 0) {
+        $('#recentUsers').html('<tr><td colspan="4" class="text-center text-muted">No recent users</td></tr>');
+        return;
+      }
+
+      var html = '';
+      users.forEach(function (user) {
+        var statusBadge = user.isActive
+          ? '<span class="badge badge-success">Active</span>'
+          : '<span class="badge badge-warning">Blocked</span>';
+
+        html += `<tr>
+              <td>${user.fullName}</td>
+          <td>${user.email}</td>
+            <td>${statusBadge}</td>
+           <td><span class="badge badge-info">${formatDate(user.createdAt)}</span></td>
+            </tr>`;
+      });
+      $('#recentUsers').html(html);
+    }
+
+    function loadRecentProviders(providers) {
+      if (!providers || providers.length === 0) {
+        $('#recentProviders').html('<tr><td colspan="4" class="text-center text-muted">No recent providers</td></tr>');
+        return;
+      }
+
+      var html = '';
+      providers.forEach(function (provider) {
+        var statusBadge = provider.isActive
+          ? '<span class="badge badge-success">Active</span>'
+          : '<span class="badge badge-warning">Blocked</span>';
+
+        html += `<tr>
+       <td>${provider.fullName}</td>
+      <td>${provider.businessName || 'N/A'}</td>
+          <td>${statusBadge}</td>
+              <td><span class="badge badge-info">${formatDate(provider.createdAt)}</span></td>
+        </tr>`;
+      });
+      $('#recentProviders').html(html);
+    }
+
+    function formatDate(dateString) {
+      var date = new Date(dateString);
+      var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+    }
+  </script>
+}

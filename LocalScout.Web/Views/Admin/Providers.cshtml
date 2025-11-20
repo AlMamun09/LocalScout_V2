@@ -1,0 +1,270 @@
+@model IEnumerable<LocalScout.Application.DTOs.ServiceProviderDto>
+@{
+    // Fallback title if not set by Controller
+    ViewData["Title"] = ViewData["Title"] ?? "Provider Management";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">@ViewData["Title"]</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item active">Providers</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Service Providers List</h3>
+            </div>
+            <!-- /.card-header -->
+            <div class="card-body">
+                <table id="providersTable" class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Provider Info</th>
+                            <th>Business Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Joined Date</th>
+                            <th class="text-center">Status</th> <!-- Active/Blocked -->
+                            <th class="text-center">Verification</th> <!-- Verified/Unverified -->
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var provider in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="@(provider.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")"
+                                            class="img-circle img-size-32 mr-2"
+                                            style="object-fit:cover; width: 32px; height: 32px;">
+                                        <span>@provider.FullName</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="font-weight-bold text-primary">@provider.BusinessName</span>
+                                </td>
+                                <td>@provider.Email</td>
+                                <td>@provider.PhoneNumber</td>
+                                <td>@provider.CreatedAt.ToString("MMM dd, yyyy")</td>
+
+                                <!-- 1. Status Column (Active/Blocked) -->
+                                <td class="text-center align-middle">
+                                    <span
+                                        class="badge @(provider.IsActive ? "badge-success" : "badge-warning") status-badge"
+                                        style="font-size: 0.9em;">
+                                        @(provider.IsActive ? "Active" : "Blocked")
+                                    </span>
+                                </td>
+
+                                <!-- 2. Verification Column (Verified/Unverified) -->
+                                <td class="text-center align-middle">
+                                    @if (provider.IsVerified)
+                                    {
+                                        <span class="badge badge-info" style="font-size: 0.9em;">
+                                            <i class="fas fa-check-circle"></i> Verified
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary" style="font-size: 0.9em;">
+                                            <i class="fas fa-clock"></i> Unverified
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="align-middle">
+                                    <div class="d-flex">
+                                        <!-- View Details Button -->
+                                        <button class="btn btn-sm btn-primary mr-1"
+                                            onclick="viewProviderDetails('@provider.Id')" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                        <!-- Block/Unblock Button (Only show if provider IS verified) -->
+                                        @if (provider.IsVerified)
+                                        {
+                                            <button
+                                                class="btn btn-sm @(provider.IsActive ? "btn-danger" : "btn-success") btn-status mr-1"
+                                                onclick="toggleProviderStatus('@provider.Id', this)"
+                                                title="@(provider.IsActive ? "Block" : "Unblock")">
+                                                <i class="fas @(provider.IsActive ? "fa-ban" : "fa-check")"></i>
+                                            </button>
+                                        }
+
+                                        <!-- Verification Actions (Only show on Verification Requests page) -->
+                                        @if (!provider.IsVerified && ViewData["Title"]?.ToString() == "Provider Verification Requests")
+                                        {
+                                            <button class="btn btn-sm btn-success mr-1"
+                                                onclick="approveProvider('@provider.Id', this)" title="Approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning"
+                                                onclick="rejectProvider('@provider.Id', this)" title="Reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal for Provider Details -->
+<div class="modal fade" id="modal-provider-details">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Provider Details</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="provider-details-content">
+                <!-- AJAX Content Loads Here -->
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var dataTable;
+
+        $(function () {
+            dataTable = $("#providersTable").DataTable({
+                "responsive": true,
+                "autoWidth": false,
+                "pageLength": 10,
+                "order": [[4, "desc"]] // Sort by 'Joined Date' (Index 4)
+            });
+        });
+
+        // --- View Details ---
+        function viewProviderDetails(id) {
+            $('#modal-provider-details').modal('show');
+            $('#provider-details-content').html('<div class="text-center py-3"><div class="spinner-border text-primary"></div></div>');
+
+            AjaxClient.get('@Url.Action("GetUserDetails", "Admin")?id=' + id,
+                function (response) { $('#provider-details-content').html(response); },
+                function () { $('#provider-details-content').html('<p class="text-danger text-center">Error loading details.</p>'); }
+            );
+        }
+
+        // --- Block/Unblock Status ---
+        function toggleProviderStatus(id, btn) {
+            var $btn = $(btn);
+            var isActive = $btn.hasClass('btn-danger');
+            var action = isActive ? "Block" : "Unblock";
+            var confirmColor = isActive ? '#d33' : '#28a745';
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to ${action} this provider.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: `Yes, ${action}!`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // If checking Blocked/Active lists, we remove the row.
+                    // If checking All Providers list, we might just update the button (logic depends on your preference).
+                    // For consistency with User Management: Remove row.
+                    performAction('@Url.Action("ToggleUserStatus", "Admin")', id, $btn, "Status updated successfully");
+                }
+            });
+        }
+
+        // --- Approve Provider ---
+        function approveProvider(id, btn) {
+            Swal.fire({
+                title: 'Approve Provider?',
+                text: 'This provider will be verified and publicly visible.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Approve!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Assuming you create an 'ApproveProvider' action in controller
+                    performAction('@Url.Action("ApproveProvider", "Admin")', id, $(btn), "Provider approved successfully");
+                }
+            });
+        }
+
+        // --- Reject Provider ---
+        function rejectProvider(id, btn) {
+            Swal.fire({
+                title: 'Reject Provider?',
+                text: 'This application will be rejected.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Reject'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Assuming you create a 'RejectProvider' action in controller
+                    performAction('@Url.Action("RejectProvider", "Admin")', id, $(btn), "Provider rejected");
+                }
+            });
+        }
+
+        // --- Generic Action Handler ---
+        function performAction(url, id, $btn, successMsg) {
+            AjaxClient.post(url, { id: id },
+                function (response) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message || successMsg,
+                        icon: 'success',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+
+                    // Remove row from table
+                    var row = $btn.parents('tr');
+                    dataTable.row(row).remove().draw();
+                },
+                function (xhr) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Action failed',
+                        icon: 'error',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+                }
+            );
+        }
+    </script>
+}

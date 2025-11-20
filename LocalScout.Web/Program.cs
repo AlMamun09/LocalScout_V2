@@ -1,6 +1,7 @@
 using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Data;
+using LocalScout.Infrastructure.Repositories;
 using LocalScout.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -37,6 +38,8 @@ builder
 
 // Register EmailSender
 builder.Services.AddTransient<IEmailSender, EmailService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IServiceProviderRepository, ServiceProviderRepository>();
 
 // Register LocationService
 builder.Services.AddHttpClient<ILocationService, LocationService>();
