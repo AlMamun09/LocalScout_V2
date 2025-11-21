@@ -11,7 +11,10 @@ namespace LocalScout.Web.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IServiceProviderRepository _providerRepository;
 
-        public AdminController(IUserRepository userRepository, IServiceProviderRepository providerRepository)
+        public AdminController(
+            IUserRepository userRepository,
+            IServiceProviderRepository providerRepository
+        )
         {
             _userRepository = userRepository;
             _providerRepository = providerRepository;
@@ -55,14 +58,17 @@ namespace LocalScout.Web.Controllers
                     blockedProviders = blockedProviders.Count(),
                     pendingVerifications = pendingVerifications.Count(),
                     recentUsers = allUsers.OrderByDescending(u => u.CreatedAt).Take(5),
-                    recentProviders = allProviders.OrderByDescending(p => p.CreatedAt).Take(5)
+                    recentProviders = allProviders.OrderByDescending(p => p.CreatedAt).Take(5),
                 };
 
                 return Ok(stats);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Failed to load dashboard statistics", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "Failed to load dashboard statistics", error = ex.Message }
+                );
             }
         }
 
@@ -80,7 +86,7 @@ namespace LocalScout.Web.Controllers
             ViewData["Title"] = "Active Users";
             var users = await _userRepository.GetUsersByStatusAsync(true);
 
-            return View("Users", users);
+            return View("User/Users", users);
         }
 
         // --- 3. Blocked Users Page ---
@@ -89,7 +95,7 @@ namespace LocalScout.Web.Controllers
             ViewData["Title"] = "Blocked Users";
             var users = await _userRepository.GetUsersByStatusAsync(false);
 
-            return View("Users", users);
+            return View("User/Users", users);
         }
 
         [HttpGet]
@@ -102,7 +108,7 @@ namespace LocalScout.Web.Controllers
             if (user == null)
                 return NotFound();
 
-            return PartialView("_UserDetailsPartial", user);
+            return PartialView("User/_UserDetailsPartial", user);
         }
 
         [HttpPost]
@@ -123,7 +129,6 @@ namespace LocalScout.Web.Controllers
 
         // ==================== PROVIDER MANAGEMENT ====================
 
-        // --- 1. All Providers ---
         public async Task<IActionResult> Providers()
         {
             ViewData["Title"] = "All Service Providers";
@@ -131,8 +136,6 @@ namespace LocalScout.Web.Controllers
             return View(providers);
         }
 
-        // --- 2. Active Providers Page ---
-        // Shows providers that are BOTH verified AND active
         public async Task<IActionResult> ActiveProviders()
         {
             ViewData["Title"] = "Active Service Providers";
@@ -141,27 +144,23 @@ namespace LocalScout.Web.Controllers
             // Filter to show only verified AND active providers
             var verifiedActiveProviders = allProviders.Where(p => p.IsVerified).ToList();
 
-            return View("Providers", verifiedActiveProviders);
+            return View("Provider/Providers", verifiedActiveProviders);
         }
 
-        // --- 3. Blocked Providers Page ---
-        // Shows providers that are blocked (IsActive = false), regardless of verification
         public async Task<IActionResult> BlockedProviders()
         {
             ViewData["Title"] = "Blocked Service Providers";
             var providers = await _providerRepository.GetProvidersByStatusAsync(false);
 
-            return View("Providers", providers);
+            return View("Provider/Providers", providers);
         }
 
-        // --- 4. Verification Requests ---
-        // Shows providers that are NOT yet verified (IsVerified = false)
         public async Task<IActionResult> VerificationRequests()
         {
             ViewData["Title"] = "Provider Verification Requests";
             var providers = await _providerRepository.GetVerificationRequestsAsync();
 
-            return View("Providers", providers);
+            return View("Provider/Providers", providers);
         }
 
         [HttpGet]
@@ -174,7 +173,7 @@ namespace LocalScout.Web.Controllers
             if (provider == null)
                 return NotFound();
 
-            return PartialView("_ProviderDetailsPartial", provider);
+            return PartialView("Provider/_ProviderDetailsPartial", provider);
         }
 
         [HttpPost]
@@ -187,7 +186,9 @@ namespace LocalScout.Web.Controllers
             var success = await _providerRepository.ToggleProviderStatusAsync(id);
             if (success)
             {
-                return Ok(new { success = true, message = "Provider status updated successfully." });
+                return Ok(
+                    new { success = true, message = "Provider status updated successfully." }
+                );
             }
 
             return BadRequest(new { message = "Failed to update provider status." });

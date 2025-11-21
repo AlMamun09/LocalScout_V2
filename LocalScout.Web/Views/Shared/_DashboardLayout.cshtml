@@ -135,14 +135,14 @@
                                     <li class="nav-item">
                                         <a asp-controller="Admin" asp-action="ActiveUsers"
                                             class="nav-link @(currentAction == "ActiveUsers" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon"></i>
+                                            <i class="far fa-circle nav-icon text-success"></i>
                                             <p>Active Users</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a asp-controller="Admin" asp-action="BlockedUsers"
                                             class="nav-link @(currentAction == "BlockedUsers" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon"></i>
+                                            <i class="far fa-circle nav-icon text-danger"></i>
                                             <p>Blocked Users</p>
                                         </a>
                                     </li>
@@ -161,21 +161,21 @@
                                     <li class="nav-item">
                                         <a asp-controller="Admin" asp-action="ActiveProviders"
                                             class="nav-link @(currentAction == "ActiveProviders" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon"></i>
+                                            <i class="far fa-circle nav-icon text-success"></i>
                                             <p>Active Providers</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a asp-controller="Admin" asp-action="BlockedProviders"
                                             class="nav-link @(currentAction == "BlockedProviders" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon"></i>
+                                            <i class="far fa-circle nav-icon text-danger"></i>
                                             <p>Blocked Providers</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a asp-controller="Admin" asp-action="VerificationRequests"
                                             class="nav-link @(currentAction == "VerificationRequests" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon text-warning"></i>
+                                            <i class="far fa-circle nav-icon text-info"></i>
                                             <p>Verification Requests</p>
                                         </a>
                                     </li>
