@@ -1,0 +1,141 @@
+@model IEnumerable<LocalScout.Domain.Entities.ServiceCategory>
+@{
+    ViewData["Title"] = "Inactive Service Categories";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Inactive Service Categories</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item active">Inactive Categories</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-secondary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Inactive Categories List</h3>
+                <div class="card-tools">
+                    <button class="btn btn-primary btn-sm" onclick="openCreateModal()">
+                        <i class="fas fa-plus"></i> Create New
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="categoriesTable" class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Icon</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">
+                                    @if (!string.IsNullOrEmpty(item.IconPath))
+                                    {
+                                        <img src="@item.IconPath" alt="@item.CategoryName" style="width: 30px; height: 30px; object-fit: contain;" />
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-image text-muted"></i>
+                                    }
+                                </td>
+                                <td>@item.CategoryName</td>
+                                <td>@item.Description</td>
+                                <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info" onclick="openEditModal('@item.Id')" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="toggleStatus('@item.Id', this)" title="Activate">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal Placeholder -->
+<div class="modal fade" id="modal-create-edit">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="modalTitle">Manage Category</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $("#categoriesTable").DataTable({
+                "responsive": true, "autoWidth": false, "pageLength": 10
+            });
+        });
+
+        function openCreateModal() {
+            $('#modalTitle').text('Create New Category');
+            loadModal('@Url.Action("GetCreateOrEditModal", "ServiceCategory")');
+        }
+
+        function openEditModal(id) {
+            $('#modalTitle').text('Edit Category');
+            loadModal('@Url.Action("GetCreateOrEditModal", "ServiceCategory")?id=' + id);
+        }
+
+        function loadModal(url) {
+            $('#modal-create-edit').modal('show');
+            $('#modalContent').html('<div class="text-center"><div class="spinner-border text-primary"></div></div>');
+            AjaxClient.get(url, function (res) { $('#modalContent').html(res); });
+        }
+
+        function toggleStatus(id, btn) {
+            Swal.fire({
+                title: 'Activate Category?',
+                text: "It will be moved to the Active list.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'Yes, Activate!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    AjaxClient.post('@Url.Action("ToggleStatus", "ServiceCategory")', { id: id },
+                        function (res) {
+                            Swal.fire('Success', res.message, 'success');
+                            $(btn).closest('tr').remove();
+                        },
+                        function (xhr) { Swal.fire('Error', 'Failed to update status', 'error'); }
+                    );
+                }
+            });
+        }
+    </script>
+}

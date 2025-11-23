@@ -7,8 +7,8 @@ namespace LocalScout.Infrastructure.Data
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+            : base(options) { }
+
+        public DbSet<ServiceCategory> ServiceCategories { get; set; }
     }
 }

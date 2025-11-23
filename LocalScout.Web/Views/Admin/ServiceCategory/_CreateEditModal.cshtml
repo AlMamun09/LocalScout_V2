@@ -1,0 +1,110 @@
+@model LocalScout.Application.DTOs.ServiceCategoryDto
+
+<form id="createEditCategoryForm" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-group">
+        <label asp-for="CategoryName">Category Name</label>
+        <input asp-for="CategoryName" class="form-control" placeholder="Enter category name" required />
+        <span asp-validation-for="CategoryName" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter description"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IconFile">Category Icon (Image)</label>
+        <div class="row align-items-center">
+            <div class="col-9">
+                <div class="custom-file">
+                    <input asp-for="IconFile" type="file" class="custom-file-input" id="iconInput" accept="image/*">
+                    <label class="custom-file-label" for="iconInput">Choose file</label>
+                </div>
+            </div>
+            <div class="col-3 text-center">
+                @if (!string.IsNullOrEmpty(Model.IconPath))
+                {
+                    <img id="iconPreview" src="@Model.IconPath" alt="Icon Preview" class="img-thumbnail" style="max-height: 50px; max-width: 50px;" />
+                }
+                else
+                {
+                    <img id="iconPreview" src="#" alt="Icon Preview" class="img-thumbnail" style="max-height: 50px; max-width: 50px; display: none;" />
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="text-right">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function () {
+        // Custom file input label update
+        bsCustomFileInput.init();
+
+        // Show existing filename if available
+        var existingPath = '@Model.IconPath';
+        if (existingPath && existingPath.length > 1) {
+            var fileName = existingPath.split('/').pop();
+            // Try to remove GUID prefix (assuming format: guid_filename)
+            var parts = fileName.split('_');
+            if (parts.length > 1 && parts[0].length === 36) { // Simple GUID length check
+                parts.shift();
+                fileName = parts.join('_');
+            }
+            $('.custom-file-label').html(fileName);
+        }
+
+        // Icon preview updater
+        $('#iconInput').change(function () {
+            var input = this;
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#iconPreview').attr('src', e.target.result).show();
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        });
+
+        // Form Submission
+        $('#createEditCategoryForm').submit(function (e) {
+            e.preventDefault();
+            var form = $(this)[0];
+            var formData = new FormData(form);
+
+            $.ajax({
+                url: '@Url.Action("SaveCategory", "ServiceCategory")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (response) {
+                    $('#modal-create-edit').modal('hide');
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload(); 
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'Failed to save category.', 'error');
+                }
+            });
+        });
+    });
+</script>

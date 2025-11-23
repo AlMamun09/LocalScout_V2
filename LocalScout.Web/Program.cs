@@ -43,6 +43,7 @@ builder.Services.AddScoped<IServiceProviderRepository, ServiceProviderRepository
 
 // Register LocationService
 builder.Services.AddHttpClient<ILocationService, LocationService>();
+builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();

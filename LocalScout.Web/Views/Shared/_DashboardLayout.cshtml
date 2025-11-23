@@ -16,7 +16,7 @@
     <title>@ViewData["Title"] - LocalScout Dashboard</title>
 
     <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
@@ -40,11 +40,6 @@
                 <li class="nav-item">
                     <a class="nav-link text-primary" data-widget="pushmenu" href="#" role="button">
                         <i class="fas fa-bars"></i>
-                    </a>
-                </li>
-                <li class="nav-item d-none d-sm-inline-block">
-                    <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-primary" title="Home">
-                        <i class="fas fa-home"></i>
                     </a>
                 </li>
             </ul>
@@ -74,7 +69,7 @@
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <a asp-controller="Home" asp-action="Index" class="brand-link">
                 <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo" class="brand-image img-circle elevation-3"
-                    style="opacity: .8">
+                     style="opacity: .8">
                 <span class="brand-text font-weight-light">LocalScout</span>
             </a>
 
@@ -85,12 +80,12 @@
                         @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
                         {
                             <img src="@currentUser.ProfilePictureUrl" class="img-circle elevation-2" alt="User Image"
-                                style="width: 2.1rem; height: 2.1rem; object-fit: cover;">
+                                 style="width: 2.1rem; height: 2.1rem; object-fit: cover;">
                         }
                         else
                         {
                             <img src="~/adminlte/dist/img/user2-160x160.jpg" class="img-circle elevation-2"
-                                alt="User Image">
+                                 alt="User Image">
                         }
                     </div>
                     <div class="info">
@@ -104,9 +99,7 @@
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
 
-                        @if (User.IsInRole(RoleNames.Admin))
-                        {
-                            // --- ADMIN MENU ---
+                        @{
                             var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
                             var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
 
@@ -114,171 +107,109 @@
                             currentAction == "BlockedUsers");
                             var isProviderMenuOpen = currentController == "Admin" && (currentAction == "ActiveProviders" ||
                             currentAction == "BlockedProviders" || currentAction == "VerificationRequests");
-
-                            <li class="nav-item">
-                                <a asp-controller="Admin" asp-action="Index"
-                                    class="nav-link @(currentAction == "Index" && currentController == "Admin" ? "active" : "")">
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>Admin Dashboard</p>
-                                </a>
-                            </li>
-
-                            <li class="nav-item @(isUserMenuOpen ? "menu-open" : "")">
-                                <a href="#" class="nav-link @(isUserMenuOpen ? "active" : "")">
-                                    <i class="nav-icon fas fa-users"></i>
-                                    <p>
-                                        User Management
-                                        <i class="right fas fa-angle-left"></i>
-                                    </p>
-                                </a>
-                                <ul class="nav nav-treeview">
-                                    <li class="nav-item">
-                                        <a asp-controller="Admin" asp-action="ActiveUsers"
-                                            class="nav-link @(currentAction == "ActiveUsers" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon text-success"></i>
-                                            <p>Active Users</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a asp-controller="Admin" asp-action="BlockedUsers"
-                                            class="nav-link @(currentAction == "BlockedUsers" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon text-danger"></i>
-                                            <p>Blocked Users</p>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item @(isProviderMenuOpen ? "menu-open" : "")">
-                                <a href="#" class="nav-link @(isProviderMenuOpen ? "active" : "")">
-                                    <i class="nav-icon fas fa-user-tie"></i>
-                                    <p>
-                                        Provider Management
-                                        <i class="right fas fa-angle-left"></i>
-                                    </p>
-                                </a>
-                                <ul class="nav nav-treeview">
-                                    <li class="nav-item">
-                                        <a asp-controller="Admin" asp-action="ActiveProviders"
-                                            class="nav-link @(currentAction == "ActiveProviders" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon text-success"></i>
-                                            <p>Active Providers</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a asp-controller="Admin" asp-action="BlockedProviders"
-                                            class="nav-link @(currentAction == "BlockedProviders" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon text-danger"></i>
-                                            <p>Blocked Providers</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a asp-controller="Admin" asp-action="VerificationRequests"
-                                            class="nav-link @(currentAction == "VerificationRequests" ? "active" : "")">
-                                            <i class="far fa-circle nav-icon text-info"></i>
-                                            <p>Verification Requests</p>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-sitemap"></i>
-                                    <p>Service Categories</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-gavel"></i>
-                                    <p>Moderate Content</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-chart-pie"></i>
-                                    <p>Reports</p>
-                                </a>
-                            </li>
+                            var isCategoryMenuOpen = currentController == "ServiceCategory" && (currentAction == "ActiveCategories" ||
+                            currentAction == "InactiveCategories" || currentAction == "CategoryRequests");
                         }
-                        else if (User.IsInRole(RoleNames.ServiceProvider))
-                        {
-                            <li class="nav-item">
-                                <a href="#" class="nav-link active">
-                                    <i class="nav-icon fas fa-home-alt"></i>
-                                    <p>Home</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>Provider Dashboard</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-briefcase"></i>
-                                    <p>Manage Services</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-calendar-check"></i>
-                                    <p>Manage Bookings</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                    <p>Payment History</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="nav-link">
-                                    <i class="nav-icon fas fa-user-edit"></i>
-                                    <p>Manage Profile</p>
-                                </a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a href="#" class="nav-link active">
-                                    <i class="nav-icon fas fa-home-alt"></i>
-                                    <p>Home</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>User Dashboard</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-calendar-alt"></i>
-                                    <p>My Bookings</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-star"></i>
-                                    <p>My Reviews</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="nav-icon fas fa-history"></i>
-                                    <p>Payment History</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="nav-link">
-                                    <i class="nav-icon fas fa-user-edit"></i>
-                                    <p>Manage Profile</p>
-                                </a>
-                            </li>
-                        }
+
+                        <li class="nav-item">
+                            <a asp-controller="Admin" asp-action="Index"
+                               class="nav-link @(currentAction == "Index" && currentController == "Admin" ? "active" : "")">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Admin Dashboard</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item @(isUserMenuOpen ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(isUserMenuOpen ? "active" : "")">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>
+                                    User Management
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a asp-controller="Admin" asp-action="ActiveUsers"
+                                       class="nav-link @(currentAction == "ActiveUsers" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-success"></i>
+                                        <p>Active Users</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a asp-controller="Admin" asp-action="BlockedUsers"
+                                       class="nav-link @(currentAction == "BlockedUsers" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-danger"></i>
+                                        <p>Blocked Users</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item @(isProviderMenuOpen ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(isProviderMenuOpen ? "active" : "")">
+                                <i class="nav-icon fas fa-user-tie"></i>
+                                <p>
+                                    Provider Management
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a asp-controller="Admin" asp-action="ActiveProviders"
+                                       class="nav-link @(currentAction == "ActiveProviders" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-success"></i>
+                                        <p>Active Providers</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a asp-controller="Admin" asp-action="BlockedProviders"
+                                       class="nav-link @(currentAction == "BlockedProviders" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-danger"></i>
+                                        <p>Blocked Providers</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a asp-controller="Admin" asp-action="VerificationRequests"
+                                       class="nav-link @(currentAction == "VerificationRequests" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-info"></i>
+                                        <p>Verification Requests</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item @(isCategoryMenuOpen ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(isCategoryMenuOpen ? "active" : "")">
+                                <i class="nav-icon fas fa-sitemap"></i>
+                                <p>
+                                    Service Categories
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a asp-controller="ServiceCategory" asp-action="ActiveCategories"
+                                       class="nav-link @(currentAction == "ActiveCategories" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-success"></i>
+                                        <p>Active Categories</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a asp-controller="ServiceCategory" asp-action="InactiveCategories"
+                                       class="nav-link @(currentAction == "InactiveCategories" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-warning"></i>
+                                        <p>Inactive Categories</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a asp-controller="ServiceCategory" asp-action="CategoryRequests"
+                                       class="nav-link @(currentAction == "CategoryRequests" ? "active" : "")">
+                                        <i class="far fa-circle nav-icon text-info"></i>
+                                        <p>Category Requests</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
                 </nav>
             </div>
@@ -301,6 +232,7 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/adminlte/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
     <script src="~/adminlte/dist/js/adminlte.min.js"></script>
 
     <!-- DataTables & Plugins -->

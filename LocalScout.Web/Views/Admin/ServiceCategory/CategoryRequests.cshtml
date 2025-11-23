@@ -1,0 +1,112 @@
+@model IEnumerable<LocalScout.Domain.Entities.ServiceCategory>
+@{
+    ViewData["Title"] = "Service Category Requests";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Service Category Requests</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item active">Requests</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-warning card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Pending Requests</h3>
+            </div>
+            <div class="card-body">
+                <table id="requestsTable" class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Requested Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.CategoryName</td>
+                                <td>@item.Description</td>
+                                <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-success" onclick="approveRequest('@item.Id', this)" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="rejectRequest('@item.Id', this)" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+</section>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $("#requestsTable").DataTable({
+                "responsive": true, "autoWidth": false, "pageLength": 10
+            });
+        });
+
+        function approveRequest(id, btn) {
+            Swal.fire({
+                title: 'Approve Request?',
+                text: "This category will become active.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'Yes, Approve!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    AjaxClient.post('@Url.Action("ApproveCategory", "ServiceCategory")', { id: id },
+                        function (res) {
+                            Swal.fire('Success', res.message, 'success');
+                            $(btn).closest('tr').remove();
+                        },
+                        function (xhr) { Swal.fire('Error', 'Failed to approve', 'error'); }
+                    );
+                }
+            });
+        }
+
+        function rejectRequest(id, btn) {
+            Swal.fire({
+                title: 'Reject Request?',
+                text: "This request will be archived/removed.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, Reject!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    AjaxClient.post('@Url.Action("RejectCategory", "ServiceCategory")', { id: id },
+                        function (res) {
+                            Swal.fire('Success', res.message, 'success');
+                            $(btn).closest('tr').remove();
+                        },
+                        function (xhr) { Swal.fire('Error', 'Failed to reject', 'error'); }
+                    );
+                }
+            });
+        }
+    </script>
+}

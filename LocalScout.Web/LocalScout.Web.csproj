@@ -22,4 +22,8 @@
     <ProjectReference Include="..\LocalScout.Infrastructure\LocalScout.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\images\categories\" />
+  </ItemGroup>
+
 </Project>
