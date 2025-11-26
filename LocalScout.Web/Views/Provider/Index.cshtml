@@ -51,13 +51,14 @@
                     <div class="card-header">
                         <h3 class="card-title">Upload Verification Document</h3>
                     </div>
-                    <form asp-action="SubmitVerification" asp-controller="Provider" method="post" enctype="multipart/form-data">
+                    <form asp-action="SubmitVerification" asp-controller="Verification" method="post" enctype="multipart/form-data">
                         <div class="card-body">
                             @Html.AntiForgeryToken()
 
                             <div class="form-group">
                                 <label>Document Type <span class="text-danger">*</span></label>
-                                <select name="DocumentType" class="form-control custom-select">
+                                <select name="DocumentType" class="form-control custom-select" required>
+                                    <option value="">-- Select Document Type --</option>
                                     <option value="NID">National ID (NID)</option>
                                     <option value="TradeLicense">Trade License</option>
                                     <option value="Passport">Passport</option>
@@ -74,6 +75,26 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @if (TempData["ErrorMessage"] != null)
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="icon fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            }
+
+                            @if (TempData["SuccessMessage"] != null)
+                            {
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <i class="icon fas fa-check"></i> @TempData["SuccessMessage"]
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            }
                         </div>
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary px-4">
@@ -269,6 +290,24 @@
         $(function () {
             // Initialize custom file input for the upload form
             bsCustomFileInput.init();
+
+            // Log form data for debugging
+            $('form').on('submit', function(e) {
+                var formData = new FormData(this);
+                console.log('Form submitting...');
+                console.log('Document Type:', formData.get('DocumentType'));
+                console.log('Document File:', formData.get('Document'));
+                
+                // Validate file is selected
+                var fileInput = document.getElementById('verificationFile');
+                if (fileInput.files.length === 0) {
+                    e.preventDefault();
+                    alert('Please select a file to upload.');
+                    return false;
+                }
+                
+                console.log('File selected:', fileInput.files[0].name);
+            });
         });
     </script>
 }

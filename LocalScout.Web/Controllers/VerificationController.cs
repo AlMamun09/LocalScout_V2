@@ -48,30 +48,52 @@ namespace LocalScout.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SubmitVerification(VerificationSubmissionDto dto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // 1. Validate Logic (Business rules in Repository)
-            string error = await _repo.ValidateSubmissionAsync(userId, dto.Document);
-            if (error != null)
+            try
             {
-                TempData["ErrorMessage"] = error;
-                return RedirectToAction("Index");
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                // Log for debugging
+                Console.WriteLine($"Submitting verification for user: {userId}");
+                Console.WriteLine($"Document Type: {dto.DocumentType}");
+                Console.WriteLine($"Document File: {dto.Document?.FileName ?? "null"}");
+
+                // Check ModelState
+                if (!ModelState.IsValid)
+                {
+                    TempData["ErrorMessage"] = "Please fill in all required fields.";
+                    return RedirectToAction("Index", "Provider");
+                }
+
+                // 1. Validate Logic (Business rules in Repository)
+                string error = await _repo.ValidateSubmissionAsync(userId, dto.Document);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                    return RedirectToAction("Index", "Provider");
+                }
+
+                // 2. Submit Request
+                await _repo.SubmitRequestAsync(userId, dto, _env.WebRootPath);
+
+                // 3. Real-time Notification to Admins
+                var user = await _userManager.FindByIdAsync(userId);
+                await _hubContext
+                    .Clients.Group("Admins")
+                    .SendAsync(
+                        "ReceiveRequestNotification",
+                        $"New verification request from {user.FullName}"
+                    );
+
+                TempData["SuccessMessage"] = "Verification documents submitted successfully! Please wait for admin review.";
+                return RedirectToAction("Index", "Provider");
             }
-
-            // 2. Submit Request
-            await _repo.SubmitRequestAsync(userId, dto, _env.WebRootPath);
-
-            // 3. Real-time Notification to Admins
-            var user = await _userManager.FindByIdAsync(userId);
-            await _hubContext
-                .Clients.Group("Admins")
-                .SendAsync(
-                    "ReceiveRequestNotification",
-                    $"New verification request from {user.FullName}"
-                );
-
-            TempData["SuccessMessage"] = "Verification documents submitted successfully!";
-            return RedirectToAction("Index");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error submitting verification: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                TempData["ErrorMessage"] = $"An error occurred while submitting your verification: {ex.Message}";
+                return RedirectToAction("Index", "Provider");
+            }
         }
     }
 }

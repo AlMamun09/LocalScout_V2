@@ -8,7 +8,7 @@ namespace LocalScout.Application.Interfaces
     public interface IVerificationRepository
     {
         Task<string?> ValidateSubmissionAsync(string providerId, IFormFile document);
-        Task SubmitRequestAsync(string providerId, VerificationSubmissionDto dto, string filePath);
+        Task SubmitRequestAsync(string providerId, VerificationSubmissionDto dto, string webRootPath);
         Task<List<VerificationRequest>> GetPendingRequestsAsync();
         Task<VerificationRequest?> GetRequestByIdAsync(Guid requestId);
         Task<VerificationRequest?> GetLatestRequestByProviderIdAsync(string providerId);
