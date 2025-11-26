@@ -42,6 +42,7 @@ builder.Services.AddTransient<IEmailSender, EmailService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IServiceProviderRepository, ServiceProviderRepository>();
 builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddHttpClient<ILocationService, LocationService>();
 builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 

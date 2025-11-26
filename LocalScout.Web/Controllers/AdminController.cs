@@ -21,13 +21,15 @@ namespace LocalScout.Web.Controllers
         private readonly IVerificationRepository _verificationRepo;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly INotificationRepository _notificationRepository;
 
         public AdminController(
             IUserRepository userRepository,
             IServiceProviderRepository providerRepository,
             IVerificationRepository verificationRepo,
             UserManager<ApplicationUser> userManager,
-            IHubContext<NotificationHub> hubContext
+            IHubContext<NotificationHub> hubContext,
+            INotificationRepository notificationRepository
         )
         {
             _userRepository = userRepository;
@@ -35,6 +37,7 @@ namespace LocalScout.Web.Controllers
             _verificationRepo = verificationRepo;
             _userManager = userManager;
             _hubContext = hubContext;
+            _notificationRepository = notificationRepository;
         }
 
         public IActionResult Index()
@@ -131,10 +134,51 @@ namespace LocalScout.Web.Controllers
             if (string.IsNullOrEmpty(id))
                 return BadRequest(new { message = "Invalid user ID." });
 
+            // Get user details before toggling status
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return BadRequest(new { message = "User not found." });
+
+            // Store the current status to determine the action
+            var wasActive = user.IsActive;
+
+            // Toggle the status
             var success = await _userRepository.ToggleUserStatusAsync(id);
             if (success)
             {
-                return Ok(new { success = true, message = "User status updated successfully." });
+                // Determine the new status and message
+                var newStatus = wasActive ? "Blocked" : "Unblocked";
+                var message = wasActive 
+                    ? "Your account has been blocked by the administrator. Please contact support for assistance."
+                    : "Your account has been unblocked. You can now access all features.";
+
+                // Create persistent notification
+                try
+                {
+                    var title = wasActive ? "Account Blocked" : "Account Unblocked";
+                    await _notificationRepository.CreateNotificationAsync(id, title, message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create notification: {ex.Message}");
+                }
+
+                // Send real-time notification to the user
+                try
+                {
+                    await _hubContext
+                        .Clients.User(id)
+                        .SendAsync("ReceiveStatusUpdate", newStatus, message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
+                }
+
+                return Ok(new { 
+                    success = true, 
+                    message = $"User status updated successfully. User has been {newStatus.ToLower()}." 
+                });
             }
 
             return BadRequest(new { message = "Failed to update user status." });
@@ -228,11 +272,54 @@ namespace LocalScout.Web.Controllers
             if (string.IsNullOrEmpty(id))
                 return BadRequest(new { message = "Invalid provider ID." });
 
+            // Get provider details before toggling status
+            var provider = await _userManager.FindByIdAsync(id);
+            if (provider == null)
+                return BadRequest(new { message = "Provider not found." });
+
+            // Store the current status to determine the action
+            var wasActive = provider.IsActive;
+
+            // Toggle the status
             var success = await _providerRepository.ToggleProviderStatusAsync(id);
             if (success)
+            {
+                // Determine the new status and message
+                var newStatus = wasActive ? "Blocked" : "Unblocked";
+                var message = wasActive
+                    ? "Your provider account has been blocked by the administrator. You cannot accept new bookings. Please contact support for assistance."
+                    : "Your provider account has been unblocked. You can now accept bookings and provide services.";
+
+                // Create persistent notification
+                try
+                {
+                    var title = wasActive ? "Provider Account Blocked" : "Provider Account Unblocked";
+                    await _notificationRepository.CreateNotificationAsync(id, title, message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create notification: {ex.Message}");
+                }
+
+                // Send real-time notification to the provider
+                try
+                {
+                    await _hubContext
+                        .Clients.User(id)
+                        .SendAsync("ReceiveStatusUpdate", newStatus, message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
+                }
+
                 return Ok(
-                    new { success = true, message = "Provider status updated successfully." }
+                    new { 
+                        success = true, 
+                        message = $"Provider status updated successfully. Provider has been {newStatus.ToLower()}." 
+                    }
                 );
+            }
 
             return BadRequest(new { message = "Failed to update provider status." });
         }
@@ -257,19 +344,35 @@ namespace LocalScout.Web.Controllers
             );
 
             // 3. Update Provider Entity (Set IsVerified = true)
-            // You can use _providerRepository.ApproveProviderAsync(id) if it sets IsVerified=true
             var providerUpdateSuccess = await _providerRepository.ApproveProviderAsync(id);
 
             if (providerUpdateSuccess)
             {
-                // 4. Send SignalR Notification
-                await _hubContext
-                    .Clients.User(id)
-                    .SendAsync(
-                        "ReceiveStatusUpdate",
-                        "Approved",
-                        "Congratulations! Your account has been verified."
-                    );
+                var title = "Verification Approved";
+                var message = "Congratulations! Your account has been verified.";
+
+                // 4. Create persistent notification
+                try
+                {
+                    await _notificationRepository.CreateNotificationAsync(id, title, message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create notification: {ex.Message}");
+                }
+
+                // 5. Send SignalR Notification
+                try
+                {
+                    await _hubContext
+                        .Clients.User(id)
+                        .SendAsync("ReceiveStatusUpdate", "Approved", message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
+                }
+
                 return Ok(
                     new { success = true, message = "Provider approved and verified successfully." }
                 );
@@ -290,21 +393,40 @@ namespace LocalScout.Web.Controllers
             if (request == null)
                 return BadRequest(new { message = "Request not found." });
 
+            var adminComments = "Documents did not meet requirements.";
+
             // 1. Update Request Status
             await _verificationRepo.UpdateRequestStatusAsync(
                 request.VerificationRequestId,
                 VerificationStatus.Rejected,
-                "Documents did not meet requirements."
+                adminComments
             );
 
-            // 2. Send SignalR Notification
-            await _hubContext
-                .Clients.User(id)
-                .SendAsync(
-                    "ReceiveStatusUpdate",
-                    "Rejected",
-                    "Your verification request was rejected. Please check details and resubmit."
-                );
+            var title = "Verification Rejected";
+            var message = "Your verification request was rejected. Please check details and resubmit.";
+
+            // 2. Create persistent notification
+            try
+            {
+                await _notificationRepository.CreateNotificationAsync(id, title, message, 
+                    $"{{\"reason\": \"{adminComments}\"}}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to create notification: {ex.Message}");
+            }
+
+            // 3. Send SignalR Notification
+            try
+            {
+                await _hubContext
+                    .Clients.User(id)
+                    .SendAsync("ReceiveStatusUpdate", "Rejected", message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
+            }
 
             return Ok(new { success = true, message = "Provider verification rejected." });
         }

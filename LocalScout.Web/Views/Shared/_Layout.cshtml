@@ -72,9 +72,13 @@
                     </div>
                 }
 
-                <!-- Right Side: User/Login (IMPORTANT: No display:none or visibility issues) -->
+                <!-- Right Side: Notifications + User/Login -->
                 <ul class="navbar-nav ml-auto align-items-center"
                     style="visibility: visible !important; display: flex !important;">
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <partial name="_NotificationPartial" />
+                    }
                     <partial name="_LoginPartial" />
                 </ul>
             </div>

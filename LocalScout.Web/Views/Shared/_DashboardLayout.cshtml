@@ -45,28 +45,10 @@
             </ul>
 
             <ul class="navbar-nav ml-auto align-items-center">
-                @if (User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.ServiceProvider))
+                @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <li class="nav-item dropdown">
-                        <a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-                            <i class="far fa-bell"></i>
-                            <span id="notificationBadge" class="badge badge-warning navbar-badge">0</span>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                            <span id="notificationHeader" class="dropdown-item dropdown-header">0 Notifications</span>
-
-                            <div class="dropdown-divider"></div>
-
-                            <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
-                                <p class="text-muted text-center small my-2">No new notifications</p>
-                            </div>
-
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-                        </div>
-                    </li>
+                    <partial name="_NotificationPartial" />
                 }
-
                 <partial name="_LoginPartial" />
             </ul>
         </nav>
