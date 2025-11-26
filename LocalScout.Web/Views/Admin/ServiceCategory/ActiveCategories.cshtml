@@ -124,15 +124,33 @@
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                confirmButtonText: 'Yes, Deactivate!'
+                confirmButtonText: 'Yes, Deactivate!',
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
                     AjaxClient.post('@Url.Action("ToggleStatus", "ServiceCategory")', { id: id },
                         function (res) {
-                            Swal.fire('Success', res.message, 'success');
-                            $(btn).closest('tr').remove();
+                            Swal.fire({
+                                title: 'Success!',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Remove row after user clicks OK
+                                $(btn).closest('tr').remove();
+                            });
                         },
-                        function (xhr) { Swal.fire('Error', 'Failed to update status', 'error'); }
+                        function (xhr) { 
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Failed to update status',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
                     );
                 }
             });

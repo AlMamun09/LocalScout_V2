@@ -163,32 +163,75 @@
             );
         }
 
-        // --- Toggle Status (Block/Unblock) ---
+        // --- Toggle Status (Block/Unblock) - FIXED ---
         function toggleProviderStatus(id, btn) {
             var $btn = $(btn);
-            var isActive = $btn.hasClass('btn-danger'); // Current state
+            var isActive = $btn.hasClass('btn-danger'); // Current state (true if showing "Block" button)
             var action = isActive ? "Block" : "Unblock";
 
             Swal.fire({
-                title: 'Are you sure?', text: `You are about to ${action} this provider.`, icon: 'warning',
-                showCancelButton: true, confirmButtonColor: isActive ? '#d33' : '#28a745', confirmButtonText: `Yes, ${action}!`
+                title: 'Are you sure?', 
+                text: `You are about to ${action} this provider. They will be removed from this list.`, 
+                icon: 'warning',
+                showCancelButton: true, 
+                confirmButtonColor: isActive ? '#d33' : '#28a745', 
+                confirmButtonText: `Yes, ${action}!`,
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // For Block/Unblock, we don't necessarily need to reload, just update row or remove it
-                    performAction('@Url.Action("ToggleProviderStatus", "Admin")', id, null, "Status updated successfully", false);
+                    // Pass the button element so the row can be removed after success
+                    performToggleStatus(id, btn);
                 }
             });
+        }
+
+        // --- Perform Toggle Status with Row Removal ---
+        function performToggleStatus(id, btn) {
+            var $btn = $(btn);
+            var $row = $btn.closest('tr');
+
+            AjaxClient.post('@Url.Action("ToggleProviderStatus", "Admin")', { id: id },
+                function (response) {
+                    // Close modal if open
+                    $('#modal-provider-details').modal('hide');
+
+                    // Show success message with OK button
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message || 'Provider status updated successfully',
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#28a745'
+                    }).then(() => {
+                        // Remove the row from DataTable after user clicks OK
+                        dataTable.row($row).remove().draw(false); // false = stay on current page
+                    });
+                },
+                function (xhr) {
+                    Swal.fire({ 
+                        title: 'Error', 
+                        text: xhr.responseJSON?.message || 'Failed to update provider status', 
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            );
         }
 
         // --- Approve Provider (Reloads Page) ---
         function approveProvider(id) {
             Swal.fire({
-                title: 'Approve Provider?', text: 'This provider will be verified and publicly visible.', icon: 'question',
-                showCancelButton: true, confirmButtonColor: '#28a745', confirmButtonText: 'Yes, Approve!'
+                title: 'Approve Provider?', 
+                text: 'This provider will be verified and publicly visible.', 
+                icon: 'question',
+                showCancelButton: true, 
+                confirmButtonColor: '#28a745', 
+                confirmButtonText: 'Yes, Approve!',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Pass true for 'reload'
-                    performAction('@Url.Action("ApproveProvider", "Admin")', id, null, "Provider approved successfully", true);
+                    performApproveReject('@Url.Action("ApproveProvider", "Admin")', id, "Provider approved successfully");
                 }
             });
         }
@@ -196,42 +239,46 @@
         // --- Reject Provider (Reloads Page) ---
         function rejectProvider(id) {
             Swal.fire({
-                title: 'Reject Provider?', text: 'This application will be rejected.', icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#ffc107', confirmButtonText: 'Yes, Reject'
+                title: 'Reject Provider?', 
+                text: 'This application will be rejected.', 
+                icon: 'warning',
+                showCancelButton: true, 
+                confirmButtonColor: '#ffc107', 
+                confirmButtonText: 'Yes, Reject',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Pass true for 'reload'
-                    performAction('@Url.Action("RejectProvider", "Admin")', id, null, "Provider rejected", true);
+                    performApproveReject('@Url.Action("RejectProvider", "Admin")', id, "Provider rejected");
                 }
             });
         }
 
-        // --- Generic Action Handler ---
-        function performAction(url, id, $btn, successMsg, shouldReload) {
+        // --- Perform Approve/Reject with Page Reload ---
+        function performApproveReject(url, id, successMsg) {
             AjaxClient.post(url, { id: id },
                 function (response) {
-                    // 1. Close Modal if open
+                    // Close modal if open
                     $('#modal-provider-details').modal('hide');
 
                     Swal.fire({
                         title: 'Success!',
                         text: response.message || successMsg,
                         icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#28a745'
                     }).then(() => {
-                        // 2. Reload Page if required (for Verification actions)
-                        if (shouldReload) {
-                            location.reload();
-                        } else if ($btn) {
-                            // If not reloading, just remove row (for Block/Unblock actions on filtered lists)
-                            var row = $btn.parents('tr');
-                            dataTable.row(row).remove().draw();
-                        }
+                        // Reload page to refresh verification requests list
+                        location.reload();
                     });
                 },
                 function (xhr) {
-                    Swal.fire({ title: 'Error', text: xhr.responseJSON?.message || 'Action failed', icon: 'error' });
+                    Swal.fire({ 
+                        title: 'Error', 
+                        text: xhr.responseJSON?.message || 'Action failed', 
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             );
         }

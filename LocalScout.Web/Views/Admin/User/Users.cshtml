@@ -120,38 +120,40 @@
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: confirmColor,
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: `Yes, ${action}!`
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: `Yes, ${action}!`,
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    performStatusUpdate(id, $btn);
+                    performStatusUpdate(id, btn);
                 }
             });
         }
 
-        function performStatusUpdate(id, $btn) {
+        function performStatusUpdate(id, btn) {
+            var $btn = $(btn);
+            var $row = $btn.closest('tr');
+
             AjaxClient.post('@Url.Action("ToggleUserStatus", "Admin")', { id: id },
                 function (response) {
                     Swal.fire({
                         title: 'Success!',
                         text: response.message,
                         icon: 'success',
-                        timer: 1500,
-                        timerProgressBar: true,
-                        showConfirmButton: true
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#28a745'
+                    }).then(() => {
+                        // Remove row after user clicks OK
+                        dataTable.row($row).remove().draw(false);
                     });
-
-                    var row = $btn.parents('tr');
-                    dataTable.row(row).remove().draw();
                 },
                 function (xhr) {
                     Swal.fire({
                         title: 'Error',
                         text: xhr.responseJSON?.message || 'Failed to update status',
                         icon: 'error',
-                        timer: 3000,
-                        timerProgressBar: true,
-                        showConfirmButton: true
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#d33'
                     });
                 }
             );
