@@ -13,116 +13,161 @@
         if (User.IsInRole(RoleNames.Admin)) { userRole = "Administrator"; }
         else if (User.IsInRole(RoleNames.ServiceProvider)) { userRole = "Service Provider"; }
     }
+
+    // Helper: initials fallback
+    string initials = "U";
+    if (!string.IsNullOrEmpty(currentUser?.FullName))
+    {
+        var parts = currentUser.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) initials = parts[0].Substring(0, 1).ToUpper();
+        else initials = (parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpper();
+    }
 }
+
+<style>
+    .nav-user-avatar {
+        width: 36px;
+        height: 36px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.06);
+    }
+
+    .avatar-fallback {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#243447,#1b2a36);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        border: 2px solid rgba(255,255,255,0.06);
+    }
+
+    .user-dropdown-header {
+        min-width: 300px;
+        padding: 0.9rem;
+        background: linear-gradient(180deg, rgba(8,20,30,0.95), rgba(10,18,28,0.95));
+        color: #fff;
+    }
+
+        .user-dropdown-header .role-badge {
+            font-size: 11px;
+            opacity: .9;
+        }
+
+    .dropdown-item .fa-fw {
+        width: 1.2rem;
+        text-align: center;
+    }
+</style>
 
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
-           data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="d-none d-md-inline text-dark font-weight-medium">@(currentUser?.FullName ?? "User")</span>
-        </a>
-
-        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right dropdown-menu-end border-0 shadow" aria-labelledby="userDropdown" style="min-width: 260px;">
-
-            <li class="px-3 py-3 bg-light border-bottom">
-                <div class="d-flex align-items-center">
-                    <div class="mr-3">
-                        @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
-                        {
-                            <img src="@currentUser.ProfilePictureUrl" class="img-circle elevation-1" alt="User Image"
-                                 style="width: 40px; height: 40px; object-fit: cover;">
-                        }
-                        else
-                        {
-                            <div class="bg-white text-secondary rounded-circle d-flex justify-content-center align-items-center elevation-1 border"
-                                 style="width: 40px; height: 40px; font-weight:bold; font-size: 1.2rem;">
-                                @(currentUser?.FullName?.Substring(0, 1).ToUpper() ?? "U")
-                            </div>
-                        }
-                    </div>
-
-                    <div class="flex-grow-1 overflow-hidden">
-                        <h6 class="m-0 font-weight-bold text-dark text-truncate">@currentUser?.FullName</h6>
-                        <small class="text-muted d-block text-truncate">@currentUser?.Email</small>
-                        <span class="badge bg-secondary text-white mt-1" style="font-size: 10px; opacity: 0.7;">@userRole</span>
-                    </div>
-                </div>
-            </li>
-
-            @if (User.IsInRole(RoleNames.Admin))
+           data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
             {
-                <li>
-                    <a asp-area="" asp-controller="Admin" asp-action="Index" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-tachometer-alt mr-2" style="width: 20px;"></i> Admin Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="" asp-controller="Admin" asp-action="Users" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-users mr-2" style="width: 20px;"></i> User Management
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="" asp-controller="Admin" asp-action="Reports" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-chart-pie mr-2" style="width: 20px;"></i> Reports
-                    </a>
-                </li>
-            }
-            else if (User.IsInRole(RoleNames.ServiceProvider))
-            {
-                <li>
-                    <a asp-area="" asp-controller="Provider" asp-action="Index" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-tachometer-alt mr-2" style="width: 20px;"></i> My Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="" asp-controller="Booking" asp-action="ProviderBookings" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-calendar-check mr-2" style="width: 20px;"></i> My Bookings
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="" asp-controller="Payment" asp-action="History" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-history mr-2" style="width: 20px;"></i> Payment History
-                    </a>
-                </li>
+                <img src="@currentUser.ProfilePictureUrl" alt="avatar" class="nav-user-avatar mr-2 me-2 img-circle elevation-2" />
             }
             else
             {
+                <div class="avatar-fallback mr-2 me-2">@initials</div>
+            }
+
+            <div class="d-none d-md-block text-left text-start">
+                <div class="small text-dark font-weight-bold fw-bold" style="line-height:1;">
+                    @(currentUser?.FullName ?? "User")
+                </div>
+                <div class="small text-muted" style="line-height:1;">@userRole</div>
+            </div>
+        </a>
+
+        <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end border-0 shadow-sm p-0" aria-labelledby="userDropdown">
+            <li class="user-dropdown-header d-flex align-items-center">
+                <div class="mr-3 me-3">
+                    @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
+                    {
+                        <img src="@currentUser.ProfilePictureUrl" alt="User Image" class="nav-user-avatar img-circle elevation-2" />
+                    }
+                    else
+                    {
+                        <div class="avatar-fallback">@initials</div>
+                    }
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="m-0 font-weight-bold fw-bold text-truncate">@currentUser?.FullName</h6>
+                    <small class="text-white-50 d-block text-truncate">@currentUser?.Email</small>
+                    <span class="badge badge-primary bg-primary role-badge mt-2">@userRole</span>
+                </div>
+                <div class="ml-2 ms-2">
+                    <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-sm btn-outline-light">
+                        Edit
+                    </a>
+                </div>
+            </li>
+
+            <li><div class="dropdown-divider m-0"></div></li>
+
+            @if (User.IsInRole(RoleNames.ServiceProvider))
+            {
                 <li>
-                    <a asp-area="" asp-controller="User" asp-action="Dashboard" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-tachometer-alt mr-2" style="width: 20px;"></i> My Dashboard
+                    <a asp-area="" asp-controller="Provider" asp-action="Index" class="dropdown-item py-2">
+                        <i class="fas fa-tachometer-alt fa-fw mr-2 me-2 text-secondary"></i> My Dashboard
                     </a>
                 </li>
                 <li>
-                    <a asp-area="" asp-controller="Booking" asp-action="MyBookings" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-calendar-alt mr-2" style="width: 20px;"></i> My Bookings
+                    <a asp-area="" asp-controller="Booking" asp-action="ProviderBookings" class="dropdown-item py-2">
+                        <i class="fas fa-calendar-check fa-fw mr-2 me-2 text-secondary"></i> My Bookings
                     </a>
                 </li>
                 <li>
-                    <a asp-area="" asp-controller="Review" asp-action="MyReviews" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-star mr-2" style="width: 20px;"></i> My Reviews
+                    <a asp-area="" asp-controller="Payment" asp-action="History" class="dropdown-item py-2">
+                        <i class="fas fa-history fa-fw mr-2 me-2 text-secondary"></i> Payment History
+                    </a>
+                </li>
+            }
+            else if (User.IsInRole(RoleNames.User))
+            {
+                <li>
+                    <a asp-area="" asp-controller="User" asp-action="Dashboard" class="dropdown-item py-2">
+                        <i class="fas fa-tachometer-alt fa-fw mr-2 me-2 text-secondary"></i> My Dashboard
                     </a>
                 </li>
                 <li>
-                    <a asp-area="" asp-controller="Payment" asp-action="UserHistory" class="dropdown-item py-2 text-secondary">
-                        <i class="fas fa-history mr-2" style="width: 20px;"></i> Payment History
+                    <a asp-area="" asp-controller="Booking" asp-action="MyBookings" class="dropdown-item py-2">
+                        <i class="fas fa-calendar-alt fa-fw mr-2 me-2 text-secondary"></i> My Bookings
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Review" asp-action="MyReviews" class="dropdown-item py-2">
+                        <i class="fas fa-star fa-fw mr-2 me-2 text-secondary"></i> My Reviews
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="" asp-controller="Payment" asp-action="UserHistory" class="dropdown-item py-2">
+                        <i class="fas fa-history fa-fw mr-2 me-2 text-secondary"></i> Payment History
                     </a>
                 </li>
             }
 
-            <li><hr class="dropdown-divider my-1"></li>
+            <li><div class="dropdown-divider my-1"></div></li>
 
             <li>
-                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="dropdown-item py-2 text-secondary">
-                    <i class="fas fa-user-cog mr-2" style="width: 20px;"></i> Manage Profile
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="dropdown-item py-2">
+                    <i class="fas fa-user-cog fa-fw mr-2 me-2 text-secondary"></i> Manage Profile
                 </a>
             </li>
 
             <li>
                 <form asp-area="Identity" asp-page="/Account/Logout"
-                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="dropdown-item-form">
-                    <button type="submit" class="dropdown-item py-2 text-danger font-weight-bold">
-                        <i class="fas fa-sign-out-alt mr-2" style="width: 20px;"></i> Logout
+                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="m-0">
+                    <button type="submit" class="dropdown-item text-danger py-2 font-weight-bold fw-bold">
+                        <i class="fas fa-sign-out-alt fa-fw mr-2 me-2"></i> Logout
                     </button>
                 </form>
             </li>
@@ -133,26 +178,54 @@ else
 {
     <li class="nav-item dropdown">
         <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" id="accountDropdown" role="button"
-           data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-user-circle mr-1"></i> Account
+           data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-user-circle mr-1 me-1"></i> Account
         </a>
         <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end border-0 shadow" aria-labelledby="accountDropdown">
             <li>
                 <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Login">
-                    <i class="fas fa-sign-in-alt mr-2 text-secondary"></i> Login
+                    <i class="fas fa-sign-in-alt fa-fw mr-2 me-2 text-secondary"></i> Login
                 </a>
             </li>
             <li>
                 <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Register">
-                    <i class="fas fa-user-plus mr-2 text-secondary"></i> Register
+                    <i class="fas fa-user-plus fa-fw mr-2 me-2 text-secondary"></i> Register
                 </a>
             </li>
             <li><div class="dropdown-divider"></div></li>
             <li>
                 <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/RegisterProvider">
-                    <i class="fas fa-user-tie mr-2 text-secondary"></i> Become a Provider
+                    <i class="fas fa-user-tie fa-fw mr-2 me-2 text-secondary"></i> Become a Provider
                 </a>
             </li>
         </ul>
     </li>
 }
+
+<script>
+    // Universal dropdown initialization for both Bootstrap 4 and Bootstrap 5
+    (function() {
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDropdowns);
+        } else {
+            initDropdowns();
+        }
+
+        function initDropdowns() {
+            // Check if Bootstrap 5 is loaded
+            if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                // Bootstrap 5 initialization
+                var dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+                dropdownElements.forEach(function(element) {
+                    new bootstrap.Dropdown(element);
+                });
+            } 
+            // Check if Bootstrap 4 (with jQuery) is loaded
+            else if (typeof jQuery !== 'undefined' && jQuery.fn.dropdown) {
+                // Bootstrap 4 initialization
+                jQuery('[data-toggle="dropdown"]').dropdown();
+            }
+        }
+    })();
+</script>

@@ -3,6 +3,7 @@ using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Data;
 using LocalScout.Infrastructure.Repositories;
 using LocalScout.Infrastructure.Services;
+using LocalScout.Web.Hubs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -40,14 +41,14 @@ builder
 builder.Services.AddTransient<IEmailSender, EmailService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IServiceProviderRepository, ServiceProviderRepository>();
-
-// Register LocationService
+builder.Services.AddScoped<IVerificationRepository, VerificationRepository>();
 builder.Services.AddHttpClient<ILocationService, LocationService>();
 builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 // Seed roles and admin user
@@ -83,6 +84,8 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();

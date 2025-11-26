@@ -2,7 +2,7 @@
 
 namespace LocalScout.Application.Interfaces
 {
-    public interface IServiceProviderRepository 
+    public interface IServiceProviderRepository
     {
         Task<IEnumerable<ServiceProviderDto>> GetAllProvidersAsync();
         Task<ServiceProviderDto?> GetProviderByIdAsync(string providerId);
@@ -11,5 +11,6 @@ namespace LocalScout.Application.Interfaces
         Task<IEnumerable<ServiceProviderDto>> GetVerificationRequestsAsync();
         Task<bool> ApproveProviderAsync(string providerId);
         Task<bool> RejectProviderAsync(string providerId);
+        Task<ProviderDashboardDto> GetProviderDashboardAsync(string providerId);
     }
 }

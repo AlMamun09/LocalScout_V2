@@ -1,0 +1,256 @@
+﻿@model LocalScout.Application.DTOs.UserDashboardDto
+
+@{
+    ViewData["Title"] = "My Dashboard";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Welcome, @Model.FullName!</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<section class="content">
+    <div class="container-fluid">
+
+        <!-- Statistics Cards -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>@Model.TotalBookings</h3>
+                        <p>Total Bookings</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <a asp-controller="Booking" asp-action="MyBookings" class="small-box-footer">
+                        View All <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>@Model.ActiveBookings</h3>
+                        <p>Active Bookings</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <a asp-controller="Booking" asp-action="MyBookings" class="small-box-footer">
+                        View Details <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>@Model.CompletedBookings</h3>
+                        <p>Completed Services</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <a asp-controller="Booking" asp-action="MyBookings" class="small-box-footer">
+                        View History <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>৳@Model.TotalSpent.ToString("N0")</h3>
+                        <p>Total Spent</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <a asp-controller="Payment" asp-action="UserHistory" class="small-box-footer">
+                        Payment History <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bolt mr-1"></i>
+                            Quick Actions
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-block">
+                                    <i class="fas fa-search mr-2"></i> Browse Services
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a asp-controller="Booking" asp-action="MyBookings" class="btn btn-info btn-block">
+                                    <i class="fas fa-calendar-alt mr-2"></i> My Bookings
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a asp-controller="Review" asp-action="MyReviews" class="btn btn-warning btn-block text-dark">
+                                    <i class="fas fa-star mr-2"></i> My Reviews
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-secondary btn-block">
+                                    <i class="fas fa-user-cog mr-2"></i> Edit Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Bookings -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Recent Bookings</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.RecentBookings != null && Model.RecentBookings.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table m-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Service Provider</th>
+                                            <th>Service</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var booking in Model.RecentBookings)
+                                        {
+                                            var badgeClass = booking.Status == "Pending" ? "badge-warning" :
+                                                           booking.Status == "Confirmed" ? "badge-info" :
+                                                           booking.Status == "Completed" ? "badge-success" :
+                                                           "badge-danger";
+
+                                            <tr>
+                                                <td>@booking.ProviderName</td>
+                                                <td>@booking.ServiceName</td>
+                                                <td>@booking.Date</td>
+                                                <td>
+                                                    <span class="badge @badgeClass">@booking.Status</span>
+                                                </td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-4 text-center text-muted">
+                                <i class="fas fa-folder-open fa-3x mb-3"></i>
+                                <p>You haven't made any bookings yet.</p>
+                                <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                                    <i class="fas fa-search mr-1"></i> Browse Services
+                                </a>
+                            </div>
+                        }
+                    </div>
+                    @if (Model.RecentBookings != null && Model.RecentBookings.Any())
+                    {
+                        <div class="card-footer clearfix">
+                            <a asp-controller="Booking" asp-action="MyBookings" class="btn btn-sm btn-secondary float-right">
+                                View All Bookings
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="card card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">Account Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Full Name:</dt>
+                            <dd class="col-sm-8">@Model.FullName</dd>
+
+                            <dt class="col-sm-4">Email:</dt>
+                            <dd class="col-sm-8">@Model.Email</dd>
+
+                            <dt class="col-sm-4">Account Type:</dt>
+                            <dd class="col-sm-8"><span class="badge badge-secondary">Regular User</span></dd>
+                        </dl>
+                    </div>
+                    <div class="card-footer">
+                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit mr-1"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card card-success card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">Become a Service Provider</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-3">
+                            Are you a service provider? Join our platform and start offering your services to customers in your area!
+                        </p>
+                        <ul class="mb-3">
+                            <li>Reach more customers</li>
+                            <li>Manage bookings easily</li>
+                            <li>Grow your business</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer">
+                        <a asp-area="Identity" asp-page="/Account/RegisterProvider" class="btn btn-sm btn-success">
+                            <i class="fas fa-user-tie mr-1"></i> Register as Provider
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

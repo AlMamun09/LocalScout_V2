@@ -10,5 +10,6 @@ namespace LocalScout.Infrastructure.Data
             : base(options) { }
 
         public DbSet<ServiceCategory> ServiceCategories { get; set; }
+        public DbSet<VerificationRequest> VerificationRequests { get; set; }
     }
 }

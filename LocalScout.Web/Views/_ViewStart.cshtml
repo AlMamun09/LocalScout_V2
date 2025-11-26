@@ -1,10 +1,40 @@
 ﻿@{
-    // Default layout
+    // Default layout for public pages
     Layout = "_Layout";
 
-    // Check if user is logged in AND is an Admin
-    if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
+    // Get current controller name
+    var controller = ViewContext.RouteData.Values["Controller"]?.ToString();
+
+    // Use DashboardLayout for Admin, Provider, and User controller areas
+    var dashboardControllers = new[] { "Admin", "Provider", "User", "ServiceCategory", "Verification" };
+    
+    if (User?.Identity?.IsAuthenticated == true && dashboardControllers.Contains(controller))
     {
         Layout = "_DashboardLayout";
+    }
+    
+    // Additional check: If user is accessing specific booking/payment pages from their dashboard
+    if (User?.Identity?.IsAuthenticated == true)
+    {
+        var action = ViewContext.RouteData.Values["Action"]?.ToString();
+        
+        // Service Providers accessing their bookings or payments
+        if (controller == "Booking" && action == "ProviderBookings" && User.IsInRole("ServiceProvider"))
+        {
+            Layout = "_DashboardLayout";
+        }
+        
+        // Regular Users accessing their dashboard-related pages
+        if (controller == "Booking" && action == "MyBookings" && User.IsInRole("User"))
+        {
+            Layout = "_DashboardLayout";
+        }
+        
+        // Payment and Review pages for authenticated users
+        if ((controller == "Payment" || controller == "Review") && 
+            (User.IsInRole("User") || User.IsInRole("ServiceProvider")))
+        {
+            Layout = "_DashboardLayout";
+        }
     }
 }

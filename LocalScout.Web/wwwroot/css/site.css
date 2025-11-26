@@ -1,5 +1,6 @@
 html {
     font-size: 14px;
+    scroll-behavior: smooth;
 }
 
 @media (min-width: 768px) {
@@ -23,4 +24,161 @@ html {
 
 body {
     margin-bottom: 60px;
+}
+
+/* ============================================
+   UTILITY ANIMATIONS
+============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.slide-in-up {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.pulse-animation {
+    animation: pulse 0.6s ease-in-out;
+}
+
+/* ============================================
+   LOADING STATES
+============================================ */
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(63, 114, 175, 0.3);
+    border-radius: 50%;
+    border-top-color: #3F72AF;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR
+============================================ */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3F72AF;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #112D4E;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+============================================ */
+
+.colored-toast.swal2-icon-success {
+    background-color: #28a745 !important;
+}
+
+.colored-toast.swal2-icon-error {
+    background-color: #dc3545 !important;
+}
+
+.colored-toast.swal2-icon-warning {
+    background-color: #ffc107 !important;
+}
+
+.colored-toast.swal2-icon-info {
+    background-color: #3F72AF !important;
+}
+
+.colored-toast .swal2-title {
+    color: white;
+}
+
+.colored-toast .swal2-close {
+    color: white;
+}
+
+/* ============================================
+   HELPER CLASSES
+============================================ */
+
+.text-gradient {
+    background: linear-gradient(135deg, #3F72AF 0%, #112D4E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.shadow-hover {
+    transition: box-shadow 0.3s ease;
+}
+
+.shadow-hover:hover {
+    box-shadow: 0 8px 25px rgba(17, 45, 78, 0.15);
+}
+
+.card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(17, 45, 78, 0.1);
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+============================================ */
+
+@media (max-width: 767.98px) {
+    .mobile-hidden {
+        display: none !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .desktop-hidden {
+        display: none !important;
+    }
 }
