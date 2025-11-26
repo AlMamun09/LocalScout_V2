@@ -12,8 +12,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - LocalScout</title>
 
+    <!-- Bootstrap 4.6 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Tailwind Config (must load before CDN) -->
+    <script src="~/tailwind.config.js"></script>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
@@ -34,10 +41,8 @@
                 <span class="localscout-logo">LocalScout</span>
             </a>
 
-
-
             <!-- Mobile Toggle Button -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#mainNavbar"
                 aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -46,7 +51,7 @@
             <div class="collapse navbar-collapse" id="mainNavbar">
 
                 <!-- Left Spacer -->
-                <ul class="navbar-nav me-auto"></ul>
+                <ul class="navbar-nav mr-auto"></ul>
 
                 <!-- Center Search Bar (Hidden on Home Page) -->
                 @if (!(ViewData["HideNavbarSearch"] is bool hide && hide))
@@ -57,16 +62,19 @@
                             <div class="input-group">
                                 <input class="form-control" type="search" name="query" placeholder="Search for services..."
                                     aria-label="Search">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
                 }
 
-                <!-- Right Side: User/Login -->
-                <ul class="navbar-nav ms-auto align-items-center">
+                <!-- Right Side: User/Login (IMPORTANT: No display:none or visibility issues) -->
+                <ul class="navbar-nav ml-auto align-items-center"
+                    style="visibility: visible !important; display: flex !important;">
                     <partial name="_LoginPartial" />
                 </ul>
             </div>
@@ -74,7 +82,6 @@
     </nav>
 
     <!-- Main Content -->
-    <!-- 'flex-shrink-0' ensures content pushes footer down. No default padding here. -->
     <main class="flex-shrink-0">
         @RenderBody()
     </main>
@@ -103,10 +110,10 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <h6>Connect With Us</h6>
-                    <div class="d-flex gap-2">
-                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-instagram"></i></a>
+                    <div class="d-flex">
+                        <a href="#" class="btn btn-outline-secondary btn-sm mr-2"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm mr-2"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm mr-2"><i class="fab fa-instagram"></i></a>
                         <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-linkedin-in"></i></a>
                     </div>
                 </div>
@@ -120,8 +127,22 @@
 
     <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Popper.js v1 for Bootstrap 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <!-- Bootstrap 4.6 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Debug Script -->
+    <script>
+        $(document).ready(function() {
+            console.log('Layout loaded');
+            console.log('jQuery loaded:', typeof $ !== 'undefined');
+            console.log('Bootstrap loaded:', typeof $.fn.modal !== 'undefined');
+            console.log('LoginPartial container:', $('.navbar-nav.ml-auto').length);
+            console.log('LoginPartial HTML:', $('.navbar-nav.ml-auto').html());
+        });
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
