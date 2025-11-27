@@ -12,10 +12,12 @@ namespace LocalScout.Web.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly INotificationRepository _notificationRepository;
+        private readonly ILogger<NotificationController> _logger;
 
-        public NotificationController(INotificationRepository notificationRepository)
+        public NotificationController(INotificationRepository notificationRepository, ILogger<NotificationController> logger)
         {
             _notificationRepository = notificationRepository;
+            _logger = logger;
         }
 
         [HttpGet("count")]
@@ -25,6 +27,7 @@ namespace LocalScout.Web.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
+            _logger.LogInformation($"Fetching unread count for User ID: {userId}");
             var count = await _notificationRepository.GetUnreadCountAsync(userId);
             return Ok(new { count });
         }
@@ -36,6 +39,7 @@ namespace LocalScout.Web.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
+            _logger.LogInformation($"Fetching notifications for User ID: {userId}");
             var notifications = await _notificationRepository.GetUserNotificationsAsync(userId, take);
             return Ok(notifications);
         }

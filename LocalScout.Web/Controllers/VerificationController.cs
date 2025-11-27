@@ -3,11 +3,11 @@ using System.Security.Claims;
 using LocalScout.Application.DTOs;
 using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
-using LocalScout.Web.Hubs;
+using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
+
 
 namespace LocalScout.Web.Controllers
 {
@@ -16,19 +16,19 @@ namespace LocalScout.Web.Controllers
     {
         private readonly IVerificationRepository _repo;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly INotificationRepository _notificationRepository;
         private readonly IWebHostEnvironment _env;
 
         public VerificationController(
             IVerificationRepository repo,
             UserManager<ApplicationUser> userManager,
-            IHubContext<NotificationHub> hubContext,
+            INotificationRepository notificationRepository,
             IWebHostEnvironment env
         )
         {
             _repo = repo;
             _userManager = userManager;
-            _hubContext = hubContext;
+            _notificationRepository = notificationRepository;
             _env = env;
         }
 
@@ -75,14 +75,18 @@ namespace LocalScout.Web.Controllers
                 // 2. Submit Request
                 await _repo.SubmitRequestAsync(userId, dto, _env.WebRootPath);
 
-                // 3. Real-time Notification to Admins
+                // 3. Notify Admins (Persistent DB Notification)
                 var user = await _userManager.FindByIdAsync(userId);
-                await _hubContext
-                    .Clients.Group("Admins")
-                    .SendAsync(
-                        "ReceiveRequestNotification",
+                var admins = await _userManager.GetUsersInRoleAsync(RoleNames.Admin);
+                
+                foreach (var admin in admins)
+                {
+                    await _notificationRepository.CreateNotificationAsync(
+                        admin.Id,
+                        "New Verification Request",
                         $"New verification request from {user.FullName}"
                     );
+                }
 
                 TempData["SuccessMessage"] = "Verification documents submitted successfully! Please wait for admin review.";
                 return RedirectToAction("Index", "Provider");

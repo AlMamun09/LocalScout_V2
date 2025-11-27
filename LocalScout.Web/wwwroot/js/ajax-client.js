@@ -1,15 +1,18 @@
 ﻿const AjaxClient = {
-  // Generic POST with Anti-Forgery Header
+  // Generic POST with Anti-Forgery Token
   post: function (url, data, successCallback, errorCallback) {
+    // Get the anti-forgery token from the hidden input field
+    const token = $('input[name="__RequestVerificationToken"]').val();
+
+    // Add the token to the data being sent
+    const dataWithToken = $.extend({}, data, {
+      __RequestVerificationToken: token,
+    });
+
     $.ajax({
       url: url,
       type: "POST",
-      data: data,
-      headers: {
-        RequestVerificationToken: $(
-          'input[name="__RequestVerificationToken"]'
-        ).val(),
-      },
+      data: dataWithToken,
       success: function (response) {
         if (successCallback) successCallback(response);
       },

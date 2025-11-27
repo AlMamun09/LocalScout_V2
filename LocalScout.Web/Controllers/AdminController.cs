@@ -3,11 +3,10 @@ using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Domain.Enums;
 using LocalScout.Infrastructure.Constants;
-using LocalScout.Web.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
+
 
 namespace LocalScout.Web.Controllers
 {
@@ -20,24 +19,24 @@ namespace LocalScout.Web.Controllers
         // NEW Dependencies
         private readonly IVerificationRepository _verificationRepo;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IHubContext<NotificationHub> _hubContext;
         private readonly INotificationRepository _notificationRepository;
+        private readonly ILogger<AdminController> _logger;
 
         public AdminController(
             IUserRepository userRepository,
             IServiceProviderRepository providerRepository,
             IVerificationRepository verificationRepo,
             UserManager<ApplicationUser> userManager,
-            IHubContext<NotificationHub> hubContext,
-            INotificationRepository notificationRepository
+            INotificationRepository notificationRepository,
+            ILogger<AdminController> logger
         )
         {
             _userRepository = userRepository;
             _providerRepository = providerRepository;
             _verificationRepo = verificationRepo;
             _userManager = userManager;
-            _hubContext = hubContext;
             _notificationRepository = notificationRepository;
+            _logger = logger;
         }
 
         public IActionResult Index()
@@ -156,23 +155,12 @@ namespace LocalScout.Web.Controllers
                 try
                 {
                     var title = wasActive ? "Account Blocked" : "Account Unblocked";
+                    _logger.LogInformation($"Creating notification for User ID: {id} - {title}");
                     await _notificationRepository.CreateNotificationAsync(id, title, message);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Failed to create notification: {ex.Message}");
-                }
-
-                // Send real-time notification to the user
-                try
-                {
-                    await _hubContext
-                        .Clients.User(id)
-                        .SendAsync("ReceiveStatusUpdate", newStatus, message);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
+                    _logger.LogError(ex, $"Failed to create notification for User ID: {id}");
                 }
 
                 return Ok(new { 
@@ -183,8 +171,6 @@ namespace LocalScout.Web.Controllers
 
             return BadRequest(new { message = "Failed to update user status." });
         }
-
-        // ==================== PROVIDER MANAGEMENT ====================
 
         public async Task<IActionResult> Providers()
         {
@@ -294,23 +280,12 @@ namespace LocalScout.Web.Controllers
                 try
                 {
                     var title = wasActive ? "Provider Account Blocked" : "Provider Account Unblocked";
+                    _logger.LogInformation($"Creating notification for Provider ID: {id} - {title}");
                     await _notificationRepository.CreateNotificationAsync(id, title, message);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Failed to create notification: {ex.Message}");
-                }
-
-                // Send real-time notification to the provider
-                try
-                {
-                    await _hubContext
-                        .Clients.User(id)
-                        .SendAsync("ReceiveStatusUpdate", newStatus, message);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
+                    _logger.LogError(ex, $"Failed to create notification for Provider ID: {id}");
                 }
 
                 return Ok(
@@ -323,9 +298,6 @@ namespace LocalScout.Web.Controllers
 
             return BadRequest(new { message = "Failed to update provider status." });
         }
-
-        // --- UPDATED: Approve Provider (SignalR Integrated) ---
-        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveProvider(string id)
         {
@@ -361,17 +333,7 @@ namespace LocalScout.Web.Controllers
                     Console.WriteLine($"Failed to create notification: {ex.Message}");
                 }
 
-                // 5. Send SignalR Notification
-                try
-                {
-                    await _hubContext
-                        .Clients.User(id)
-                        .SendAsync("ReceiveStatusUpdate", "Approved", message);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
-                }
+
 
                 return Ok(
                     new { success = true, message = "Provider approved and verified successfully." }
@@ -416,17 +378,7 @@ namespace LocalScout.Web.Controllers
                 Console.WriteLine($"Failed to create notification: {ex.Message}");
             }
 
-            // 3. Send SignalR Notification
-            try
-            {
-                await _hubContext
-                    .Clients.User(id)
-                    .SendAsync("ReceiveStatusUpdate", "Rejected", message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to send SignalR notification: {ex.Message}");
-            }
+
 
             return Ok(new { success = true, message = "Provider verification rejected." });
         }

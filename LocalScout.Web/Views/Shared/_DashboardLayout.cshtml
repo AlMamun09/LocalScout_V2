@@ -309,31 +309,37 @@
 
     </div>
 
+    <!-- Notification Modals (only for signed-in users) -->
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <partial name="_NotificationModals" />
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/adminlte/dist/js/adminlte.min.js"></script>
     <script src="~/adminlte/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+    
     <!-- DataTables & Plugins -->
     <script src="~/adminlte/plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="~/adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
     <script src="~/adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
     <script src="~/adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="~/adminlte/plugins/sweetalert2/sweetalert2.min.js"></script>
+    
     <!-- Ajax Helper -->
     <script src="~/js/ajax-client.js"></script>
 
-    @if (User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.ServiceProvider))
+    @if (User.Identity?.IsAuthenticated == true)
     {
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
-        <script src="~/js/notification.js"></script>
+        <!-- Notification Script (only for signed-in users) -->
+        <script src="~/js/notification.js" asp-append-version="true"></script>
     }
 
     <script>
-        // Initialize Bootstrap dropdowns explicitly
         $(document).ready(function() {
-            // Initialize all dropdowns
-            $('[data-toggle="dropdown"]').dropdown();
+            // Custom file input
+            bsCustomFileInput.init();
             
             // Reinitialize AdminLTE components
             if (typeof $.fn.AdminLTE !== 'undefined') {

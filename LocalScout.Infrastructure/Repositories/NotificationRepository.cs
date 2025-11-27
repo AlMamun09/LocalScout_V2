@@ -29,6 +29,14 @@ namespace LocalScout.Infrastructure.Repositories
 
         public async Task<List<NotificationDto>> GetUserNotificationsAsync(string userId, int take = 50)
         {
+            if (string.IsNullOrEmpty(userId))
+            {
+                Console.WriteLine("GetUserNotificationsAsync called with empty UserId");
+                return new List<NotificationDto>();
+            }
+
+            Console.WriteLine($"Repository: Fetching notifications for UserId: {userId}");
+
             var notifications = await _context.Notifications
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)
