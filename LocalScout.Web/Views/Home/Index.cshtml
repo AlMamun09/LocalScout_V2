@@ -1,6 +1,8 @@
-﻿@{
+﻿@using LocalScout.Domain.Entities
+@model IEnumerable<ServiceCategory>
+
+@{
     ViewData["Title"] = "Find Local Service Providers";
-    ViewData["HideNavbarSearch"] = true;
 }
 
 <div class="position-relative d-flex align-items-center justify-content-center w-100 overflow-hidden"
@@ -8,96 +10,128 @@
 
     <div class="container position-relative z-1 text-center py-5">
         <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-8">
+            <div class="col-lg-10 col-xl-9">
 
-                <h1 class="display-4 text-white mb-3"
-                    style="font-weight: 700; letter-spacing: -0.5px;">
+                <h1 class="display-4 mb-2 pb-2"
+                    style="font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(to right, #1d4ed8, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                     Find Trusted Local Experts in Your Neighbourhood
                 </h1>
 
-
-                <p class="text-white-50 mb-5 mx-auto"
+                <p class="text-white-50 mt-1 mb-4 mx-auto"
                    style="max-width: 700px; font-weight: 300; font-size: 1.1rem;">
-                    From home repairs to creative design, hire verified professionals who get the job done right.
+                    From home repairs to creative design, hire verified professionals who get the job done right <br />
+                    Explore our top service categories and hire verified professionals.
                 </p>
 
+                <div id="categoryHeroCarousel" class="carousel slide mt-4" data-ride="carousel">
+                    <div class="carousel-inner">
+                        @{
+                            // If Model is null, init empty list to avoid crash
+                            var categoryList = Model != null ? Model.ToList() : new List<ServiceCategory>();
+                            var itemsPerSlide = 4;
+                            var chunkedCategories = categoryList
+                            .Select((x, i) => new { Index = i, Value = x })
+                            .GroupBy(x => x.Index / itemsPerSlide)
+                            .Select(x => x.Select(v => v.Value).ToList())
+                            .ToList();
+                        }
 
-                <div class="mx-auto mt-4" style="max-width: 720px;">
-                    <form asp-controller="Home" asp-action="Search" method="get">
+                        @if (chunkedCategories.Any())
+                        {
+                            for (int i = 0; i < chunkedCategories.Count; i++)
+                            {
+                                <div class="carousel-item @(i == 0 ? "active" : "")">
+                                    <div class="row justify-content-center">
+                                        @foreach (var item in chunkedCategories[i])
+                                        {
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <a asp-controller="Home" asp-action="Search" asp-route-query="@item.CategoryName" class="text-decoration-none category-card-link">
+                                                    <div class="card bg-transparent border-0 h-100 category-card">
+                                                        <div class="card-body text-center p-3 rounded-lg"
+                                                             style="background: #005C89; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s;">
 
-                        <div class="d-flex align-items-center rounded-pill shadow-lg p-1"
-                             style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px);">
+                                                            <div class="mb-2 d-flex align-items-center justify-content-center" style="height: 60px;">
+                                                                @if (!string.IsNullOrEmpty(item.IconPath))
+                                                                {
+                                                                    <img src="@item.IconPath" alt="@item.CategoryName" style="max-height: 50px; max-width: 100%; filter: brightness(0) invert(1);" />
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="fas fa-tools fa-2x text-white"></i>
+                                                                }
+                                                            </div>
 
-                            <input type="text" name="query"
-                                   class="form-control border-0 shadow-none bg-transparent px-4 text-white"
-                                   placeholder="What service do you need?"
-                                   style="height: 55px; font-size: 1.1rem;">
+                                                            <h6 class="text-white mb-0 font-weight-bold">@item.CategoryName</h6>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-white-50">No active categories found.</div>
+                        }
+                    </div>
 
-
-                            <button class="btn btn-primary rounded-pill px-4 font-weight-bold m-1" type="submit"
-                                    style="height: 48px; min-width: 120px;">
-                                Search
-                            </button>
-
-                        </div>
-                    </form>
+                    @if (chunkedCategories.Count > 1)
+                    {
+                        <a class="carousel-control-prev" href="#categoryHeroCarousel" role="button" data-slide="prev" style="width: 5%; left: -6%;">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                        <a class="carousel-control-next" href="#categoryHeroCarousel" role="button" data-slide="next" style="width: 5%; right: -6%;">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Next</span>
+                        </a>
+                    }
                 </div>
+
                 <style>
-                    .form-control::placeholder {
-                        color: rgba(255,255,255, 0.7) !important;
+                    .category-card:hover .card-body {
+                        background: #137DD6 !important;
+                        border-color: rgba(255, 255, 255, 0.8) !important;
                     }
                 </style>
+
             </div>
         </div>
     </div>
 </div>
 
 <section class="bg-white">
-    <div class="container py-4">
+    <div class="container py-5">
         <div class="row">
-
             <div class="col-md-4 mb-4">
                 <div class="card h-100 border-0 shadow-sm text-center p-4">
                     <div class="card-body">
-                        <div class="text-primary mb-3">
-                            <i class="fas fa-search fa-3x"></i>
-                        </div>
+                        <div class="text-primary mb-3"><i class="fas fa-search fa-3x"></i></div>
                         <h5 class="card-title font-weight-bold">Find Local Pros</h5>
-                        <p class="card-text text-muted">
-                            Browse trusted service providers in your area with verified reviews.
-                        </p>
+                        <p class="card-text text-muted">Browse trusted service providers in your area.</p>
                     </div>
                 </div>
             </div>
-
             <div class="col-md-4 mb-4">
                 <div class="card h-100 border-0 shadow-sm text-center p-4">
                     <div class="card-body">
-                        <div class="text-primary mb-3">
-                            <i class="fas fa-calendar-check fa-3x"></i>
-                        </div>
+                        <div class="text-primary mb-3"><i class="fas fa-calendar-check fa-3x"></i></div>
                         <h5 class="card-title font-weight-bold">Book Instantly</h5>
-                        <p class="card-text text-muted">
-                            Schedule appointments with professionals quickly and easily.
-                        </p>
+                        <p class="card-text text-muted">Schedule appointments quickly and easily.</p>
                     </div>
                 </div>
             </div>
-
             <div class="col-md-4 mb-4">
                 <div class="card h-100 border-0 shadow-sm text-center p-4">
                     <div class="card-body">
-                        <div class="text-primary mb-3">
-                            <i class="fas fa-shield-alt fa-3x"></i>
-                        </div>
-                        <h5 class="card-title font-weight-bold">Safe &amp; Secure</h5>
-                        <p class="card-text text-muted">
-                            All service providers are verified and rated by real customers.
-                        </p>
+                        <div class="text-primary mb-3"><i class="fas fa-shield-alt fa-3x"></i></div>
+                        <h5 class="card-title font-weight-bold">Safe & Secure</h5>
+                        <p class="card-text text-muted">All providers are verified and rated.</p>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </section>

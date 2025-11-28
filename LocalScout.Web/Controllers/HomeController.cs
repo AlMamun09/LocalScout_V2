@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LocalScout.Application.Interfaces; // Required for Repository
 using LocalScout.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,20 +8,29 @@ namespace LocalScout.Web.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IServiceCategoryRepository _serviceCategoryRepository; // Inject Repository
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(
+            ILogger<HomeController> logger,
+            IServiceCategoryRepository serviceCategoryRepository
+        )
         {
             _logger = logger;
+            _serviceCategoryRepository = serviceCategoryRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            //if (User?.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
-            //{
-            //    return RedirectToAction("Index", "Admin");
-            //}
+            // Fetch active/approved categories for the carousel
+            var categories = await _serviceCategoryRepository.GetActiveAndApprovedCategoryAsync();
+            return View(categories);
+        }
 
-            return View();
+        public IActionResult Search(string query)
+        {
+            // Redirect or handle search logic here
+            // For now, just returning the view or redirection
+            return RedirectToAction("Index"); // Placeholder
         }
 
         public IActionResult Privacy()
