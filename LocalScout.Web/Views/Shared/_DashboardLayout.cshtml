@@ -19,6 +19,8 @@
           href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <script src="~/tailwind.config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
@@ -30,6 +32,17 @@
     <link rel="stylesheet" href="~/css/custom-theme.css" asp-append-version="true" />
 
     @await RenderSectionAsync("Styles", required: false)
+
+    <style>
+        .search-input-transition {
+            transition: all 0.3s ease;
+        }
+
+            .search-input-transition:focus {
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+                border-color: #3b82f6;
+            }
+    </style>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
@@ -47,23 +60,28 @@
             <div class="collapse navbar-collapse" id="mainNavbar">
 
                 <ul class="navbar-nav mr-auto"></ul>
+
                 @if (!User.IsInRole(RoleNames.Admin))
                 {
-                    <div class="d-flex d-md-flex justify-content-center flex-grow-1 mx-3">
-                        <form class="d-flex my-2 my-lg-0" style="max-width: 450px; width: 100%;" role="search"
-                              asp-controller="Home" asp-action="Search" method="get">
-                            <div class="input-group">
-                                <input class="form-control" type="search" name="query" placeholder="Search for services..."
-                                       aria-label="Search">
-                                <div class="input-group-append">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="fas fa-search"></i>
-                                    </button>
+                    <div class="mx-auto my-2 my-lg-0 w-100" style="max-width: 500px;">
+                        <form class="w-100" role="search" asp-controller="Home" asp-action="Search" method="get">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
                                 </div>
+                                <input type="search" name="query"
+                                       class="block w-full pl-10 pr-12 py-2.5 text-gray-700 bg-gray-50 border border-gray-200 rounded-full focus:bg-white outline-none search-input-transition"
+                                       placeholder="Search services (e.g. Plumber)..." aria-label="Search">
+                                <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-2">
+                                    <div class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 w-8 h-8 d-flex align-items-center justify-content-center transition-colors shadow-sm">
+                                        <i class="fas fa-search text-xs"></i>
+                                    </div>
+                                </button>
                             </div>
                         </form>
                     </div>
                 }
+
             </div>
 
             <ul class="navbar-nav ml-auto align-items-center">
@@ -76,12 +94,19 @@
         </nav>
 
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <a asp-controller="Home" asp-action="Index" class="brand-link">
-                <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo" class="brand-image img-circle elevation-3"
-                     style="opacity: .8">
-                <span class="brand-text font-weight-light">LocalScout</span>
-            </a>
 
+            <a asp-controller="Home" asp-action="Index" class="brand-link px-1 d-flex align-items-center group" style="background-color: #112D4E !important;">
+                <div class="relative">
+                    <img src="~/images/LocalScoutLogo.png" alt="LocalScout Logo"
+                         class="brand-image elevation-3 opacity-80"
+                         style="height: 30px; width: auto; object-fit: contain;" />
+                </div>
+                <div class="ml-1 d-flex flex-column justify-content-center">
+                    <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-cyan-500 localscout-logo leading-none">
+                        LocalScout
+                    </span>
+                </div>
+            </a>
             <div class="sidebar">
 
                 <div class="user-panel mt-2 pb-3 mb-3 d-flex">
@@ -328,10 +353,8 @@
             <strong>Copyright &copy; 2025 <a href="#">LocalScout</a>.</strong>
             All rights reserved.
         </footer>
-
     </div>
 
-    <!-- Notification Modals (only for signed-in users) -->
     @if (User.Identity?.IsAuthenticated == true)
     {
         <partial name="_NotificationModals" />
@@ -341,20 +364,17 @@
     <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/adminlte/dist/js/adminlte.min.js"></script>
     <script src="~/adminlte/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
-    
-    <!-- DataTables & Plugins -->
+
     <script src="~/adminlte/plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="~/adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
     <script src="~/adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
     <script src="~/adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
     <script src="~/adminlte/plugins/sweetalert2/sweetalert2.min.js"></script>
-    
-    <!-- Ajax Helper -->
+
     <script src="~/js/ajax-client.js"></script>
 
     @if (User.Identity?.IsAuthenticated == true)
     {
-        <!-- Notification Script (only for signed-in users) -->
         <script src="~/js/notification.js" asp-append-version="true"></script>
     }
 
@@ -362,7 +382,7 @@
         $(document).ready(function() {
             // Custom file input
             bsCustomFileInput.init();
-            
+
             // Reinitialize AdminLTE components
             if (typeof $.fn.AdminLTE !== 'undefined') {
                 $.fn.AdminLTE = $.fn.AdminLTE || {};

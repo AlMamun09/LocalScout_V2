@@ -57,39 +57,34 @@
 
             <div class="collapse navbar-collapse" id="mainNavbar">
 
-                @if (!User.IsInRole(RoleNames.Admin))
-                {
-                    <div class="mx-auto my-2 my-lg-0 w-100" style="max-width: 500px;">
-                        <form class="w-100" role="search" asp-controller="Home" asp-action="Search" method="get">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-search text-gray-400"></i>
-                                </div>
-                                <input type="search" name="query" 
-                                       class="block w-full pl-10 pr-12 py-2.5 text-gray-700 bg-gray-50 border border-gray-200 rounded-full focus:bg-white outline-none search-input-transition" 
-                                       placeholder="Search services (e.g. Plumber)..." aria-label="Search">
-                                <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-2">
-                                    <div class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 w-8 h-8 d-flex align-items-center justify-content-center transition-colors shadow-sm">
-                                        <i class="fas fa-arrow-right text-xs"></i>
-                                    </div>
-                                </button>
+                <div class="mx-auto my-2 my-lg-0 w-100" style="max-width: 500px;">
+                    <form class="w-100" role="search" asp-controller="Home" asp-action="Search" method="get">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
                             </div>
-                        </form>
-                    </div>
-                }
-                else
-                {
-                    <div class="mr-auto"></div>
-                }
+                            <input type="search" name="query"
+                                   class="block w-full pl-10 pr-12 py-2.5 text-gray-700 bg-gray-500 border border-gray-200 rounded-full focus:bg-white outline-none search-input-transition"
+                                   placeholder="Search services (e.g. Plumber)..." aria-label="Search">
+                            <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-2">
+                                <div class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 w-8 h-8 d-flex align-items-center justify-content-center transition-colors shadow-sm">
+                                    <i class="fas fa-search text-xs"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
-                <ul class="navbar-nav ml-auto align-items-center gap-2"
-                    style="visibility: visible !important; display: flex !important;">
-                    @if (SignInManager.IsSignedIn(User))
-                    {
-                        <partial name="_NotificationPartial" />
-                    }
-                    <partial name="_LoginPartial" />
-                </ul>
+                <div>
+                    <ul class="navbar-nav ml-auto align-items-center gap-2"
+                        style="visibility: visible !important; display: flex !important;">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <partial name="_NotificationPartial" />
+                        }
+                        <partial name="_LoginPartial" />
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>

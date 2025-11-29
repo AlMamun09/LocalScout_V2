@@ -182,3 +182,35 @@ body {
         display: none !important;
     }
 }
+
+/* ============================================
+   NAVBAR SEARCH BAR FIXES
+============================================ */
+
+/* Ensure search container is visible */
+.navbar .mx-auto {
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Search input styling fixes */
+.navbar input[type="search"] {
+    background-color: white !important;
+    color: #374151 !important; /* text-gray-700 */
+    border: 1px solid #e5e7eb !important; /* border-gray-200 */
+}
+
+    .navbar input[type="search"]::placeholder {
+        color: #9ca3af !important; /* text-gray-400 */
+    }
+
+/* Ensure the search form takes full width */
+.navbar .mx-auto .w-100 {
+    width: 100% !important;
+}
+
+/* Make sure the relative positioning works */
+.navbar .relative {
+    position: relative !important;
+}
+
