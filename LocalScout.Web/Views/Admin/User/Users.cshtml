@@ -35,10 +35,13 @@
                         {
                             <tr>
                                 <td>
-                                    <img src="@(user.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")"
-                                        class="img-circle img-size-32 mr-2" style="object-fit:cover;">
-                                    @user.FullName
+                                    <div class="d-flex align-items-center">
+                                        <img src="@(user.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")"
+                                             class="img-circle img-size-32 mr-2" style="object-fit:cover;">
+                                        <span>@user.FullName</span>
+                                    </div>
                                 </td>
+
                                 <td>@user.Email</td>
                                 <td>
                                     <span

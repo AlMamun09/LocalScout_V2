@@ -13,7 +13,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - LocalScout Dashboard</title>
+    <title>@ViewData["Title"] - Neighbourly Dashboard</title>
 
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -49,6 +49,7 @@
     <div class="wrapper">
 
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Left navbar links -->
             <ul class="navbar-nav align-items-center">
                 <li class="nav-item">
                     <a class="nav-link text-primary" data-widget="pushmenu" href="#" role="button">
@@ -57,33 +58,29 @@
                 </li>
             </ul>
 
-            <div class="collapse navbar-collapse" id="mainNavbar">
-
-                <ul class="navbar-nav mr-auto"></ul>
-
-                @if (!User.IsInRole(RoleNames.Admin))
-                {
-                    <div class="mx-auto my-2 my-lg-0 w-100" style="max-width: 500px;">
-                        <form class="w-100" role="search" asp-controller="Home" asp-action="Search" method="get">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-search text-gray-400"></i>
-                                </div>
-                                <input type="search" name="query"
-                                       class="block w-full pl-10 pr-12 py-2.5 text-gray-700 bg-gray-50 border border-gray-200 rounded-full focus:bg-white outline-none search-input-transition"
-                                       placeholder="Search services (e.g. Plumber)..." aria-label="Search">
-                                <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-2">
-                                    <div class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 w-8 h-8 d-flex align-items-center justify-content-center transition-colors shadow-sm">
-                                        <i class="fas fa-search text-xs"></i>
-                                    </div>
-                                </button>
+            <!-- Center: Search Bar -->
+            @if (!User.IsInRole(RoleNames.Admin))
+            {
+                <div class="mx-auto my-0" style="max-width: 500px; flex-grow: 0; flex-shrink: 0;">
+                    <form class="w-100" role="search" asp-controller="Home" asp-action="Search" method="get">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
                             </div>
-                        </form>
-                    </div>
-                }
+                            <input type="search" name="query"
+                                   class="block w-full pl-10 pr-12 py-2.5 text-gray-700 bg-gray-50 border border-gray-200 rounded-full focus:bg-white outline-none search-input-transition"
+                                   placeholder="Search services (e.g. Plumber)..." aria-label="Search">
+                            <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-2">
+                                <div class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 w-8 h-8 d-flex align-items-center justify-content-center transition-colors shadow-sm">
+                                    <i class="fas fa-search text-xs"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            }
 
-            </div>
-
+            <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto align-items-center">
                 @if (User.Identity?.IsAuthenticated == true)
                 {
@@ -92,7 +89,6 @@
                 <partial name="_LoginPartial" />
             </ul>
         </nav>
-
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
 
             <a asp-controller="Home" asp-action="Index" class="brand-link px-1 d-flex align-items-center group" style="background-color: #112D4E !important;">
@@ -102,8 +98,8 @@
                          style="height: 30px; width: auto; object-fit: contain;" />
                 </div>
                 <div class="ml-1 d-flex flex-column justify-content-center">
-                    <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-cyan-500 localscout-logo leading-none">
-                        LocalScout
+                    <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-cyan-500 localscout-logo leading-9">
+                        Neighbourly
                     </span>
                 </div>
             </a>
@@ -350,7 +346,7 @@
         </div>
 
         <footer class="main-footer">
-            <strong>Copyright &copy; 2025 <a href="#">LocalScout</a>.</strong>
+            <strong>Copyright &copy; 2025 <a href="#">Neighbourly</a>.</strong>
             All rights reserved.
         </footer>
     </div>

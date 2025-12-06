@@ -1,13 +1,13 @@
 ﻿"use strict";
 
-(function() {
+(function () {
     let notifications = [];
     const POLLING_INTERVAL = 30000; // 30 seconds
 
     // Initialize on page load
-    $(document).ready(function() {
+    $(document).ready(function () {
         loadUnreadCount();
-        
+
         // Start polling
         setInterval(loadUnreadCount, POLLING_INTERVAL);
 
@@ -23,7 +23,7 @@
         });
 
         // Mark All Read button
-        $('#markAllReadBtn').on('click', function(e) {
+        $('#markAllReadBtn').on('click', function (e) {
             e.preventDefault();
             markAllAsRead();
         });
@@ -34,10 +34,10 @@
         $.ajax({
             url: '/api/Notification/count',
             type: 'GET',
-            success: function(response) {
+            success: function (response) {
                 updateBadge(response.count);
             },
-            error: function() {
+            error: function () {
                 console.error('Failed to load notification count');
             }
         });
@@ -58,11 +58,11 @@
             url: '/api/Notification/list',
             type: 'GET',
             data: { take: 50 },
-            success: function(data) {
+            success: function (data) {
                 notifications = data;
                 renderNotifications(data);
             },
-            error: function() {
+            error: function () {
                 listContainer.html(`
                     <div class="text-center text-danger py-5">
                         <p>Failed to load notifications.</p>
@@ -76,7 +76,7 @@
     // Update the bell badge
     function updateBadge(count) {
         const badge = $('#notificationBadge');
-        
+
         if (count > 0) {
             badge.text(count > 99 ? '99+' : count);
             badge.show();
@@ -88,7 +88,7 @@
     // Render the list inside the modal
     function renderNotifications(items) {
         const listContainer = $('#notificationListContainer');
-        
+
         if (!items || items.length === 0) {
             listContainer.html(`
                 <div class="text-center text-muted py-5">
@@ -100,10 +100,10 @@
         }
 
         let html = '<div class="list-group list-group-flush">';
-        items.forEach(function(notification) {
+        items.forEach(function (notification) {
             const unreadClass = !notification.isRead ? 'bg-light font-weight-bold' : '';
             const iconClass = getIconForNotification(notification);
-            
+
             html += `
                 <a href="#" class="list-group-item list-group-item-action ${unreadClass} notification-item" data-id="${notification.id}">
                     <div class="d-flex w-100 justify-content-between">
@@ -121,7 +121,7 @@
         listContainer.html(html);
 
         // Attach click handlers to items
-        $('.notification-item').on('click', function(e) {
+        $('.notification-item').on('click', function (e) {
             e.preventDefault();
             const id = $(this).data('id');
             showNotificationDetail(id);
@@ -135,6 +135,45 @@
         if (title.includes('rejected') || title.includes('blocked')) return '<i class="fas fa-ban text-danger mr-2"></i>';
         if (title.includes('request')) return '<i class="fas fa-user-plus text-info mr-2"></i>';
         return '<i class="fas fa-info-circle text-primary mr-2"></i>';
+    }
+
+    // Format metaJson into user-friendly text
+    function formatMetaInfo(metaJson) {
+        if (!metaJson) return '';
+
+        try {
+            const meta = JSON.parse(metaJson);
+            let html = '<div class="mt-3">';
+
+            // Handle common meta fields
+            if (meta.reason) {
+                html += `
+                    <div class="alert alert-warning mb-0">
+                        <strong><i class="fas fa-exclamation-triangle mr-1"></i> Reason:</strong>
+                        <p class="mb-0 mt-1">${escapeHtml(meta.reason)}</p>
+                    </div>
+                `;
+            }
+
+            // Handle other meta fields generically
+            const handledKeys = ['reason'];
+            const otherKeys = Object.keys(meta).filter(k => !handledKeys.includes(k));
+
+            if (otherKeys.length > 0) {
+                html += '<div class="mt-2">';
+                otherKeys.forEach(key => {
+                    const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                    html += `<p class="mb-1"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(meta[key]))}</p>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        } catch (e) {
+            // If JSON parsing fails, return as plain text
+            return `<div class="mt-3"><p class="text-muted mb-0">${escapeHtml(metaJson)}</p></div>`;
+        }
     }
 
     // Show detail modal
@@ -158,30 +197,24 @@
             <div class="p-3 bg-light rounded mb-3">
                 <p class="mb-0 text-dark">${escapeHtml(notification.message)}</p>
             </div>
-            ${notification.metaJson ? `<div class="mt-3"><small class="text-muted">Additional Info:</small><pre class="bg-dark text-white p-2 rounded small mt-1">${escapeHtml(notification.metaJson)}</pre></div>` : ''}
+            ${formatMetaInfo(notification.metaJson)}
         `);
 
         // Mark as read if needed
         if (!notification.isRead) {
             markAsRead(id);
         }
-
-        // When detail modal closes, reopen list modal? 
-        // The requirement says "When that modal is closed, mark the notification as read."
-        // It doesn't explicitly say reopen the list, but it's good UX.
-        // However, standard behavior is usually just close.
-        // Let's stick to simple close for now, user can open bell again.
     }
 
     function markAsRead(id) {
         $.ajax({
             url: `/api/Notification/${id}/mark-read`,
             type: 'POST',
-            success: function(response) {
+            success: function (response) {
                 // Update local state
                 const n = notifications.find(x => x.id === id);
                 if (n) n.isRead = true;
-                
+
                 // Update badge
                 updateBadge(response.unreadCount);
             }
@@ -192,10 +225,10 @@
         $.ajax({
             url: '/api/Notification/mark-all-read',
             type: 'POST',
-            success: function(response) {
+            success: function (response) {
                 updateBadge(0);
                 loadNotifications(); // Reload list to remove bold styling
-                
+
                 // Toast
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -225,7 +258,7 @@
 
     // Expose global
     window.notificationPanel = {
-        reload: function() {
+        reload: function () {
             loadUnreadCount();
             // If modal is open, reload list
             if ($('#notificationListModal').hasClass('show')) {

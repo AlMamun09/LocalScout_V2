@@ -50,7 +50,7 @@
                     <tbody>
                         @foreach (var provider in Model)
                         {
-                            <tr>
+                            <tr data-provider-id="@provider.Id">
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <img src="@(provider.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")"
@@ -91,7 +91,7 @@
                                         </button>
 
                                         <!-- Block/Unblock Button: HIDE if on Verification Request Page -->
-                                        @if (!isVerificationPage && provider.IsVerified)
+                                        @if (!isVerificationPage)
                                         {
                                             <button class="btn btn-sm @(provider.IsActive ? "btn-danger" : "btn-success") btn-status mr-1"
                                                     onclick="toggleProviderStatus('@provider.Id', this)"
@@ -141,9 +141,43 @@
     </div>
 </div>
 
+<!-- Modal for Custom Rejection Reason -->
+<div class="modal fade" id="modal-reject-reason" data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h4 class="modal-title"><i class="fas fa-times-circle mr-2"></i>Reject Verification</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reject-provider-id" />
+                <div class="form-group">
+                    <label for="rejection-reason">Rejection Reason</label>
+                    <textarea id="rejection-reason" class="form-control" rows="4"
+                              placeholder="Enter the reason for rejection (optional). If left empty, a default message will be used."></textarea>
+                    <small class="text-muted">
+                        Default: "Documents did not meet requirements."
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    <i class="fas fa-arrow-left mr-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmRejectProvider()">
+                    <i class="fas fa-times mr-1"></i> Confirm Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         var dataTable;
+        var currentProviderId = null; // Track the provider being acted upon
 
         $(function () {
             dataTable = $("#providersTable").DataTable({
@@ -151,35 +185,42 @@
             });
         });
 
+        // Helper function to remove row by provider ID
+        function removeRowByProviderId(providerId) {
+            var $row = $('tr[data-provider-id="' + providerId + '"]');
+            if ($row.length) {
+                dataTable.row($row).remove().draw(false);
+            }
+        }
+
         // --- View Details ---
         function viewProviderDetails(id) {
+            currentProviderId = id; // Store for potential actions from modal
             $('#modal-provider-details').modal('show');
             $('#provider-details-content').html('<div class="text-center py-3"><div class="spinner-border text-primary"></div></div>');
 
-            // Using GetProviderDetails to fetch the partial with document info
             AjaxClient.get('@Url.Action("GetProviderDetails", "Admin")?id=' + id,
                 function (response) { $('#provider-details-content').html(response); },
                 function () { $('#provider-details-content').html('<p class="text-danger text-center">Error loading details.</p>'); }
             );
         }
 
-        // --- Toggle Status (Block/Unblock) - FIXED ---
+        // --- Toggle Status (Block/Unblock) ---
         function toggleProviderStatus(id, btn) {
             var $btn = $(btn);
-            var isActive = $btn.hasClass('btn-danger'); // Current state (true if showing "Block" button)
+            var isActive = $btn.hasClass('btn-danger');
             var action = isActive ? "Block" : "Unblock";
 
             Swal.fire({
-                title: 'Are you sure?', 
-                text: `You are about to ${action} this provider. They will be removed from this list.`, 
+                title: 'Are you sure?',
+                text: `You are about to ${action} this provider. They will be removed from this list.`,
                 icon: 'warning',
-                showCancelButton: true, 
-                confirmButtonColor: isActive ? '#d33' : '#28a745', 
+                showCancelButton: true,
+                confirmButtonColor: isActive ? '#d33' : '#28a745',
                 confirmButtonText: `Yes, ${action}!`,
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Pass the button element so the row can be removed after success
                     performToggleStatus(id, btn);
                 }
             });
@@ -192,10 +233,8 @@
 
             AjaxClient.post('@Url.Action("ToggleProviderStatus", "Admin")', { id: id },
                 function (response) {
-                    // Close modal if open
                     $('#modal-provider-details').modal('hide');
 
-                    // Show success message with OK button
                     Swal.fire({
                         title: 'Success!',
                         text: response.message || 'Provider status updated successfully',
@@ -203,14 +242,13 @@
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#28a745'
                     }).then(() => {
-                        // Remove the row from DataTable after user clicks OK
-                        dataTable.row($row).remove().draw(false); // false = stay on current page
+                        dataTable.row($row).remove().draw(false);
                     });
                 },
                 function (xhr) {
-                    Swal.fire({ 
-                        title: 'Error', 
-                        text: xhr.responseJSON?.message || 'Failed to update provider status', 
+                    Swal.fire({
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Failed to update provider status',
                         icon: 'error',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#d33'
@@ -219,62 +257,114 @@
             );
         }
 
-        // --- Approve Provider (Reloads Page) ---
-        function approveProvider(id) {
+        // --- Approve Provider with Row Removal ---
+        function approveProvider(id, btn) {
+            currentProviderId = id;
+
             Swal.fire({
-                title: 'Approve Provider?', 
-                text: 'This provider will be verified and publicly visible.', 
+                title: 'Approve Provider?',
+                text: 'This provider will be verified and publicly visible.',
                 icon: 'question',
-                showCancelButton: true, 
-                confirmButtonColor: '#28a745', 
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
                 confirmButtonText: 'Yes, Approve!',
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    performApproveReject('@Url.Action("ApproveProvider", "Admin")', id, "Provider approved successfully");
+                    performApprove(id);
                 }
             });
         }
 
-        // --- Reject Provider (Reloads Page) ---
-        function rejectProvider(id) {
+        // --- Perform Approve with Row Removal ---
+        function performApprove(id) {
             Swal.fire({
-                title: 'Reject Provider?', 
-                text: 'This application will be rejected.', 
-                icon: 'warning',
-                showCancelButton: true, 
-                confirmButtonColor: '#ffc107', 
-                confirmButtonText: 'Yes, Reject',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    performApproveReject('@Url.Action("RejectProvider", "Admin")', id, "Provider rejected");
+                title: 'Processing...',
+                text: 'Approving provider verification',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
             });
-        }
 
-        // --- Perform Approve/Reject with Page Reload ---
-        function performApproveReject(url, id, successMsg) {
-            AjaxClient.post(url, { id: id },
+            AjaxClient.post('@Url.Action("ApproveProvider", "Admin")', { id: id },
                 function (response) {
-                    // Close modal if open
                     $('#modal-provider-details').modal('hide');
 
                     Swal.fire({
-                        title: 'Success!',
-                        text: response.message || successMsg,
+                        title: 'Approved!',
+                        text: response.message || 'Provider approved successfully.',
                         icon: 'success',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#28a745'
                     }).then(() => {
-                        // Reload page to refresh verification requests list
-                        location.reload();
+                        // Remove row from DataTable
+                        removeRowByProviderId(id);
                     });
                 },
                 function (xhr) {
-                    Swal.fire({ 
-                        title: 'Error', 
-                        text: xhr.responseJSON?.message || 'Action failed', 
+                    Swal.fire({
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Failed to approve provider',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            );
+        }
+
+        // --- Reject Provider - Opens Custom Reason Modal ---
+        function rejectProvider(id, btn) {
+            currentProviderId = id;
+
+            // Close details modal if open
+            $('#modal-provider-details').modal('hide');
+
+            // Store provider ID and clear previous reason
+            $('#reject-provider-id').val(id);
+            $('#rejection-reason').val('');
+
+            // Show rejection reason modal
+            $('#modal-reject-reason').modal('show');
+        }
+
+        // --- Confirm Rejection with Row Removal ---
+        function confirmRejectProvider() {
+            var providerId = $('#reject-provider-id').val();
+            var reason = $('#rejection-reason').val().trim();
+
+            // Close the modal
+            $('#modal-reject-reason').modal('hide');
+
+            // Show loading state
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Rejecting provider verification',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Send request with custom reason
+            AjaxClient.post('@Url.Action("RejectProvider", "Admin")', { id: providerId, reason: reason },
+                function (response) {
+                    Swal.fire({
+                        title: 'Rejected!',
+                        text: response.message || 'Provider verification rejected.',
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#28a745'
+                    }).then(() => {
+                        // Remove row from DataTable instead of reloading page
+                        removeRowByProviderId(providerId);
+                    });
+                },
+                function (xhr) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Failed to reject provider',
                         icon: 'error',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#d33'

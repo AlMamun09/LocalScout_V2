@@ -147,7 +147,7 @@ namespace LocalScout.Web.Controllers
             {
                 // Determine the new status and message
                 var newStatus = wasActive ? "Blocked" : "Unblocked";
-                var message = wasActive 
+                var message = wasActive
                     ? "Your account has been blocked by the administrator. Please contact support for assistance."
                     : "Your account has been unblocked. You can now access all features.";
 
@@ -163,9 +163,10 @@ namespace LocalScout.Web.Controllers
                     _logger.LogError(ex, $"Failed to create notification for User ID: {id}");
                 }
 
-                return Ok(new { 
-                    success = true, 
-                    message = $"User status updated successfully. User has been {newStatus.ToLower()}." 
+                return Ok(new
+                {
+                    success = true,
+                    message = $"User status updated successfully. User has been {newStatus.ToLower()}."
                 });
             }
 
@@ -289,9 +290,10 @@ namespace LocalScout.Web.Controllers
                 }
 
                 return Ok(
-                    new { 
-                        success = true, 
-                        message = $"Provider status updated successfully. Provider has been {newStatus.ToLower()}." 
+                    new
+                    {
+                        success = true,
+                        message = $"Provider status updated successfully. Provider has been {newStatus.ToLower()}."
                     }
                 );
             }
@@ -343,10 +345,10 @@ namespace LocalScout.Web.Controllers
             return BadRequest(new { message = "Failed to approve provider." });
         }
 
-        // --- UPDATED: Reject Provider (SignalR Integrated) ---
+        // --- Reject Provider ---
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RejectProvider(string id)
+        public async Task<IActionResult> RejectProvider(string id, string? reason = null)
         {
             if (string.IsNullOrEmpty(id))
                 return BadRequest(new { message = "Invalid provider ID." });
@@ -355,7 +357,10 @@ namespace LocalScout.Web.Controllers
             if (request == null)
                 return BadRequest(new { message = "Request not found." });
 
-            var adminComments = "Documents did not meet requirements.";
+            // Use custom reason if provided, otherwise fall back to default
+            var adminComments = string.IsNullOrWhiteSpace(reason)
+                ? "Documents did not meet requirements."
+                : reason.Trim();
 
             // 1. Update Request Status
             await _verificationRepo.UpdateRequestStatusAsync(
@@ -370,15 +375,13 @@ namespace LocalScout.Web.Controllers
             // 2. Create persistent notification
             try
             {
-                await _notificationRepository.CreateNotificationAsync(id, title, message, 
+                await _notificationRepository.CreateNotificationAsync(id, title, message,
                     $"{{\"reason\": \"{adminComments}\"}}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to create notification: {ex.Message}");
             }
-
-
 
             return Ok(new { success = true, message = "Provider verification rejected." });
         }
