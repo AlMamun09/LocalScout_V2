@@ -46,10 +46,10 @@
                                 <td>@item.Description</td>
                                 <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-success" onclick="approveRequest('@item.Id', this)" title="Approve">
+                                    <button class="btn btn-sm btn-success" onclick="approveRequest('@item.ServiceCategoryId', this)" title="Approve">
                                         <i class="fas fa-check"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-danger" onclick="rejectRequest('@item.Id', this)" title="Reject">
+                                    <button class="btn btn-sm btn-danger" onclick="rejectRequest('@item.ServiceCategoryId', this)" title="Reject">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </td>

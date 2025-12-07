@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Http;
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace LocalScout.Application.DTOs
 {
     public class ServiceCategoryDto
     {
-        public Guid Id { get; set; }
+        public Guid ServiceCategoryId { get; set; }
 
         [Required(ErrorMessage = "Category Name is required")]
         [Display(Name = "Category Name")]

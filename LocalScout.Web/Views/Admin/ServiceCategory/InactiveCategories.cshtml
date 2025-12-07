@@ -62,10 +62,10 @@
                                 <td>@item.Description</td>
                                 <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-info" onclick="openEditModal('@item.Id')" title="Edit">
+                                    <button class="btn btn-sm btn-info" onclick="openEditModal('@item.ServiceCategoryId')" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-success" onclick="toggleStatus('@item.Id', this)" title="Activate">
+                                    <button class="btn btn-sm btn-success" onclick="toggleStatus('@item.ServiceCategoryId', this)" title="Activate">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 </td>

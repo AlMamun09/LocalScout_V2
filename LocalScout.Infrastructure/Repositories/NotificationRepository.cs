@@ -3,10 +3,6 @@ using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace LocalScout.Infrastructure.Repositories
 {
@@ -22,7 +18,7 @@ namespace LocalScout.Infrastructure.Repositories
         public async Task<NotificationDto?> GetByIdAsync(Guid id)
         {
             var notification = await _context.Notifications
-                .FirstOrDefaultAsync(n => n.Id == id);
+                .FirstOrDefaultAsync(n => n.NotificationId == id);
 
             return notification == null ? null : MapToDto(notification);
         }
@@ -56,7 +52,7 @@ namespace LocalScout.Infrastructure.Repositories
         {
             var notification = new Notification
             {
-                Id = Guid.NewGuid(),
+                NotificationId = Guid.NewGuid(),
                 UserId = userId,
                 Title = title,
                 Message = message,
@@ -112,7 +108,7 @@ namespace LocalScout.Infrastructure.Repositories
         {
             return new NotificationDto
             {
-                Id = notification.Id,
+                NotificationId = notification.NotificationId,
                 UserId = notification.UserId,
                 Title = notification.Title,
                 Message = notification.Message,

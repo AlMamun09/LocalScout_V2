@@ -2,7 +2,7 @@
 {
     public class ServiceCategory
     {
-        public Guid Id { get; set; }
+        public Guid ServiceCategoryId { get; set; }
         public string? CategoryName { get; set; }
         public string? Description { get; set; }
         public string? IconPath { get; set; }

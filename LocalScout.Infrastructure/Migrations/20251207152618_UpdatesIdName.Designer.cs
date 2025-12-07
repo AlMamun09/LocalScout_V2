@@ -4,6 +4,7 @@ using LocalScout.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalScout.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251207152618_UpdatesIdName")]
+    partial class UpdatesIdName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -169,49 +172,6 @@ namespace LocalScout.Infrastructure.Migrations
                         .HasDatabaseName("IX_Notifications_UserId_IsRead");
 
                     b.ToTable("Notifications");
-                });
-
-            modelBuilder.Entity("LocalScout.Domain.Entities.Service", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImagePaths")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("PricingUnit")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ServiceCategoryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ServiceName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Services");
                 });
 
             modelBuilder.Entity("LocalScout.Domain.Entities.ServiceCategory", b =>

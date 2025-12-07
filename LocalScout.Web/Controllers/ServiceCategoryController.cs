@@ -4,9 +4,6 @@ using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace LocalScout.Web.Controllers
 {
@@ -70,7 +67,7 @@ namespace LocalScout.Web.Controllers
 
             var dto = new ServiceCategoryDto
             {
-                Id = category.Id,
+                ServiceCategoryId = category.ServiceCategoryId,
                 CategoryName = category.CategoryName,
                 Description = category.Description,
                 IconPath = category.IconPath
@@ -106,7 +103,7 @@ namespace LocalScout.Web.Controllers
                     model.IconPath = "/images/categories/" + uniqueFileName;
                 }
 
-                if (model.Id == Guid.Empty)
+                if (model.ServiceCategoryId == Guid.Empty)
                 {
                     // Create
                     var category = new ServiceCategory
@@ -123,7 +120,7 @@ namespace LocalScout.Web.Controllers
                 else
                 {
                     // Edit
-                    var category = await _repo.GetCategoryByIdAsync(model.Id);
+                    var category = await _repo.GetCategoryByIdAsync(model.ServiceCategoryId);
                     if (category != null)
                     {
                         category.CategoryName = model.CategoryName;
