@@ -1,0 +1,341 @@
+@model LocalScout.Application.DTOs.ServiceDto
+@{
+    var categories = ViewBag.Categories as IEnumerable<LocalScout.Domain.Entities.ServiceCategory>;
+    var isEdit = Model.ServiceId != Guid.Empty;
+    
+    // Parse existing images
+    var existingImages = new List<string>();
+    if (!string.IsNullOrEmpty(Model.ImagePaths))
+    {
+        try
+        {
+            existingImages = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Model.ImagePaths) ?? new List<string>();
+        }
+        catch { }
+    }
+
+    // Pricing unit options
+    var pricingUnits = new[] { "Fixed", "Per Hour", "Per Day", "Per Project", "Per Session" };
+    
+    // Max images limit
+    var maxImages = 10;
+    var existingCount = existingImages.Count;
+}
+
+<!-- Select2 CSS -->
+<link rel="stylesheet" href="~/adminlte/plugins/select2/css/select2.min.css">
+<link rel="stylesheet" href="~/adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+
+<form id="createEditServiceForm" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ServiceId" />
+    <input type="hidden" id="existingImageUrls" name="existingImageUrls" value="@(System.Text.Json.JsonSerializer.Serialize(existingImages))" />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label asp-for="ServiceName">Service Name <span class="text-danger">*</span></label>
+                <input asp-for="ServiceName" class="form-control" placeholder="Enter service name" required />
+                <span asp-validation-for="ServiceName" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label asp-for="ServiceCategoryId">Category <span class="text-danger">*</span></label>
+                <select asp-for="ServiceCategoryId" id="categorySelect" class="form-control select2-category" required style="width: 100%;">
+                    <option value="">-- Select Category --</option>
+                    @if (categories != null)
+                    {
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat.ServiceCategoryId" 
+                                    selected="@(Model.ServiceCategoryId == cat.ServiceCategoryId ? "selected" : null)">
+                                @cat.CategoryName
+                            </option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="ServiceCategoryId" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label asp-for="Price">Price ($) <span class="text-danger">*</span></label>
+                <input asp-for="Price" type="number" step="0.01" min="0.01" class="form-control" 
+                       placeholder="Enter price" required />
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label asp-for="PricingUnit">Pricing Unit</label>
+                <select asp-for="PricingUnit" class="form-control">
+                    @foreach (var unit in pricingUnits)
+                    {
+                        <option value="@unit" 
+                                selected="@(Model.PricingUnit == unit ? "selected" : null)">
+                            @unit
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <textarea asp-for="Description" class="form-control" rows="3" 
+                  placeholder="Describe your service in detail..."></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label>Service Images <small class="text-muted">(<span id="imageCount">@existingCount</span>/@maxImages)</small></label>
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" id="imageInput" name="images" 
+                   accept="image/jpeg,image/png,image/webp" multiple>
+            <label class="custom-file-label" for="imageInput">Choose images (max 5MB each, max @maxImages images)</label>
+        </div>
+        <small class="form-text text-muted">
+            You can upload up to @maxImages images total. Supported formats: JPG, PNG, WebP (max 5MB each)
+        </small>
+    </div>
+
+    <!-- Image Preview Section - 5 images per row -->
+    <div class="form-group" id="imagePreviewSection">
+        <label>Image Preview</label>
+        <div class="row" id="imagePreviewContainer">
+            @if (existingImages.Any())
+            {
+                @foreach (var img in existingImages)
+                {
+                    <div class="col mb-2 image-preview-item" data-url="@img" style="flex: 0 0 20%; max-width: 20%;">
+                        <div class="position-relative">
+                            <img src="@img" class="img-thumbnail" style="width: 100%; height: 70px; object-fit: cover;" />
+                            <button type="button" class="btn btn-danger btn-xs position-absolute" 
+                                    style="top: 2px; right: 2px; padding: 2px 5px; font-size: 9px;"
+                                    onclick="removeExistingImage(this, '@img')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <span class="badge badge-secondary position-absolute" 
+                                  style="bottom: 2px; left: 2px; font-size: 8px;">Existing</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <!-- New image previews will be added here -->
+        <div class="row" id="newImagePreviewContainer"></div>
+    </div>
+
+    <div class="form-group">
+        <div class="custom-control custom-switch">
+            <input type="checkbox" class="custom-control-input" id="isActiveSwitch" name="IsActive"
+                   @(Model.IsActive ? "checked" : "") value="true" />
+            <label class="custom-control-label" for="isActiveSwitch">
+                <strong>Active</strong> - Service is visible to customers
+            </label>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-secondary mr-2" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+            <i class="fas fa-save mr-1"></i> @(isEdit ? "Update" : "Create") Service
+        </button>
+    </div>
+</form>
+
+<!-- Select2 JS -->
+<script src="~/adminlte/plugins/select2/js/select2.full.min.js"></script>
+
+<script>
+    var maxImages = @maxImages;
+    var existingImageCount = @existingCount;
+    var newImageCount = 0;
+
+    $(document).ready(function () {
+        // Initialize Select2 for searchable category dropdown
+        $('.select2-category').select2({
+            theme: 'bootstrap4',
+            placeholder: '-- Select Category --',
+            allowClear: true,
+            dropdownParent: $('#modal-create-edit .modal-content')
+        });
+
+        // Custom file input
+        bsCustomFileInput.init();
+
+        // Update image count display
+        updateImageCount();
+
+        // Image input change handler
+        $('#imageInput').on('change', function () {
+            var files = this.files;
+            $('#newImagePreviewContainer').empty();
+            newImageCount = 0;
+
+            // Calculate how many more images can be added
+            var currentExisting = $('.image-preview-item').length;
+            var availableSlots = maxImages - currentExisting;
+
+            if (availableSlots <= 0) {
+                Swal.fire('Limit Reached', 'You have reached the maximum of ' + maxImages + ' images. Remove some existing images to add new ones.', 'warning');
+                $(this).val(''); // Clear the input
+                return;
+            }
+
+            if (files.length > availableSlots) {
+                Swal.fire('Too Many Images', 'You can only add ' + availableSlots + ' more image(s). Maximum is ' + maxImages + ' images total.', 'warning');
+            }
+
+            var validFiles = [];
+
+            for (var i = 0; i < files.length && validFiles.length < availableSlots; i++) {
+                var file = files[i];
+
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    Swal.fire('Error', 'File "' + file.name + '" is too large. Maximum size is 5MB.', 'error');
+                    continue;
+                }
+
+                // Validate file type
+                var validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    Swal.fire('Error', 'File "' + file.name + '" is not a valid image type.', 'error');
+                    continue;
+                }
+
+                validFiles.push(file);
+            }
+
+            newImageCount = validFiles.length;
+            updateImageCount();
+
+            // Create previews for valid files
+            validFiles.forEach(function(file, index) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var html = '<div class="col mb-2 new-image-preview" data-index="' + index + '" style="flex: 0 0 20%; max-width: 20%;">' +
+                        '<div class="position-relative">' +
+                        '<img src="' + e.target.result + '" class="img-thumbnail" style="width: 100%; height: 70px; object-fit: cover;" />' +
+                        '<button type="button" class="btn btn-danger btn-xs position-absolute" ' +
+                        'style="top: 2px; right: 2px; padding: 2px 5px; font-size: 9px;" ' +
+                        'onclick="removeNewImage(' + index + ')">' +
+                        '<i class="fas fa-times"></i></button>' +
+                        '<span class="badge badge-primary position-absolute" style="bottom: 2px; left: 2px; font-size: 8px;">New</span>' +
+                        '</div></div>';
+                    $('#newImagePreviewContainer').append(html);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // Form Submission
+        $('#createEditServiceForm').on('submit', function (e) {
+            e.preventDefault();
+
+            // Validate total image count before submit
+            var totalImages = $('.image-preview-item').length + $('.new-image-preview').length;
+            if (totalImages > maxImages) {
+                Swal.fire('Error', 'Maximum ' + maxImages + ' images allowed. Please remove some images.', 'error');
+                return;
+            }
+
+            var form = $(this)[0];
+            var formData = new FormData(form);
+
+            // Add IsActive value (checkbox handling)
+            if (!$('#isActiveSwitch').is(':checked')) {
+                formData.set('IsActive', 'false');
+            }
+
+            // Show loading state
+            var $submitBtn = $('#submitBtn');
+            var originalText = $submitBtn.html();
+            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Saving...');
+
+            $.ajax({
+                url: '@Url.Action("SaveService", "Service")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (response) {
+                    $('#modal-create-edit').modal('hide');
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#28a745'
+                    }).then(() => {
+                        // Reload table data via AJAX instead of full page reload
+                        reloadServicesTable();
+                    });
+                },
+                error: function (xhr) {
+                    $submitBtn.prop('disabled', false).html(originalText);
+                    Swal.fire({
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Failed to save service. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            });
+        });
+    });
+
+    // Update image count display
+    function updateImageCount() {
+        var existingCount = $('.image-preview-item').length;
+        var totalCount = existingCount + newImageCount;
+        $('#imageCount').text(totalCount);
+        
+        // Change color if at limit
+        if (totalCount >= maxImages) {
+            $('#imageCount').addClass('text-danger font-weight-bold');
+        } else {
+            $('#imageCount').removeClass('text-danger font-weight-bold');
+        }
+    }
+
+    // Remove existing image
+    function removeExistingImage(btn, url) {
+        var $item = $(btn).closest('.image-preview-item');
+        $item.fadeOut(200, function () {
+            $(this).remove();
+            updateExistingImageUrls();
+            updateImageCount();
+        });
+    }
+
+    // Update hidden field with remaining existing images
+    function updateExistingImageUrls() {
+        var urls = [];
+        $('.image-preview-item').each(function () {
+            urls.push($(this).data('url'));
+        });
+        $('#existingImageUrls').val(JSON.stringify(urls));
+    }
+
+    // Remove new image preview
+    function removeNewImage(index) {
+        $('.new-image-preview[data-index="' + index + '"]').fadeOut(200, function () {
+            $(this).remove();
+            newImageCount = $('.new-image-preview').length;
+            updateImageCount();
+        });
+    }
+</script>

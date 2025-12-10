@@ -1,0 +1,351 @@
+@model IEnumerable<LocalScout.Application.DTOs.ServiceDto>
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "My Services";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    var isActive = (bool)(ViewData["IsActive"] ?? true);
+}
+
+@Html.AntiForgeryToken()
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">@ViewData["Title"]</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Provider" asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">@ViewData["Title"]</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card @(isActive ? "card-success" : "card-secondary") card-outline">
+            <div class="card-header">
+                <h3 class="card-title">@(isActive ? "Active" : "Inactive") Services List</h3>
+                <div class="card-tools">
+                    <button class="btn btn-primary btn-sm" onclick="openCreateModal()">
+                        <i class="fas fa-plus"></i> Add New Service
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="servicesTable" class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Image</th>
+                            <th>Service Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Pricing Unit</th>
+                            <th>Created Date</th>
+                            <th style="width: 150px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var imagePaths = new List<string>();
+                            if (!string.IsNullOrEmpty(item.ImagePaths))
+                            {
+                                try
+                                {
+                                    imagePaths = System.Text.Json.JsonSerializer.Deserialize<List<string>>(item.ImagePaths) ?? new List<string>();
+                                }
+                                catch { }
+                            }
+                            var firstImage = imagePaths.FirstOrDefault();
+
+                            <tr>
+                                <td class="text-center">
+                                    @if (!string.IsNullOrEmpty(firstImage))
+                                    {
+                                        <img src="@firstImage" alt="@item.ServiceName"
+                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light d-flex align-items-center justify-content-center"
+                                             style="width: 40px; height: 40px; border-radius: 4px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@item.ServiceName</strong>
+                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    {
+                                        <br />
+                                        <small class="text-muted">
+                                            @(item.Description.Length > 50 ? item.Description.Substring(0, 50) + "..." : item.Description)
+                                        </small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">@item.CategoryName</span>
+                                </td>
+                                <td>
+                                    <strong class="text-success">$@item.Price.ToString("N2")</strong>
+                                </td>
+                                <td>@(item.PricingUnit ?? "Fixed")</td>
+                                <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info" onclick="openEditModal('@item.ServiceId')" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    @if (isActive)
+                                    {
+                                        <button class="btn btn-sm btn-warning" onclick="toggleStatus('@item.ServiceId', this)" title="Deactivate">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success" onclick="toggleStatus('@item.ServiceId', this)" title="Activate">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-danger" onclick="deleteService('@item.ServiceId', this)" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.Any())
+                        {
+                            <tr class="empty-row">
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                    No services found. Click "Add New Service" to create one.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal Placeholder -->
+<div class="modal fade" id="modal-create-edit">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="modalTitle">Manage Service</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var dataTable;
+        var isActivePage = @(isActive.ToString().ToLower());
+
+        $(function () {
+            initDataTable();
+        });
+
+        function initDataTable() {
+            if ($.fn.DataTable.isDataTable('#servicesTable')) {
+                dataTable.destroy();
+            }
+            dataTable = $("#servicesTable").DataTable({
+                "responsive": true,
+                "autoWidth": false,
+                "pageLength": 10,
+                "order": [[5, "desc"]]
+            });
+        }
+
+        function openCreateModal() {
+            $('#modalTitle').text('Add New Service');
+            loadModal('@Url.Action("GetCreateOrEditModal", "Service")');
+        }
+
+        function openEditModal(id) {
+            $('#modalTitle').text('Edit Service');
+            loadModal('@Url.Action("GetCreateOrEditModal", "Service")?id=' + id);
+        }
+
+        function loadModal(url) {
+            $('#modal-create-edit').modal('show');
+            $('#modalContent').html('<div class="text-center p-4"><div class="spinner-border text-primary"></div><p class="mt-2">Loading...</p></div>');
+            AjaxClient.get(url,
+                function (res) { $('#modalContent').html(res); },
+                function (xhr) {
+                    $('#modalContent').html('<div class="alert alert-danger">Failed to load form. Please try again.</div>');
+                }
+            );
+        }
+
+        // Reload table data via AJAX (returns JSON, rebuilds table client-side)
+        function reloadServicesTable() {
+            var url = '@Url.Action("GetServicesTableData", "Service")?isActive=' + isActivePage;
+
+            AjaxClient.get(url,
+                function (response) {
+                    if (response.success) {
+                        rebuildTable(response.data);
+                    } else {
+                        location.reload(); // Fallback
+                    }
+                },
+                function (xhr) {
+                    location.reload(); // Fallback on error
+                }
+            );
+        }
+
+        // Rebuild table with new data
+        function rebuildTable(services) {
+            // Destroy existing DataTable
+            if ($.fn.DataTable.isDataTable('#servicesTable')) {
+                dataTable.destroy();
+            }
+
+            var $tbody = $('#servicesTable tbody');
+            $tbody.empty();
+
+            if (services.length === 0) {
+                $tbody.html(`
+                    <tr class="empty-row">
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                            No services found. Click "Add New Service" to create one.
+                        </td>
+                    </tr>
+                `);
+            } else {
+                services.forEach(function (item) {
+                    var imageHtml = item.firstImage
+                        ? `<img src="${item.firstImage}" alt="${item.serviceName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />`
+                        : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 4px;"><i class="fas fa-image text-muted"></i></div>`;
+
+                    var descHtml = item.description
+                        ? `<br /><small class="text-muted">${item.description.length > 50 ? item.description.substring(0, 50) + '...' : item.description}</small>`
+                        : '';
+
+                    var toggleBtn = isActivePage
+                        ? `<button class="btn btn-sm btn-warning" onclick="toggleStatus('${item.serviceId}', this)" title="Deactivate"><i class="fas fa-ban"></i></button>`
+                        : `<button class="btn btn-sm btn-success" onclick="toggleStatus('${item.serviceId}', this)" title="Activate"><i class="fas fa-check"></i></button>`;
+
+                    var row = `
+                        <tr>
+                            <td class="text-center">${imageHtml}</td>
+                            <td><strong>${item.serviceName}</strong>${descHtml}</td>
+                            <td><span class="badge badge-info">${item.categoryName}</span></td>
+                            <td><strong class="text-success">$${parseFloat(item.price).toFixed(2)}</strong></td>
+                            <td>${item.pricingUnit}</td>
+                            <td>${item.createdAt}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info" onclick="openEditModal('${item.serviceId}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                ${toggleBtn}
+                                <button class="btn btn-sm btn-danger" onclick="deleteService('${item.serviceId}', this)" title="Delete"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    $tbody.append(row);
+                });
+            }
+
+            // Reinitialize DataTable
+            initDataTable();
+        }
+
+        function toggleStatus(id, btn) {
+            var action = isActivePage ? "Deactivate" : "Activate";
+            var confirmColor = isActivePage ? '#ffc107' : '#28a745';
+            var icon = isActivePage ? 'warning' : 'question';
+
+            Swal.fire({
+                title: action + ' Service?',
+                text: isActivePage
+                    ? "This service will be moved to Inactive list and won't be visible to customers."
+                    : "This service will be activated and visible to customers.",
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                confirmButtonText: 'Yes, ' + action + '!',
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    AjaxClient.post('@Url.Action("ToggleActive", "Service")', { id: id },
+                        function (res) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Remove row from current table
+                                dataTable.row($(btn).closest('tr')).remove().draw(false);
+                            });
+                        },
+                        function (xhr) {
+                            Swal.fire({
+                                title: 'Error',
+                                text: xhr.responseJSON?.message || 'Failed to update status',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    );
+                }
+            });
+        }
+
+        function deleteService(id, btn) {
+            Swal.fire({
+                title: 'Delete Service?',
+                text: "This action cannot be undone. The service will be permanently removed.",
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, Delete!',
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    AjaxClient.post('@Url.Action("SoftDelete", "Service")', { id: id },
+                        function (res) {
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Remove row from table
+                                dataTable.row($(btn).closest('tr')).remove().draw(false);
+                            });
+                        },
+                        function (xhr) {
+                            Swal.fire({
+                                title: 'Error',
+                                text: xhr.responseJSON?.message || 'Failed to delete service',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    );
+                }
+            });
+        }
+    </script>
+}

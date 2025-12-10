@@ -1,7 +1,10 @@
-﻿namespace LocalScout.Domain.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace LocalScout.Domain.Entities
 {
     public class Service
     {
+        [Key]
         public Guid ServiceId { get; set; }
         public string? Id { get; set; }
         public Guid ServiceCategoryId { get; set; }

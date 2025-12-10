@@ -139,6 +139,10 @@
                             currentAction == "BlockedProviders" || currentAction == "VerificationRequests");
                             var isCategoryMenuOpen = currentController == "ServiceCategory" && (currentAction == "ActiveCategories" ||
                             currentAction == "InactiveCategories" || currentAction == "CategoryRequests");
+                            
+                            // Service Provider - Services menu
+                            var isServiceMenuOpen = currentController == "Service" && (currentAction == "ActiveServices" ||
+                            currentAction == "InactiveServices" || currentAction == "MyServices");
                         }
 
                         @* =============== ADMIN MENU =============== *@
@@ -256,12 +260,30 @@
                                 </a>
                             </li>
 
-                            <li class="nav-item">
-                                <a asp-controller="Service" asp-action="MyServices"
-                                   class="nav-link @(currentController == "Service" ? "active" : "")">
+                            <li class="nav-item @(isServiceMenuOpen ? "menu-open" : "")">
+                                <a href="#" class="nav-link @(isServiceMenuOpen ? "active" : "")">
                                     <i class="nav-icon fas fa-briefcase"></i>
-                                    <p>Manage Services</p>
+                                    <p>
+                                        Manage Services
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a asp-controller="Service" asp-action="ActiveServices"
+                                           class="nav-link @(currentAction == "ActiveServices" ? "active" : "")">
+                                            <i class="far fa-circle nav-icon text-success"></i>
+                                            <p>Active Services</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a asp-controller="Service" asp-action="InactiveServices"
+                                           class="nav-link @(currentAction == "InactiveServices" ? "active" : "")">
+                                            <i class="far fa-circle nav-icon text-warning"></i>
+                                            <p>Inactive Services</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
                             <li class="nav-item">

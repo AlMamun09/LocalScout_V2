@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace LocalScout.Domain.Entities
 {
     public class Notification
     {
+        [Key]
         public Guid NotificationId { get; set; }
         public string UserId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;

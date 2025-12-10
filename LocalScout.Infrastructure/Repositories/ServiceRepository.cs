@@ -35,6 +35,22 @@ namespace LocalScout.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Service>> GetActiveServicesByProviderAsync(string providerId)
+        {
+            return await _context.Services
+                .Where(s => s.Id == providerId && s.IsActive && !s.IsDeleted)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Service>> GetInactiveServicesByProviderAsync(string providerId)
+        {
+            return await _context.Services
+                .Where(s => s.Id == providerId && !s.IsActive && !s.IsDeleted)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Service>> GetPublicActiveByCategoryAsync(Guid categoryId)
         {
             return await _context.Services
@@ -47,11 +63,15 @@ namespace LocalScout.Infrastructure.Repositories
 
         public async Task AddServiceAsync(Service service)
         {
-            service.ServiceId = Guid.NewGuid();
+            // Only set ServiceId if not already set
+            if (service.ServiceId == Guid.Empty)
+            {
+                service.ServiceId = Guid.NewGuid();
+            }
+            
+            // Set timestamps
             service.CreatedAt = DateTime.UtcNow;
             service.UpdatedAt = DateTime.UtcNow;
-            service.IsActive = true;
-            service.IsDeleted = false;
 
             await _context.Services.AddAsync(service);
             await _context.SaveChangesAsync();

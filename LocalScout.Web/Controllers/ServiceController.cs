@@ -19,6 +19,10 @@ namespace LocalScout.Web.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ServiceController> _logger;
 
+        // Constants
+        private const int MaxImagesPerService = 10;
+        private const long MaxImageSizeBytes = 5 * 1024 * 1024; // 5MB
+
         public ServiceController(
             IServiceRepository serviceRepository,
             IServiceCategoryRepository categoryRepository,
@@ -33,8 +37,14 @@ namespace LocalScout.Web.Controllers
             _logger = logger;
         }
 
-        // GET: Service/MyServices (List provider's services)
-        public async Task<IActionResult> MyServices()
+        // GET: Service/MyServices - Redirects to ActiveServices
+        public IActionResult MyServices()
+        {
+            return RedirectToAction(nameof(ActiveServices));
+        }
+
+        // GET: Service/ActiveServices
+        public async Task<IActionResult> ActiveServices()
         {
             try
             {
@@ -44,26 +54,108 @@ namespace LocalScout.Web.Controllers
                     return RedirectToAction("Login", "Account", new { area = "Identity" });
                 }
 
-                var services = await _serviceRepository.GetServiceByProviderAsync(userId);
-                var serviceDtos = services.Select(MapToDto).ToList();
+                var services = await _serviceRepository.GetActiveServicesByProviderAsync(userId);
+                var categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
+                var categoryDict = categories.ToDictionary(c => c.ServiceCategoryId, c => c.CategoryName);
 
-                return View(serviceDtos);
+                var serviceDtos = services.Select(s => MapToDto(s, categoryDict)).ToList();
+
+                ViewData["Title"] = "Active Services";
+                ViewData["IsActive"] = true;
+                return View("MyServices", serviceDtos);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading services for provider");
+                _logger.LogError(ex, "Error loading active services for provider");
                 TempData["ErrorMessage"] = "Failed to load services.";
-                return View(new List<ServiceDto>());
+                return View("MyServices", new List<ServiceDto>());
             }
         }
 
-        // GET: Service/Get/{id} (Get single service)
-        [HttpGet]
-        public async Task<IActionResult> Get(Guid id)
+        // GET: Service/InactiveServices
+        public async Task<IActionResult> InactiveServices()
         {
             try
             {
-                var service = await _serviceRepository.GetServiceByIdAsync(id);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account", new { area = "Identity" });
+                }
+
+                var services = await _serviceRepository.GetInactiveServicesByProviderAsync(userId);
+                var categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
+                var categoryDict = categories.ToDictionary(c => c.ServiceCategoryId, c => c.CategoryName);
+
+                var serviceDtos = services.Select(s => MapToDto(s, categoryDict)).ToList();
+
+                ViewData["Title"] = "Inactive Services";
+                ViewData["IsActive"] = false;
+                return View("MyServices", serviceDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading inactive services for provider");
+                TempData["ErrorMessage"] = "Failed to load services.";
+                return View("MyServices", new List<ServiceDto>());
+            }
+        }
+
+        // GET: Service/GetServicesTableData (AJAX - returns JSON for table rebuild)
+        [HttpGet]
+        public async Task<IActionResult> GetServicesTableData(bool isActive)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized();
+                }
+
+                var services = isActive
+                    ? await _serviceRepository.GetActiveServicesByProviderAsync(userId)
+                    : await _serviceRepository.GetInactiveServicesByProviderAsync(userId);
+
+                var categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
+                var categoryDict = categories.ToDictionary(c => c.ServiceCategoryId, c => c.CategoryName);
+
+                var serviceDtos = services.Select(s => new
+                {
+                    serviceId = s.ServiceId,
+                    serviceName = s.ServiceName,
+                    description = s.Description,
+                    categoryName = categoryDict.GetValueOrDefault(s.ServiceCategoryId) ?? "Unknown",
+                    price = s.Price,
+                    pricingUnit = s.PricingUnit ?? "Fixed",
+                    createdAt = s.CreatedAt.ToString("MMM dd, yyyy"),
+                    firstImage = GetFirstImagePath(s.ImagePaths),
+                    isActive = s.IsActive
+                }).ToList();
+
+                return Json(new { success = true, data = serviceDtos });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading services table data");
+                return StatusCode(500, new { success = false, message = "Failed to load services." });
+            }
+        }
+
+        // GET: Service/GetCreateOrEditModal
+        [HttpGet]
+        public async Task<IActionResult> GetCreateOrEditModal(Guid? id)
+        {
+            try
+            {
+                ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
+
+                if (id == null || id == Guid.Empty)
+                {
+                    return PartialView("_CreateEditModal", new ServiceDto());
+                }
+
+                var service = await _serviceRepository.GetServiceByIdAsync(id.Value);
                 if (service == null)
                 {
                     return NotFound(new { message = "Service not found." });
@@ -76,141 +168,54 @@ namespace LocalScout.Web.Controllers
                     return Forbid();
                 }
 
-                var dto = MapToDto(service);
-                return Ok(dto);
+                var dto = MapToDto(service, null);
+                return PartialView("_CreateEditModal", dto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving service {ServiceId}", id);
-                return StatusCode(500, new { message = "Failed to retrieve service." });
+                _logger.LogError(ex, "Error loading service modal for {ServiceId}", id);
+                return StatusCode(500, new { message = "Failed to load service data." });
             }
         }
 
-        // GET: Service/Create (Show create form)
-        public async Task<IActionResult> Create()
-        {
-            ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
-            return View(new ServiceDto());
-        }
-
-        // POST: Service/Create
+        // POST: Service/SaveService (Create or Update via AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ServiceDto dto, List<IFormFile>? images)
+        public async Task<IActionResult> SaveService(ServiceDto dto, List<IFormFile>? images, string? existingImageUrls)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
-                    TempData["ErrorMessage"] = "Please correct the errors and try again.";
-                    return View(dto);
-                }
-
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return RedirectToAction("Login", "Account", new { area = "Identity" });
+                    return Unauthorized(new { message = "User not authenticated." });
                 }
 
-                // Handle file uploads
-                var imagePaths = new List<string>();
-                if (images != null && images.Any())
+                // Basic validation
+                if (string.IsNullOrWhiteSpace(dto.ServiceName))
                 {
-                    imagePaths = await SaveImagesAsync(images);
+                    return BadRequest(new { message = "Service name is required." });
                 }
 
-                // Map DTO to Entity
-                var service = MapToEntity(dto);
-                service.Id = userId;
-                service.ImagePaths = JsonSerializer.Serialize(imagePaths);
-
-                await _serviceRepository.AddServiceAsync(service);
-
-                TempData["SuccessMessage"] = "Service created successfully!";
-                return RedirectToAction(nameof(MyServices));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating service");
-                ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
-                TempData["ErrorMessage"] = "Failed to create service.";
-                return View(dto);
-            }
-        }
-
-        // GET: Service/Edit/{id}
-        public async Task<IActionResult> Edit(Guid id)
-        {
-            try
-            {
-                var service = await _serviceRepository.GetServiceByIdAsync(id);
-                if (service == null)
+                if (dto.ServiceCategoryId == Guid.Empty)
                 {
-                    TempData["ErrorMessage"] = "Service not found.";
-                    return RedirectToAction(nameof(MyServices));
+                    return BadRequest(new { message = "Please select a category." });
                 }
 
-                // Verify ownership
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (service.Id != userId)
+                if (dto.Price <= 0)
                 {
-                    TempData["ErrorMessage"] = "You don't have permission to edit this service.";
-                    return RedirectToAction(nameof(MyServices));
-                }
-
-                ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
-                ViewBag.ExistingImages = GetImagePathsFromJson(service.ImagePaths);
-
-                var dto = MapToDto(service);
-                return View(dto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading service for edit {ServiceId}", id);
-                TempData["ErrorMessage"] = "Failed to load service.";
-                return RedirectToAction(nameof(MyServices));
-            }
-        }
-
-        // POST: Service/Edit
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ServiceDto dto, List<IFormFile>? newImages, string? existingImagePaths)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
-                    TempData["ErrorMessage"] = "Please correct the errors and try again.";
-                    return View(dto);
-                }
-
-                var service = await _serviceRepository.GetServiceByIdAsync(dto.ServiceId);
-                if (service == null)
-                {
-                    TempData["ErrorMessage"] = "Service not found.";
-                    return RedirectToAction(nameof(MyServices));
-                }
-
-                // Verify ownership
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (service.Id != userId)
-                {
-                    TempData["ErrorMessage"] = "You don't have permission to edit this service.";
-                    return RedirectToAction(nameof(MyServices));
+                    return BadRequest(new { message = "Price must be greater than zero." });
                 }
 
                 // Handle image paths
                 var imagePaths = new List<string>();
 
                 // Add existing images that weren't removed
-                if (!string.IsNullOrEmpty(existingImagePaths))
+                if (!string.IsNullOrEmpty(existingImageUrls))
                 {
                     try
                     {
-                        var existingPaths = JsonSerializer.Deserialize<List<string>>(existingImagePaths);
+                        var existingPaths = JsonSerializer.Deserialize<List<string>>(existingImageUrls);
                         if (existingPaths != null)
                         {
                             imagePaths.AddRange(existingPaths);
@@ -222,32 +227,82 @@ namespace LocalScout.Web.Controllers
                     }
                 }
 
-                // Add new uploaded images
-                if (newImages != null && newImages.Any())
+                // Calculate how many new images can be added
+                var availableSlots = MaxImagesPerService - imagePaths.Count;
+
+                // Add new uploaded images (limited by available slots)
+                if (images != null && images.Any())
                 {
-                    var newPaths = await SaveImagesAsync(newImages);
+                    if (images.Count > availableSlots)
+                    {
+                        _logger.LogWarning("Too many images uploaded. Limit is {MaxImages}, existing: {Existing}, new: {New}",
+                            MaxImagesPerService, imagePaths.Count, images.Count);
+                    }
+
+                    var imagesToProcess = images.Take(availableSlots).ToList();
+                    var newPaths = await SaveImagesAsync(imagesToProcess);
                     imagePaths.AddRange(newPaths);
                 }
 
-                // Update service properties
-                service.ServiceName = dto.ServiceName;
-                service.Description = dto.Description;
-                service.ServiceCategoryId = dto.ServiceCategoryId;
-                service.PricingUnit = dto.PricingUnit;
-                service.Price = dto.Price;
-                service.ImagePaths = JsonSerializer.Serialize(imagePaths);
+                // Final validation - ensure total doesn't exceed limit
+                if (imagePaths.Count > MaxImagesPerService)
+                {
+                    return BadRequest(new { message = $"Maximum {MaxImagesPerService} images allowed per service." });
+                }
 
-                await _serviceRepository.UpdateServiceAsync(service);
+                if (dto.ServiceId == Guid.Empty)
+                {
+                    // Create new service
+                    var service = new Service
+                    {
+                        ServiceId = Guid.NewGuid(),
+                        Id = userId,
+                        ServiceCategoryId = dto.ServiceCategoryId,
+                        ServiceName = dto.ServiceName,
+                        Description = dto.Description,
+                        PricingUnit = dto.PricingUnit ?? "Fixed",
+                        Price = dto.Price,
+                        ImagePaths = JsonSerializer.Serialize(imagePaths),
+                        IsActive = dto.IsActive,
+                        IsDeleted = false,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
 
-                TempData["SuccessMessage"] = "Service updated successfully!";
-                return RedirectToAction(nameof(MyServices));
+                    await _serviceRepository.AddServiceAsync(service);
+                    return Json(new { success = true, message = "Service created successfully!" });
+                }
+                else
+                {
+                    // Update existing service
+                    var service = await _serviceRepository.GetServiceByIdAsync(dto.ServiceId);
+                    if (service == null)
+                    {
+                        return NotFound(new { message = "Service not found." });
+                    }
+
+                    // Verify ownership
+                    if (service.Id != userId)
+                    {
+                        return Forbid();
+                    }
+
+                    service.ServiceCategoryId = dto.ServiceCategoryId;
+                    service.ServiceName = dto.ServiceName;
+                    service.Description = dto.Description;
+                    service.PricingUnit = dto.PricingUnit ?? "Fixed";
+                    service.Price = dto.Price;
+                    service.ImagePaths = JsonSerializer.Serialize(imagePaths);
+                    service.IsActive = dto.IsActive;
+
+                    await _serviceRepository.UpdateServiceAsync(service);
+                    return Json(new { success = true, message = "Service updated successfully!" });
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating service {ServiceId}", dto.ServiceId);
-                ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
-                TempData["ErrorMessage"] = "Failed to update service.";
-                return View(dto);
+                _logger.LogError(ex, "Error saving service: {Message}", ex.Message);
+                return StatusCode(500, new { message = "Failed to save service." });
             }
         }
 
@@ -316,13 +371,14 @@ namespace LocalScout.Web.Controllers
         }
 
         // Helper: Map Entity to DTO
-        private ServiceDto MapToDto(Service service)
+        private ServiceDto MapToDto(Service service, Dictionary<Guid, string?>? categoryDict)
         {
             return new ServiceDto
             {
                 ServiceId = service.ServiceId,
                 Id = service.Id,
                 ServiceCategoryId = service.ServiceCategoryId,
+                CategoryName = categoryDict?.GetValueOrDefault(service.ServiceCategoryId) ?? "Unknown",
                 ServiceName = service.ServiceName,
                 Description = service.Description,
                 PricingUnit = service.PricingUnit,
@@ -335,22 +391,20 @@ namespace LocalScout.Web.Controllers
             };
         }
 
-        // Helper: Map DTO to Entity
-        private Service MapToEntity(ServiceDto dto)
+        // Helper: Get first image path from JSON
+        private string? GetFirstImagePath(string? imagePaths)
         {
-            return new Service
+            if (string.IsNullOrEmpty(imagePaths)) return null;
+            
+            try
             {
-                ServiceId = dto.ServiceId,
-                Id = dto.Id,
-                ServiceCategoryId = dto.ServiceCategoryId,
-                ServiceName = dto.ServiceName,
-                Description = dto.Description,
-                PricingUnit = dto.PricingUnit,
-                Price = dto.Price,
-                ImagePaths = dto.ImagePaths,
-                IsActive = dto.IsActive,
-                IsDeleted = dto.IsDeleted
-            };
+                var paths = JsonSerializer.Deserialize<List<string>>(imagePaths);
+                return paths?.FirstOrDefault();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         // Helper: Save uploaded images
@@ -380,7 +434,7 @@ namespace LocalScout.Web.Controllers
                     }
 
                     // Validate file size (max 5MB)
-                    if (image.Length > 5 * 1024 * 1024)
+                    if (image.Length > MaxImageSizeBytes)
                     {
                         _logger.LogWarning("File too large: {FileName}", image.FileName);
                         continue;
@@ -402,25 +456,6 @@ namespace LocalScout.Web.Controllers
             }
 
             return imagePaths;
-        }
-
-        // Helper: Get image paths from JSON string
-        private List<string> GetImagePathsFromJson(string? jsonPaths)
-        {
-            if (string.IsNullOrEmpty(jsonPaths))
-            {
-                return new List<string>();
-            }
-
-            try
-            {
-                return JsonSerializer.Deserialize<List<string>>(jsonPaths) ?? new List<string>();
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogError(ex, "Failed to deserialize image paths");
-                return new List<string>();
-            }
         }
     }
 }
