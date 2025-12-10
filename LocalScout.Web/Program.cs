@@ -45,6 +45,7 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddHttpClient<ILocationService, LocationService>();
 builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddHttpClient<IAIService, AIService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
