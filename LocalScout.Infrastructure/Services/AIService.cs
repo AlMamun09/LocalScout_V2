@@ -67,8 +67,9 @@ namespace LocalScout.Infrastructure.Services
                     - Opening: Must begin with one of the following:
                       * We are
                       * We specialize in
-                      * We empower
                       * We provide
+                      * We offer
+                    - If Working Days or Working Hours are provided, naturally mention availability (e.g., 'available Monday-Friday from 9:00 AM to 5:00 PM').
                     - Formatting: No Markdown, no code blocks, no commentary.
                     - Output: Only the final biography text.
                 Data:

@@ -61,6 +61,16 @@ namespace LocalScout.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Service>> GetNearbyServicesAsync(double? userLatitude, double? userLongitude, int maxResults = 20)
+        {
+            var query = _context.Services
+                .Where(s => s.IsActive && !s.IsDeleted)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(maxResults);
+
+            return await query.ToListAsync();
+        }
+
         public async Task AddServiceAsync(Service service)
         {
             // Only set ServiceId if not already set

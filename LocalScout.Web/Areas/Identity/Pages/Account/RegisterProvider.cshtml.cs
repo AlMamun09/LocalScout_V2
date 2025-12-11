@@ -129,6 +129,20 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             [Display(Name = "Gender")]
             public string Gender { get; set; }
 
+            [Display(Name = "Profile Picture")]
+            public IFormFile ProfilePicture { get; set; }
+
+            [Required]
+            [Display(Name = "Date of Birth")]
+            [DataType(DataType.Date)]
+            public DateTime DateOfBirth { get; set; }
+
+            [Display(Name = "Working Days")]
+            public string WorkingDays { get; set; }
+
+            [Display(Name = "Working Hours")]
+            public string WorkingHours { get; set; }
+
             [Display(Name = "Business Name (Optional)")]
             public string BusinessName { get; set; }
 
@@ -150,6 +164,16 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             ExternalLogins = (
                 await _signInManager.GetExternalAuthenticationSchemesAsync()
             ).ToList();
+
+            // Validate age (must be 18+)
+            var age = DateTime.UtcNow.Year - Input.DateOfBirth.Year;
+            if (Input.DateOfBirth > DateTime.UtcNow.AddYears(-age)) age--;
+            
+            if (age < 18)
+            {
+                ModelState.AddModelError("Input.DateOfBirth", "Providers must be at least 18 years old to register.");
+            }
+
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
@@ -164,9 +188,30 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                 user.Latitude = Input.Latitude;
                 user.Longitude = Input.Longitude;
                 user.Gender = Input.Gender;
+                user.DateOfBirth = Input.DateOfBirth;
+                user.WorkingDays = Input.WorkingDays;
+                user.WorkingHours = Input.WorkingHours;
                 user.BusinessName = Input.BusinessName;
                 user.Description = Input.Description;
                 user.CreatedAt = DateTime.UtcNow;
+
+                // Handle profile picture upload
+                if (Input.ProfilePicture != null && Input.ProfilePicture.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "profiles");
+                    Directory.CreateDirectory(uploadsFolder);
+                    
+                    var uniqueFileName = $"{Guid.NewGuid()}_{Input.ProfilePicture.FileName}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await Input.ProfilePicture.CopyToAsync(fileStream);
+                    }
+                    
+                    user.ProfilePictureUrl = $"/uploads/profiles/{uniqueFileName}";
+                }
+
                 // Set default values for new providers
                 user.IsActive = true; // Active by default
                 user.IsVerified = false; // Needs admin verification
