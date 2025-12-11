@@ -39,11 +39,17 @@
                     <thead>
                         <tr>
                             <th style="width: 60px;">Image</th>
-                            <th>Service Name</th>
+
+                            <th style="width: 30%;">Service Name</th>
+
                             <th>Category</th>
-                            <th>Price</th>
-                            <th>Pricing Unit</th>
-                            <th>Created Date</th>
+
+                            <th style="width: 100px;">Price</th>
+
+                            <th style="width: 80px;">Pricing Unit</th>
+
+                            <th style="width: 100px">Created Date</th>
+
                             <th style="width: 150px;">Actions</th>
                         </tr>
                     </thead>
@@ -62,15 +68,17 @@
                             var firstImage = imagePaths.FirstOrDefault();
 
                             <tr>
-                                <td class="text-center">
+                                <td class="text-center align-middle">
                                     @if (!string.IsNullOrEmpty(firstImage))
                                     {
-                                        <img src="@firstImage" alt="@item.ServiceName"
-                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />
+                                        <div class="d-flex justify-content-center">
+                                            <img src="@firstImage" alt="@item.ServiceName"
+                                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />
+                                        </div>
                                     }
                                     else
                                     {
-                                        <div class="bg-light d-flex align-items-center justify-content-center"
+                                        <div class="bg-light d-flex align-items-center justify-content-center mx-auto"
                                              style="width: 40px; height: 40px; border-radius: 4px;">
                                             <i class="fas fa-image text-muted"></i>
                                         </div>
@@ -90,7 +98,7 @@
                                     <span class="badge badge-info">@item.CategoryName</span>
                                 </td>
                                 <td>
-                                    <strong class="text-success">$@item.Price.ToString("N2")</strong>
+                                    <strong class="text-success">Tk @item.Price.ToString("N2")</strong>
                                 </td>
                                 <td>@(item.PricingUnit ?? "Fixed")</td>
                                 <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
@@ -133,7 +141,6 @@
     </div>
 </section>
 
-<!-- Modal Placeholder -->
 <div class="modal fade" id="modal-create-edit">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -142,7 +149,6 @@
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body" id="modalContent">
-                <!-- Loaded via AJAX -->
             </div>
         </div>
     </div>
@@ -229,9 +235,20 @@
                 `);
             } else {
                 services.forEach(function (item) {
+
+                    // Centered image or placeholder
+                    // Added mx-auto to placeholder div
                     var imageHtml = item.firstImage
-                        ? `<img src="${item.firstImage}" alt="${item.serviceName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />`
-                        : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 4px;"><i class="fas fa-image text-muted"></i></div>`;
+                        ? `
+                            <div class="d-flex justify-content-center">
+                                <img src="${item.firstImage}" alt="${item.serviceName}"
+                                     style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />
+                            </div>`
+                        : `
+                            <div class="d-flex justify-content-center align-items-center bg-light mx-auto"
+                                 style="width: 40px; height: 40px; border-radius: 4px;">
+                                <i class="fas fa-image text-muted"></i>
+                            </div>`;
 
                     var descHtml = item.description
                         ? `<br /><small class="text-muted">${item.description.length > 50 ? item.description.substring(0, 50) + '...' : item.description}</small>`
@@ -241,12 +258,13 @@
                         ? `<button class="btn btn-sm btn-warning" onclick="toggleStatus('${item.serviceId}', this)" title="Deactivate"><i class="fas fa-ban"></i></button>`
                         : `<button class="btn btn-sm btn-success" onclick="toggleStatus('${item.serviceId}', this)" title="Activate"><i class="fas fa-check"></i></button>`;
 
+                    // Added align-middle to td class
                     var row = `
                         <tr>
-                            <td class="text-center">${imageHtml}</td>
+                            <td class="text-center align-middle">${imageHtml}</td>
                             <td><strong>${item.serviceName}</strong>${descHtml}</td>
                             <td><span class="badge badge-info">${item.categoryName}</span></td>
-                            <td><strong class="text-success">$${parseFloat(item.price).toFixed(2)}</strong></td>
+                            <td><strong class="text-success">Tk ${parseFloat(item.price).toFixed(2)}</strong></td>
                             <td>${item.pricingUnit}</td>
                             <td>${item.createdAt}</td>
                             <td class="text-center">
@@ -256,6 +274,7 @@
                             </td>
                         </tr>
                     `;
+
                     $tbody.append(row);
                 });
             }
@@ -263,6 +282,7 @@
             // Reinitialize DataTable
             initDataTable();
         }
+
 
         function toggleStatus(id, btn) {
             var action = isActivePage ? "Deactivate" : "Activate";

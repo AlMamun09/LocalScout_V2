@@ -15,7 +15,7 @@
     }
 
     // Pricing unit options
-    var pricingUnits = new[] { "Fixed", "Per Hour", "Per Day", "Per Project", "Per Session" };
+    var pricingUnits = new[] { "Fixed", "Per Hour", "Per Day", "Per Month", "Per Project" };
 
     // Max images limit
     var maxImages = 10;
@@ -34,16 +34,9 @@
     <div class="row">
         <div class="col-md-6">
             <div class="form-group">
-                <label asp-for="ServiceName">Service Name <span class="text-danger">*</span></label>
-                <input asp-for="ServiceName" class="form-control" placeholder="Enter service name" required />
-                <span asp-validation-for="ServiceName" class="text-danger"></span>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
                 <label asp-for="ServiceCategoryId">Category <span class="text-danger">*</span></label>
                 <select asp-for="ServiceCategoryId" id="categorySelect" class="form-control select2-category" required style="width: 100%;">
-                    <option value="">-- Select Category --</option>
+                    <option value="">Select Category</option>
                     @if (categories != null)
                     {
                         @foreach (var cat in categories)
@@ -58,17 +51,16 @@
                 <span asp-validation-for="ServiceCategoryId" class="text-danger"></span>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label asp-for="ServiceName">Service Name <span class="text-danger">*</span></label>
+                <input asp-for="ServiceName" class="form-control" placeholder="Enter service name" required />
+                <span asp-validation-for="ServiceName" class="text-danger"></span>
+            </div>
+        </div>
     </div>
 
     <div class="row">
-        <div class="col-md-6">
-            <div class="form-group">
-                <label asp-for="Price">Price ($) <span class="text-danger">*</span></label>
-                <input asp-for="Price" type="number" step="0.01" min="0.01" class="form-control"
-                       placeholder="Enter price" required />
-                <span asp-validation-for="Price" class="text-danger"></span>
-            </div>
-        </div>
         <div class="col-md-6">
             <div class="form-group">
                 <label asp-for="PricingUnit">Pricing Unit</label>
@@ -83,12 +75,20 @@
                 </select>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label asp-for="Price">Price (Taka) <span class="text-danger">*</span></label>
+                <input asp-for="Price" type="number" step="0.01" min="0.01" class="form-control"
+                       placeholder="Enter price" required />
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+        </div>
     </div>
 
     <div class="form-group">
         <label asp-for="Description">Description</label>
         <div class="position-relative">
-            <textarea asp-for="Description" id="serviceDescriptionTextarea" class="form-control" rows="4"
+            <textarea asp-for="Description" id="serviceDescriptionTextarea" class="form-control" rows="2"
                       placeholder="Describe your service in detail..." style="padding-bottom: 45px;"></textarea>
             <button type="button" id="generateServiceDescBtn"
                     class="btn btn-sm btn-outline-primary position-absolute"
@@ -171,7 +171,7 @@
         // Initialize Select2 for searchable category dropdown
         $('.select2-category').select2({
             theme: 'bootstrap4',
-            placeholder: '-- Select Category --',
+            placeholder: 'Select Category',
             allowClear: true,
             dropdownParent: $('#modal-create-edit .modal-content')
         });

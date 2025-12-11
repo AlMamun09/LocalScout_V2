@@ -4,9 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LocalScout.Web.Controllers
 {
-    /// <summary>
-    /// Controller for AI-powered features like description generation.
-    /// </summary>
     public class AIController : Controller
     {
         private readonly IAIService _aiService;

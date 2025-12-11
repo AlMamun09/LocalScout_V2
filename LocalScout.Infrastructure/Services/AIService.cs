@@ -52,7 +52,6 @@ namespace LocalScout.Infrastructure.Services
 
         private string BuildPrompt(Dictionary<string, string> context, string type)
         {
-            // Format context data into a clean list
             var contextText = string.Join("\n", context
                 .Where(kvp => !string.IsNullOrWhiteSpace(kvp.Value))
                 .Select(kvp => $"- {kvp.Key}: {kvp.Value}"));
@@ -60,31 +59,40 @@ namespace LocalScout.Infrastructure.Services
             if (type.Equals("provider", StringComparison.OrdinalIgnoreCase))
             {
                 return $@"
-                    Role: You are the business owner writing a professional biography.
-                    Task: Write a sophisticated business bio based on the data below.
-                    Constraints: 
-                    - Max 60 words.
-                    - Write in the FIRST PERSON PLURAL (Use 'We', 'Our', 'Us').
-                    - Do NOT use the owner's name as the starting subject. Instead of 'John is...', write 'We are...'.
-                    - Start directly with 'We are', 'We provide', or 'Our academy'.
-                    - Output ONLY the biography text.
-
-                    Data:
-                    {contextText}";
+                    Role: You are the business owner.
+                    Task: Write a professional business biography using the data provided.
+                    Constraints:
+                    - Length: minimum 30 words, maximum 60 words.
+                    - Voice: First person plural (We, Our).
+                    - Opening: Must begin with one of the following:
+                      * We are
+                      * We specialize in
+                      * We empower
+                      * We provide
+                    - Formatting: No Markdown, no code blocks, no commentary.
+                    - Output: Only the final biography text.
+                Data:
+                {contextText}";
             }
 
             return $@"
-                    Role: You are the service provider.
-                    Task: Write a compelling description for your service based on the data below.
-                    Constraints:
-                    - Max 50 words.
-                    - Write in the FIRST PERSON (Use 'We offer', 'Our service').
-                    - Focus on benefits and value to the customer.
-                    - Output ONLY the description text.
+                Role: You are the service provider.
+                Task: Write a compelling service description using the data provided.
+                Constraints:
+                - Length: minimum 20 words, maximum 50 words.
+                - Voice: First person singular (I, My).
+                - Opening: Must begin with one of the following:
+                  * I offer
+                  * I provide
+                  * I deliver
+                  * I help clients by
+                - Formatting: No Markdown, no code blocks, no commentary.
+                - Output: Only the final service description.
 
-                    Data:
-                {contextText}";
+            Data:
+            {contextText}";
         }
+
 
         private async Task<string> CallHuggingFaceRouterWithRetryAsync(string prompt)
         {
@@ -154,34 +162,41 @@ namespace LocalScout.Infrastructure.Services
         {
             if (string.IsNullOrWhiteSpace(response)) return "";
 
+            // 1. Remove Markdown Code Blocks (The main issue)
+            response = response.Replace("```python", "")
+                               .Replace("```json", "")
+                               .Replace("```", "");
+
+            // 2. Remove "Note:" sections often added at the end
+            var noteIndex = response.IndexOf("Note:", StringComparison.OrdinalIgnoreCase);
+            if (noteIndex > -1)
+            {
+                response = response.Substring(0, noteIndex);
+            }
+
+            // 3. Remove Quotes and Whitespace
             response = response.Trim().Trim('"', '\'');
 
-            // Aggressive cleaning of common AI chat prefixes
-            var artifacts = new[] {
-                "Here is a concise", "Here is a professional", "Here is the", "Sure!", "Certainly!",
-                "Bio:", "Description:", "Output:", "Summary:"
-            };
-
+            // 4. Remove chatty prefixes
+            var artifacts = new[] { "Here is a", "Sure!", "Bio:", "Description:", "Certainly!", "Output:" };
             foreach (var artifact in artifacts)
             {
                 if (response.StartsWith(artifact, StringComparison.OrdinalIgnoreCase))
                 {
-                    // If it starts with "Bio:", remove it.
-                    // If it is a sentence like "Here is a bio for...", try to find the next newline or colon
-                    var index = response.IndexOf(':');
-                    if (index > 0 && index < 25)
+                    // If it says "Here is the bio:", cut everything before the colon
+                    var colonIndex = response.IndexOf(':');
+                    if (colonIndex > -1 && colonIndex < 50)
                     {
-                        response = response.Substring(index + 1).Trim();
+                        response = response.Substring(colonIndex + 1);
                     }
                     else
                     {
-                        // Fallback: just remove the artifact string
-                        response = response.Replace(artifact, "", StringComparison.OrdinalIgnoreCase).Trim();
+                        response = response.Substring(artifact.Length);
                     }
                 }
             }
 
-            return response;
+            return response.Trim();
         }
 
         // --- OpenAI Response Classes ---
