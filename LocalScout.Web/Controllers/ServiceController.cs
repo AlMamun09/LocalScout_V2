@@ -191,6 +191,21 @@ namespace LocalScout.Web.Controllers
                     return Unauthorized(new { message = "User not authenticated." });
                 }
 
+                // Check if provider is verified
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return Unauthorized(new { message = "User not found." });
+                }
+
+                if (!user.IsVerified)
+                {
+                    return BadRequest(new { 
+                        message = "You must be verified before creating services. Please submit verification documents first.",
+                        requiresVerification = true 
+                    });
+                }
+
                 // Basic validation
                 if (string.IsNullOrWhiteSpace(dto.ServiceName))
                 {

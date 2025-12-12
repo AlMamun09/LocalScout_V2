@@ -27,6 +27,15 @@
             e.preventDefault();
             markAllAsRead();
         });
+        
+        // When detail modal is hidden, show list modal again
+        $('#notificationDetailModal').on('hidden.bs.modal', function () {
+            // Only re-show list modal if user came from list modal
+            if ($('#notificationListModal').data('from-list')) {
+                $('#notificationListModal').removeData('from-list');
+                $('#notificationListModal').modal('show');
+            }
+        });
     }
 
     // Load unread count for the badge
@@ -101,11 +110,12 @@
 
         let html = '<div class="list-group list-group-flush">';
         items.forEach(function (notification) {
+            const notificationId = getNotificationId(notification);
             const unreadClass = !notification.isRead ? 'bg-light font-weight-bold' : '';
             const iconClass = getIconForNotification(notification);
 
             html += `
-                <a href="#" class="list-group-item list-group-item-action ${unreadClass} notification-item" data-id="${notification.id}">
+                <a href="#" class="list-group-item list-group-item-action ${unreadClass} notification-item" data-id="${notificationId}">
                     <div class="d-flex w-100 justify-content-between">
                         <h6 class="mb-1 text-primary">
                             ${iconClass} ${escapeHtml(notification.title)}
@@ -178,14 +188,13 @@
 
     // Show detail modal
     function showNotificationDetail(id) {
-        const notification = notifications.find(n => n.id === id);
+        const notification = notifications.find(n => getNotificationId(n) === id);
         if (!notification) return;
 
-        // Hide list modal, show detail modal
-        $('#notificationListModal').modal('hide');
-        $('#notificationDetailModal').modal('show');
-
-        // Populate detail
+        const listModal = $('#notificationListModal');
+        const detailModal = $('#notificationDetailModal');
+        
+        // Populate detail modal content
         const modalBody = $('#notificationModalBody');
         modalBody.html(`
             <div class="mb-4">
@@ -200,6 +209,23 @@
             ${formatMetaInfo(notification.metaJson)}
         `);
 
+        // Check if list modal is currently shown
+        if (listModal.hasClass('show')) {
+            // Mark that we're coming from list modal
+            listModal.data('from-list', true);
+            
+            // Hide the list modal and wait for it to be completely hidden
+            listModal.one('hidden.bs.modal', function () {
+                // Show detail modal after list modal is completely hidden
+                detailModal.modal('show');
+            });
+            
+            listModal.modal('hide');
+        } else {
+            // If list modal is not shown, just show detail modal
+            detailModal.modal('show');
+        }
+
         // Mark as read if needed
         if (!notification.isRead) {
             markAsRead(id);
@@ -212,7 +238,7 @@
             type: 'POST',
             success: function (response) {
                 // Update local state
-                const n = notifications.find(x => x.id === id);
+                const n = notifications.find(x => getNotificationId(x) === id);
                 if (n) n.isRead = true;
 
                 // Update badge
@@ -254,6 +280,10 @@
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function getNotificationId(notification) {
+        return notification.notificationId || notification.id || '';
     }
 
     // Expose global

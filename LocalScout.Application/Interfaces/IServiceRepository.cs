@@ -10,6 +10,7 @@ namespace LocalScout.Application.Interfaces
         Task<IEnumerable<Service>> GetInactiveServicesByProviderAsync(string providerId);
         Task<IEnumerable<Service>> GetPublicActiveByCategoryAsync(Guid categoryId);
         Task<IEnumerable<Service>> GetNearbyServicesAsync(double? userLatitude, double? userLongitude, int maxResults = 20);
+        Task<IEnumerable<Service>> SearchServicesAsync(string? query, Guid? categoryId, int maxResults = 20);
         Task AddServiceAsync(Service service);
         Task UpdateServiceAsync(Service service);
         Task SoftDeleteServiceAsync(Guid id);

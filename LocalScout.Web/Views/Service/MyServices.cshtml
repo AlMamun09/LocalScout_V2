@@ -1,8 +1,13 @@
 @model IEnumerable<LocalScout.Application.DTOs.ServiceDto>
+@inject Microsoft.AspNetCore.Identity.UserManager<LocalScout.Domain.Entities.ApplicationUser> UserManager
 @{
     ViewData["Title"] = ViewData["Title"] ?? "My Services";
     Layout = "~/Views/Shared/_DashboardLayout.cshtml";
     var isActive = (bool)(ViewData["IsActive"] ?? true);
+    
+    // Check if current user is verified
+    var currentUser = await UserManager.GetUserAsync(User);
+    var isVerified = currentUser?.IsVerified ?? false;
 }
 
 @Html.AntiForgeryToken()
@@ -25,13 +30,39 @@
 
 <section class="content">
     <div class="container-fluid">
+        
+        @if (!isVerified)
+        {
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <h5><i class="icon fas fa-exclamation-triangle"></i> Verification Required</h5>
+                <p class="mb-2">
+                    You must complete verification before creating services. Please submit your verification documents to get started.
+                </p>
+                <a asp-controller="Verification" asp-action="Index" class="btn btn-sm btn-warning">
+                    <i class="fas fa-id-card mr-1"></i> Submit Verification
+                </a>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        }
+        
         <div class="card @(isActive ? "card-success" : "card-secondary") card-outline">
             <div class="card-header">
                 <h3 class="card-title">@(isActive ? "Active" : "Inactive") Services List</h3>
                 <div class="card-tools">
-                    <button class="btn btn-primary btn-sm" onclick="openCreateModal()">
-                        <i class="fas fa-plus"></i> Add New Service
-                    </button>
+                    @if (isVerified)
+                    {
+                        <button class="btn btn-primary btn-sm" onclick="openCreateModal()">
+                            <i class="fas fa-plus"></i> Add New Service
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary btn-sm" disabled title="Verification required">
+                            <i class="fas fa-lock"></i> Add New Service (Verification Required)
+                        </button>
+                    }
                 </div>
             </div>
             <div class="card-body">
@@ -130,7 +161,17 @@
                             <tr class="empty-row">
                                 <td colspan="7" class="text-center text-muted py-4">
                                     <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
-                                    No services found. Click "Add New Service" to create one.
+                                    @if (!isVerified)
+                                    {
+                                        <p>Complete verification to start creating services.</p>
+                                        <a asp-controller="Verification" asp-action="Index" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-id-card mr-1"></i> Submit Verification
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <p>No services found. Click "Add New Service" to create one.</p>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -158,6 +199,7 @@
     <script>
         var dataTable;
         var isActivePage = @(isActive.ToString().ToLower());
+        var isVerified = @(isVerified.ToString().ToLower());
 
         $(function () {
             initDataTable();
@@ -176,6 +218,17 @@
         }
 
         function openCreateModal() {
+            if (!isVerified) {
+                Swal.fire({
+                    title: 'Verification Required',
+                    html: 'You must complete verification before creating services.<br><br><a href="@Url.Action("Index", "Verification")" class="btn btn-warning"><i class="fas fa-id-card mr-1"></i> Submit Verification</a>',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ffc107'
+                });
+                return;
+            }
+            
             $('#modalTitle').text('Add New Service');
             loadModal('@Url.Action("GetCreateOrEditModal", "Service")');
         }
@@ -225,11 +278,15 @@
             $tbody.empty();
 
             if (services.length === 0) {
+                var emptyMessage = isVerified 
+                    ? 'No services found. Click "Add New Service" to create one.'
+                    : 'Complete verification to start creating services. <a href="@Url.Action("Index", "Verification")" class="btn btn-warning btn-sm mt-2"><i class="fas fa-id-card mr-1"></i> Submit Verification</a>';
+                    
                 $tbody.html(`
                     <tr class="empty-row">
                         <td colspan="7" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
-                            No services found. Click "Add New Service" to create one.
+                            ${emptyMessage}
                         </td>
                     </tr>
                 `);

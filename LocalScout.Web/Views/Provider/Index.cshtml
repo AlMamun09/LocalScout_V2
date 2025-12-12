@@ -51,7 +51,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Upload Verification Document</h3>
                     </div>
-                    <form asp-action="SubmitVerification" asp-controller="Verification" method="post" enctype="multipart/form-data">
+                    <form asp-action="SubmitVerification" asp-controller="Verification" method="post" enctype="multipart/form-data" id="verificationUploadForm">
                         <div class="card-body">
                             @Html.AntiForgeryToken()
 
@@ -291,8 +291,7 @@
             // Initialize custom file input for the upload form
             bsCustomFileInput.init();
 
-            // Log form data for debugging
-            $('form').on('submit', function(e) {
+            $('#verificationUploadForm').on('submit', function(e) {
                 var formData = new FormData(this);
                 console.log('Form submitting...');
                 console.log('Document Type:', formData.get('DocumentType'));

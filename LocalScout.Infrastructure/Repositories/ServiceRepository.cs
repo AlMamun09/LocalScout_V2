@@ -71,6 +71,30 @@ namespace LocalScout.Infrastructure.Repositories
             return await query.ToListAsync();
         }
 
+        public async Task<IEnumerable<Service>> SearchServicesAsync(string? query, Guid? categoryId, int maxResults = 20)
+        {
+            var servicesQuery = _context.Services
+                .Where(s => s.IsActive && !s.IsDeleted);
+
+            if (categoryId.HasValue && categoryId.Value != Guid.Empty)
+            {
+                servicesQuery = servicesQuery.Where(s => s.ServiceCategoryId == categoryId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var keyword = $"%{query.Trim()}%";
+                servicesQuery = servicesQuery.Where(s =>
+                    (!string.IsNullOrEmpty(s.ServiceName) && EF.Functions.Like(s.ServiceName!, keyword)) ||
+                    (!string.IsNullOrEmpty(s.Description) && EF.Functions.Like(s.Description!, keyword)));
+            }
+
+            return await servicesQuery
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(maxResults)
+                .ToListAsync();
+        }
+
         public async Task AddServiceAsync(Service service)
         {
             // Only set ServiceId if not already set
@@ -78,7 +102,7 @@ namespace LocalScout.Infrastructure.Repositories
             {
                 service.ServiceId = Guid.NewGuid();
             }
-            
+
             // Set timestamps
             service.CreatedAt = DateTime.UtcNow;
             service.UpdatedAt = DateTime.UtcNow;
