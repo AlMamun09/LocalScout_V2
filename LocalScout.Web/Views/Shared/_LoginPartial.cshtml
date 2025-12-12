@@ -116,6 +116,13 @@
 
             <div class="dropdown-divider m-0"></div>
 
+            @if (User.IsInRole(RoleNames.Admin))
+            {
+                <a asp-area="" asp-controller="Admin" asp-action="Index" class="dropdown-item py-2">
+                    <i class="fas fa-gauge fa-fw mr-2 text-secondary"></i> Admin Dashboard
+                </a>
+            }
+
             @if (User.IsInRole(RoleNames.ServiceProvider))
             {
                 <a asp-area="" asp-controller="Provider" asp-action="Index" class="dropdown-item py-2">

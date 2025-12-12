@@ -1,4 +1,4 @@
-﻿namespace LocalScout.Application.DTOs
+namespace LocalScout.Application.DTOs
 {
     public class BookingDto
     {

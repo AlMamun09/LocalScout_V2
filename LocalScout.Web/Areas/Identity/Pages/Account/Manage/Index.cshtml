@@ -1,0 +1,169 @@
+﻿@page
+@model IndexModel
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Profile";
+}
+
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card shadow-lg border-0 rounded-xl overflow-hidden">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h2 class="h4 font-weight-bold mb-0 text-gray-800">Manage your profile</h2>
+                    <div class="d-flex gap-2">
+                        <a href="@Request.Path" class="btn btn-light text-muted font-weight-bold px-4 rounded-lg border-0">Reset</a>
+                        <button type="submit" form="profile-form" class="btn btn-primary font-weight-bold px-4 rounded-lg border-0">Save</button>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <partial name="_StatusMessage" model="Model.StatusMessage" />
+                    
+                    <form id="profile-form" method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-lg border-0 shadow-sm mb-4"></div>
+                        
+                        <div class="row">
+                            <!-- Part 1: Profile Picture -->
+                            <div class="col-md-4 mb-4 mb-md-0 d-flex flex-column">
+                                <div class="card border-0 bg-gray-50 h-100 rounded-xl p-4 text-center d-flex flex-column align-items-center justify-content-center">
+                                    <h5 class="text-muted mb-4 font-weight-normal">Profile Picture</h5>
+                                    
+                                    <div class="position-relative mb-3">
+                                        <div class="rounded-circle overflow-hidden shadow-sm" style="width: 150px; height: 150px;">
+                                            <img src="@(string.IsNullOrEmpty(Model.CurrentProfilePictureUrl) ? "/images/default-profile.png" : Model.CurrentProfilePictureUrl)" 
+                                                 alt="Profile" 
+                                                 class="w-100 h-100 object-fit-cover" 
+                                                 id="profilePreview"
+                                                 onerror="this.src='/images/default-profile.png'">
+                                        </div>
+                                    </div>
+                                    
+                                    <label for="Input_ProfilePicture" class="btn btn-link text-decoration-none font-weight-bold text-primary p-0 mb-2 cursor-pointer">
+                                        Change picture
+                                    </label>
+                                    <input asp-for="Input.ProfilePicture" type="file" accept="image/*" class="d-none" onchange="previewImage(this)">
+                                    <span asp-validation-for="Input.ProfilePicture" class="text-danger small d-block"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Part 2: Form Fields -->
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Input.FullName" class="form-label font-weight-bold text-muted small text-uppercase">Full Name</label>
+                                        <input asp-for="Input.FullName" class="form-control bg-light border-0 rounded-lg py-2" placeholder="Enter Full Name" />
+                                        <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label font-weight-bold text-muted small text-uppercase">Email</label>
+                                        <input value="@User.Identity?.Name" class="form-control bg-light border-0 rounded-lg py-2" disabled />
+                                        <small class="text-muted">Email cannot be changed directly.</small>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Input.PhoneNumber" class="form-label font-weight-bold text-muted small text-uppercase">Phone Number</label>
+                                        <input asp-for="Input.PhoneNumber" class="form-control bg-light border-0 rounded-lg py-2" placeholder="Enter Phone Number" />
+                                        <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Input.DateOfBirth" class="form-label font-weight-bold text-muted small text-uppercase">Date of Birth</label>
+                                        <input asp-for="Input.DateOfBirth" type="date" class="form-control bg-light border-0 rounded-lg py-2" />
+                                        <span asp-validation-for="Input.DateOfBirth" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label asp-for="Input.Gender" class="form-label font-weight-bold text-muted small text-uppercase">Gender</label>
+                                        <select asp-for="Input.Gender" class="form-control bg-light border-0 rounded-lg py-2">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                        <span asp-validation-for="Input.Gender" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Part 3: Location -->
+                        <div class="row mt-3">
+                            <div class="col-12 mb-3 position-relative w-100">
+                                <label asp-for="Input.Address" class="form-label font-weight-bold text-muted small text-uppercase">Location</label>
+                                <div class="position-relative">
+                                    <div class="relative">
+                                        <i class="fas fa-map-marker-alt absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm" style="left: 12px; top: 50%; transform: translateY(-50%); position: absolute; z-index: 5;"></i>
+                                        <input asp-for="Input.Address" id="addressInput" class="form-control bg-light border-0 py-2 rounded-lg pl-5" placeholder="Enter Address" style="padding-left: 35px; padding-right: 140px;" />
+                                        <button type="button" id="useLocationBtn" 
+                                            class="btn btn-sm btn-outline-primary absolute right-2.5 top-1/2 -translate-y-1/2 z-10 text-[0.7rem] px-2 py-1 rounded-md whitespace-nowrap transition-all"
+                                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
+                                            Use My Location
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="addressSuggestions" class="list-group position-absolute w-100 shadow-lg" style="z-index: 1000; top: 100%; display: none;"></div>
+                                <input type="hidden" asp-for="Input.Latitude" id="latitudeInput" />
+                                <input type="hidden" asp-for="Input.Longitude" id="longitudeInput" />
+                                <span asp-validation-for="Input.Address" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script type="module">
+        import { LocationService } from '/js/modules/location-service.js';
+
+        new LocationService({
+            addressInputId: "addressInput",
+            useLocationBtnId: "useLocationBtn",
+            suggestionsId: "addressSuggestions",
+            latitudeInputId: "latitudeInput",
+            longitudeInputId: "longitudeInput"
+        });
+    </script>
+    
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profilePreview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+    
+    <style>
+        .bg-gray-50 { background-color: #f9fafb; }
+        .object-fit-cover { object-fit: cover; }
+        .cursor-pointer { cursor: pointer; }
+        .rounded-xl { border-radius: 1rem; }
+        .rounded-start-lg { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; }
+        .rounded-end-lg { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+        
+        /* Custom scrollbar for suggestions */
+        #addressSuggestions {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #addressSuggestions .list-group-item {
+            cursor: pointer;
+        }
+        #addressSuggestions .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+}

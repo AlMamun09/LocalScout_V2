@@ -1,4 +1,4 @@
-﻿using LocalScout.Domain.Entities;
+using LocalScout.Domain.Entities;
 
 namespace LocalScout.Application.DTOs
 {
