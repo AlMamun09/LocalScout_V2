@@ -26,6 +26,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
         public string Username { get; set; } = string.Empty;
         public string? CurrentProfilePictureUrl { get; set; }
         public bool IsProvider { get; set; }
+        public DateTime JoiningDate { get; set; }
 
         [TempData]
         public string StatusMessage { get; set; }
@@ -54,7 +55,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 
             [StringLength(200)]
             public string? Address { get; set; }
-            
+
             public double? Latitude { get; set; }
             public double? Longitude { get; set; }
 
@@ -85,6 +86,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 
             Username = userName;
             CurrentProfilePictureUrl = user.ProfilePictureUrl;
+            JoiningDate = user.CreatedAt;
 
             Input = new InputModel
             {
