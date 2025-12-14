@@ -50,16 +50,10 @@
                             <!-- Part 2: Form Fields -->
                             <div class="col-md-8">
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-12 mb-3">
                                         <label asp-for="Input.FullName" class="form-label font-weight-bold text-muted small text-uppercase">Full Name</label>
                                         <input asp-for="Input.FullName" class="form-control bg-light border-0 rounded-lg py-2" placeholder="Enter Full Name" />
                                         <span asp-validation-for="Input.FullName" class="text-danger small"></span>
-                                    </div>
-                                    
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label font-weight-bold text-muted small text-uppercase">Email</label>
-                                        <input value="@User.Identity?.Name" class="form-control bg-light border-0 rounded-lg py-2" disabled />
-                                        <small class="text-muted">Email cannot be changed directly.</small>
                                     </div>
                                 </div>
 
@@ -70,14 +64,14 @@
                                         <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="Input.DateOfBirth" class="form-label font-weight-bold text-muted small text-uppercase">Date of Birth</label>
-                                        <input asp-for="Input.DateOfBirth" type="date" class="form-control bg-light border-0 rounded-lg py-2" />
-                                        <span asp-validation-for="Input.DateOfBirth" class="text-danger small"></span>
+                                        <label class="form-label font-weight-bold text-muted small text-uppercase">Email</label>
+                                        <input value="@User.Identity?.Name" class="form-control bg-light border-0 rounded-lg py-2" disabled />
+                                        <small class="text-muted">Email cannot be changed directly.</small>
                                     </div>
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-12 mb-3">
+                                    <div class="col-md-6 mb-3">
                                         <label asp-for="Input.Gender" class="form-label font-weight-bold text-muted small text-uppercase">Gender</label>
                                         <select asp-for="Input.Gender" class="form-control bg-light border-0 rounded-lg py-2">
                                             <option value="">Select Gender</option>
@@ -86,6 +80,11 @@
                                             <option value="Other">Other</option>
                                         </select>
                                         <span asp-validation-for="Input.Gender" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Input.DateOfBirth" class="form-label font-weight-bold text-muted small text-uppercase">Date of Birth</label>
+                                        <input asp-for="Input.DateOfBirth" type="date" class="form-control bg-light border-0 rounded-lg py-2" />
+                                        <span asp-validation-for="Input.DateOfBirth" class="text-danger small"></span>
                                     </div>
                                 </div>
                             </div>
@@ -112,6 +111,40 @@
                                 <span asp-validation-for="Input.Address" class="text-danger small"></span>
                             </div>
                         </div>
+
+                        @if (Model.IsProvider)
+                        {
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h5 class="text-muted font-weight-bold text-uppercase small mb-3">Business Details</h5>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.BusinessName" class="form-label font-weight-bold text-muted small text-uppercase">Business Name</label>
+                                    <input asp-for="Input.BusinessName" class="form-control bg-light border-0 rounded-lg py-2" placeholder="Enter Business Name" />
+                                    <span asp-validation-for="Input.BusinessName" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.WorkingDays" class="form-label font-weight-bold text-muted small text-uppercase">Working Days</label>
+                                    <input asp-for="Input.WorkingDays" class="form-control bg-light border-0 rounded-lg py-2" placeholder="e.g., Monday - Friday" />
+                                    <span asp-validation-for="Input.WorkingDays" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.WorkingHours" class="form-label font-weight-bold text-muted small text-uppercase">Working Hours</label>
+                                    <input asp-for="Input.WorkingHours" class="form-control bg-light border-0 rounded-lg py-2" placeholder="e.g., 9 AM - 6 PM" />
+                                    <span asp-validation-for="Input.WorkingHours" class="text-danger small"></span>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label asp-for="Input.Description" class="form-label font-weight-bold text-muted small text-uppercase">Business Description</label>
+                                    <div class="position-relative">
+                                        <textarea asp-for="Input.Description" id="providerDescriptionTextarea" rows="4" class="form-control bg-light border-0 rounded-lg py-2 pr-5" placeholder="Describe your services and specialties"></textarea>
+                                        <button type="button" id="generateProviderDescBtn" class="btn btn-sm btn-outline-primary position-absolute" style="bottom: 12px; right: 12px; font-size: 0.75rem;">
+                                            <i class="fas fa-magic mr-1"></i> Generate with AI
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="Input.Description" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        }
 
                     </form>
                 </div>
@@ -145,6 +178,28 @@
             }
         }
     </script>
+    
+    @if (Model.IsProvider)
+    {
+        <script src="~/js/ai-generator.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AIGenerator) {
+                    AIGenerator.init({
+                        fields: {
+                            'Business Name': '#Input_BusinessName',
+                            'Location': '#addressInput',
+                            'Working Days': '#Input_WorkingDays',
+                            'Working Hours': '#Input_WorkingHours'
+                        },
+                        targetTextarea: '#providerDescriptionTextarea',
+                        buttonSelector: '#generateProviderDescBtn',
+                        type: 'provider'
+                    });
+                }
+            });
+        </script>
+    }
     
     <style>
         .bg-gray-50 { background-color: #f9fafb; }

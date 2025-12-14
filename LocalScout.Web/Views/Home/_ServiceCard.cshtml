@@ -7,7 +7,7 @@
         ? DateTime.Parse(service.providerJoinedDate.ToString()).ToString("MMM dd, yyyy")
         : "N/A";
     var rating = service.rating?.ToString("0.0") ?? "4.6";
-    var priceDisplay = service.pricingUnit == "Hourly" ? $"${service.price}/h" : $"${service.price}";
+    var priceDisplay = service.pricingUnit == "Hourly" ? $"{service.price} Taka/h" : $"{service.price} Taka";
     var pricingLabel = service.pricingUnit ?? "Price";
     
     // Get short address (up to 2nd comma)

@@ -39,18 +39,7 @@ namespace LocalScout.Web.Controllers
             return View("~/Views/Admin/ServiceCategory/InactiveCategories.cshtml", categories);
         }
 
-        // --- 3. Category Requests (Pending Approval) ---
-        public async Task<IActionResult> CategoryRequests()
-        {
-            ViewData["Title"] = "Service Category Requests";
-            var categories = await _repo.GetCategoriesByStatusAsync(
-                isActive: true,
-                isApproved: false
-            );
-            return View("~/Views/Admin/ServiceCategory/CategoryRequests.cshtml", categories);
-        }
-
-        // --- 4. Get Modal for Create/Edit ---
+        // --- 3. Get Modal for Create/Edit ---
         [HttpGet]
         public async Task<IActionResult> GetCreateOrEditModal(Guid? id)
         {
@@ -76,7 +65,7 @@ namespace LocalScout.Web.Controllers
             return PartialView("~/Views/Admin/ServiceCategory/_CreateEditModal.cshtml", dto);
         }
 
-        // --- 5. Save (Create/Edit) via AJAX ---
+        // --- 4. Save (Create/Edit) via AJAX ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveCategory(ServiceCategoryDto model)
@@ -137,7 +126,7 @@ namespace LocalScout.Web.Controllers
             return BadRequest(new { message = "Invalid data submitted." });
         }
 
-        // --- 6. Toggle Status (Activate/Deactivate) ---
+        // --- 5. Toggle Status (Activate/Deactivate) ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(Guid id)
@@ -152,7 +141,7 @@ namespace LocalScout.Web.Controllers
             return NotFound(new { message = "Category not found." });
         }
 
-        // --- 7. Approve Request ---
+        // --- 6. Approve Request ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveCategory(Guid id)
@@ -168,7 +157,7 @@ namespace LocalScout.Web.Controllers
             return NotFound(new { message = "Category not found." });
         }
 
-        // --- 8. Reject Request ---
+        // --- 7. Reject Request ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectCategory(Guid id)

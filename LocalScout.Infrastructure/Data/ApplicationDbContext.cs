@@ -13,12 +13,11 @@ namespace LocalScout.Infrastructure.Data
         public DbSet<VerificationRequest> VerificationRequests { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Service> Services { get; set; }
+        public DbSet<CategoryRequest> CategoryRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Apply all configurations from the current assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         }
     }

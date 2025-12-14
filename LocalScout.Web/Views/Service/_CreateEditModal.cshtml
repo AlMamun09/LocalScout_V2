@@ -49,6 +49,10 @@
                     }
                 </select>
                 <span asp-validation-for="ServiceCategoryId" class="text-danger"></span>
+                <small class="form-text text-muted">
+                    Can't find your category?
+                    <a href="#" id="requestNewCategoryLink" class="text-primary font-weight-bold">Request new category</a>
+                </small>
             </div>
         </div>
         <div class="col-md-6">
@@ -78,7 +82,7 @@
         <div class="col-md-6">
             <div class="form-group">
                 <label asp-for="Price">Price (Taka) <span class="text-danger">*</span></label>
-                <input asp-for="Price" type="number" step="0.01" min="0.01" class="form-control"
+                <input asp-for="Price" type="number" step="1" min="0" class="form-control"
                        placeholder="Enter price" required />
                 <span asp-validation-for="Price" class="text-danger"></span>
             </div>
@@ -436,4 +440,27 @@
 
     // Initialize AI Generator
     initAIGenerator();
+
+    // Request New Category Modal Handler
+    $('#requestNewCategoryLink').on('click', function(e) {
+        e.preventDefault();
+        // Close current modal
+        $('#modal-create-edit').modal('hide');
+
+        // Load and show category request modal
+        $.get('@Url.Action("RequestForm", "CategoryRequest")', function(html) {
+            // Create modal if it doesn't exist
+            if ($('#modal-category-request').length === 0) {
+                $('body').append(`
+                    <div class="modal fade" id="modal-category-request" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" id="modal-category-request-content"></div>
+                        </div>
+                    </div>
+                `);
+            }
+            $('#modal-category-request-content').html(html);
+            $('#modal-category-request').modal('show');
+        });
+    });
 </script>

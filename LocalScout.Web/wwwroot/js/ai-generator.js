@@ -132,3 +132,7 @@ const AIGenerator = (function () {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = AIGenerator;
 }
+
+if (typeof window !== 'undefined') {
+    window.AIGenerator = AIGenerator;
+}

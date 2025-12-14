@@ -137,8 +137,8 @@
                             currentAction == "BlockedUsers");
                             var isProviderMenuOpen = currentController == "Admin" && (currentAction == "ActiveProviders" ||
                             currentAction == "BlockedProviders" || currentAction == "VerificationRequests");
-                            var isCategoryMenuOpen = currentController == "ServiceCategory" && (currentAction == "ActiveCategories" ||
-                            currentAction == "InactiveCategories" || currentAction == "CategoryRequests");
+                            var isCategoryMenuOpen = (currentController == "ServiceCategory" && (currentAction == "ActiveCategories" ||
+                            currentAction == "InactiveCategories")) || (currentController == "CategoryRequest" && currentAction == "PendingRequests");
                             
                             // Service Provider - Services menu
                             var isServiceMenuOpen = currentController == "Service" && (currentAction == "ActiveServices" ||
@@ -239,8 +239,8 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a asp-controller="ServiceCategory" asp-action="CategoryRequests"
-                                           class="nav-link @(currentAction == "CategoryRequests" ? "active" : "")">
+                                        <a asp-controller="CategoryRequest" asp-action="PendingRequests"
+                                           class="nav-link @(currentController == "CategoryRequest" && currentAction == "PendingRequests" ? "active" : "")">
                                             <i class="far fa-circle nav-icon text-info"></i>
                                             <p>Category Requests</p>
                                         </a>

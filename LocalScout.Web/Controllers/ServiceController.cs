@@ -200,9 +200,10 @@ namespace LocalScout.Web.Controllers
 
                 if (!user.IsVerified)
                 {
-                    return BadRequest(new { 
+                    return BadRequest(new
+                    {
                         message = "You must be verified before creating services. Please submit verification documents first.",
-                        requiresVerification = true 
+                        requiresVerification = true
                     });
                 }
 
@@ -410,7 +411,7 @@ namespace LocalScout.Web.Controllers
         private string? GetFirstImagePath(string? imagePaths)
         {
             if (string.IsNullOrEmpty(imagePaths)) return null;
-            
+
             try
             {
                 var paths = JsonSerializer.Deserialize<List<string>>(imagePaths);

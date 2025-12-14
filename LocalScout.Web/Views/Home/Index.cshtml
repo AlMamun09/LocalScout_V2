@@ -300,7 +300,7 @@
             });
 
             const rating = service.rating ? service.rating.toFixed(1) : '4.6';
-            const priceDisplay = service.pricingUnit === 'Hourly' ? `$${service.price}/h` : `$${service.price}`;
+            const priceDisplay = service.pricingUnit === 'Hourly' ? `${service.price} Taka/h` : `${service.price} Taka`;
             const pricingLabel = service.pricingUnit || 'Price';
 
             // Get short address (up to 2nd comma)

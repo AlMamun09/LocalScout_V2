@@ -1,4 +1,5 @@
 ﻿using LocalScout.Domain.Entities;
+using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -24,6 +25,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 
         public string Username { get; set; } = string.Empty;
         public string? CurrentProfilePictureUrl { get; set; }
+        public bool IsProvider { get; set; }
 
         [TempData]
         public string StatusMessage { get; set; }
@@ -58,6 +60,22 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 
             [Display(Name = "Profile Picture")]
             public IFormFile? ProfilePicture { get; set; }
+
+            [StringLength(150)]
+            [Display(Name = "Business Name")]
+            public string? BusinessName { get; set; }
+
+            [StringLength(1000)]
+            [Display(Name = "Business Description")]
+            public string? Description { get; set; }
+
+            [StringLength(100)]
+            [Display(Name = "Working Days")]
+            public string? WorkingDays { get; set; }
+
+            [StringLength(100)]
+            [Display(Name = "Working Hours")]
+            public string? WorkingHours { get; set; }
         }
 
         private async Task LoadAsync(ApplicationUser user)
@@ -76,7 +94,11 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
                 Gender = user.Gender,
                 Address = user.Address,
                 Latitude = user.Latitude,
-                Longitude = user.Longitude
+                Longitude = user.Longitude,
+                BusinessName = user.BusinessName,
+                Description = user.Description,
+                WorkingDays = user.WorkingDays,
+                WorkingHours = user.WorkingHours
             };
         }
 
@@ -87,6 +109,9 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            IsProvider = roles.Contains(RoleNames.ServiceProvider);
 
             await LoadAsync(user);
             return Page();
@@ -99,6 +124,9 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            IsProvider = roles.Contains(RoleNames.ServiceProvider);
 
             // Validate age
             var minDate = DateTime.UtcNow.AddYears(-18).Date;
@@ -172,6 +200,14 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
             user.Latitude = Input.Latitude;
             user.Longitude = Input.Longitude;
             user.UpdatedAt = DateTime.UtcNow;
+
+            if (IsProvider)
+            {
+                user.BusinessName = string.IsNullOrWhiteSpace(Input.BusinessName) ? null : Input.BusinessName.Trim();
+                user.Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim();
+                user.WorkingDays = string.IsNullOrWhiteSpace(Input.WorkingDays) ? null : Input.WorkingDays.Trim();
+                user.WorkingHours = string.IsNullOrWhiteSpace(Input.WorkingHours) ? null : Input.WorkingHours.Trim();
+            }
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)

@@ -1,4 +1,4 @@
-@model IEnumerable<LocalScout.Domain.Entities.ServiceCategory>
+@model IEnumerable<LocalScout.Application.DTOs.CategoryRequestDto>
 @{
     ViewData["Title"] = "Service Category Requests";
     Layout = "~/Views/Shared/_DashboardLayout.cshtml";
@@ -15,7 +15,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index">Home</a></li>
-                    <li class="breadcrumb-item active">Requests</li>
+                    <li class="breadcrumb-item active">Category Requests</li>
                 </ol>
             </div>
         </div>
@@ -29,55 +29,114 @@
                 <h3 class="card-title">Pending Requests</h3>
             </div>
             <div class="card-body">
-                <table id="requestsTable" class="table table-bordered table-hover">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Requested Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
+                @if (!Model.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No pending category requests.</p>
+                    </div>
+                }
+                else
+                {
+                    <table id="requestsTable" class="table table-bordered table-hover">
+                        <thead>
                             <tr>
-                                <td>@item.CategoryName</td>
-                                <td>@item.Description</td>
-                                <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-success" onclick="approveRequest('@item.ServiceCategoryId', this)" title="Approve">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="rejectRequest('@item.ServiceCategoryId', this)" title="Reject">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </td>
+                                <th>Provider</th>
+                                <th>Requested Category</th>
+                                <th>Description</th>
+                                <th>Requested Date</th>
+                                <th>Actions</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var profileImg = !string.IsNullOrEmpty(item.ProviderProfilePictureUrl)
+                                    ? item.ProviderProfilePictureUrl
+                                    : "/images/default-avatar.png";
+                                <tr data-id="@item.CategoryRequestId">
+                                    <td>
+                                        <a href="#" class="provider-link d-flex align-items-center"
+                                           data-provider-id="@item.ProviderId" style="text-decoration: none; color: inherit;">
+                                            <img src="@profileImg" alt="@item.ProviderName"
+                                                 class="img-circle mr-2" style="width: 35px; height: 35px; object-fit: cover;">
+                                            <span class="text-primary font-weight-bold">@item.ProviderName</span>
+                                        </a>
+                                    </td>
+                                    <td><strong>@item.RequestedCategoryName</strong></td>
+                                    <td>@(item.Description ?? "-")</td>
+                                    <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-success" onclick="approveRequest('@item.CategoryRequestId', this)" title="Approve">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="rejectRequest('@item.CategoryRequestId', this)" title="Reject">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
 </section>
+
+<!-- Provider Details Modal -->
+<div class="modal fade" id="providerDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Provider Details</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="providerDetailsContent">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
         $(function () {
-            $("#requestsTable").DataTable({
-                "responsive": true, "autoWidth": false, "pageLength": 10
+            if ($("#requestsTable").length) {
+                $("#requestsTable").DataTable({
+                    "responsive": true, "autoWidth": false, "pageLength": 10
+                });
+            }
+
+            // Provider link click handler
+            $('.provider-link').on('click', function(e) {
+                e.preventDefault();
+                var providerId = $(this).data('provider-id');
+
+                $('#providerDetailsContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
+                $('#providerDetailsModal').modal('show');
+
+                $.get('@Url.Action("GetProviderDetails", "CategoryRequest")', { id: providerId }, function(html) {
+                    $('#providerDetailsContent').html(html);
+                }).fail(function() {
+                    $('#providerDetailsContent').html('<div class="alert alert-danger">Failed to load provider details.</div>');
+                });
             });
         });
 
         function approveRequest(id, btn) {
             Swal.fire({
                 title: 'Approve Request?',
-                text: "This category will become active.",
+                text: "This will create the new service category.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#28a745',
                 confirmButtonText: 'Yes, Approve!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    AjaxClient.post('@Url.Action("ApproveCategory", "ServiceCategory")', { id: id },
+                    AjaxClient.post('@Url.Action("Approve", "CategoryRequest")', { id: id },
                         function (res) {
                             Swal.fire('Success', res.message, 'success');
                             $(btn).closest('tr').remove();
@@ -91,16 +150,24 @@
         function rejectRequest(id, btn) {
             Swal.fire({
                 title: 'Reject Request?',
-                text: "This request will be archived/removed.",
+                input: 'textarea',
+                inputLabel: 'Rejection Reason (Required)',
+                inputPlaceholder: 'Enter the reason for rejection...',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) {
+                        return 'Reason is required!';
+                    }
+                },
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                confirmButtonText: 'Yes, Reject!'
+                confirmButtonText: 'Reject'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    AjaxClient.post('@Url.Action("RejectCategory", "ServiceCategory")', { id: id },
+                    AjaxClient.post('@Url.Action("Reject", "CategoryRequest")',
+                        { id: id, reason: result.value },
                         function (res) {
-                            Swal.fire('Success', res.message, 'success');
+                            Swal.fire('Rejected', res.message, 'success');
                             $(btn).closest('tr').remove();
                         },
                         function (xhr) { Swal.fire('Error', 'Failed to reject', 'error'); }

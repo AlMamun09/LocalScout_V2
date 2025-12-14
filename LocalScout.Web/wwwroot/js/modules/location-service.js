@@ -78,85 +78,135 @@ export class LocationService {
       return;
     }
 
-    // Show loading state
-    useLocationBtn.innerHTML =
-      '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
-    useLocationBtn.disabled = true;
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-
-        console.log(
-          `Location obtained: Lat ${latitude}, Lon ${longitude}, Accuracy: ${accuracy}m`
-        );
-
-        try {
-          const response = await fetch("/api/location/reverse-geocode", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ latitude, longitude }),
-          });
-
-          if (!response.ok) throw new Error("Failed to get address");
-
-          const data = await response.json();
-
-          // Autofill address and coordinates
-          addressInput.value = data.displayName || "";
-          const latEl = document.getElementById(this.latitudeInputId);
-          const lonEl = document.getElementById(this.longitudeInputId);
-          if (latEl) latEl.value = latitude;
-          if (lonEl) lonEl.value = longitude;
-
-          addressInput.classList.remove("is-invalid");
-          //addressInput.classList.add("is-valid");
-        } catch (error) {
-          console.error("Reverse geocoding error:", error);
-          alert("Could not retrieve address. Please enter manually.");
-          addressInput.focus();
-        } finally {
-          useLocationBtn.innerHTML = "Use My Location";
-          useLocationBtn.disabled = false;
-        }
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-
-        let errorMessage = "Unable to get your location. ";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage +=
-              "You denied location access. Please enter your address manually or use autocomplete.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage += "The request timed out.";
-            break;
-          default:
-            errorMessage += "An unknown error occurred.";
-        }
-
-        alert(errorMessage);
-        const addressInputEl = document.getElementById(this.addressInputId);
-        if (addressInputEl) addressInputEl.focus();
-
+    const setLoadingState = (isLoading, message) => {
+      if (!useLocationBtn) return;
+      if (isLoading) {
+        useLocationBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${message || 'Getting Location...'}`;
+        useLocationBtn.disabled = true;
+      } else {
         useLocationBtn.innerHTML = "Use My Location";
         useLocationBtn.disabled = false;
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
       }
+    };
+
+    setLoadingState(true, "Getting Location...");
+
+    // Try multiple strategies in order of preference
+    const strategies = [
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0, name: "High Accuracy" },
+      { enableHighAccuracy: false, timeout: 30000, maximumAge: 30000, name: "Standard" },
+      { enableHighAccuracy: false, timeout: 60000, maximumAge: 300000, name: "Cached/Network" },
+    ];
+
+    let position = null;
+    let lastError = null;
+
+    for (const strategy of strategies) {
+      try {
+        console.log(`Trying geolocation strategy: ${strategy.name}`);
+        setLoadingState(true, `Trying ${strategy.name}...`);
+        position = await this.getCurrentPositionAsync({
+          enableHighAccuracy: strategy.enableHighAccuracy,
+          timeout: strategy.timeout,
+          maximumAge: strategy.maximumAge,
+        });
+        console.log(`Success with strategy: ${strategy.name}`);
+        break;
+      } catch (error) {
+        console.warn(`Strategy ${strategy.name} failed:`, error.message || error.code);
+        lastError = error;
+        
+        // If permission denied, don't try other strategies
+        if (error.code === 1) { // PERMISSION_DENIED
+          break;
+        }
+      }
+    }
+
+    if (!position) {
+      this.handleGeolocationError(lastError, addressInput);
+      setLoadingState(false);
+      return;
+    }
+
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+
+    console.log(
+      `Location obtained: Lat ${latitude}, Lon ${longitude}, Accuracy: ${accuracy}m`
     );
+
+    setLoadingState(true, "Getting Address...");
+
+    try {
+      const response = await fetch("/api/location/reverse-geocode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ latitude, longitude }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get address");
+
+      const data = await response.json();
+
+      // Autofill address and coordinates
+      addressInput.value = data.displayName || "";
+      const latEl = document.getElementById(this.latitudeInputId);
+      const lonEl = document.getElementById(this.longitudeInputId);
+      if (latEl) latEl.value = latitude;
+      if (lonEl) lonEl.value = longitude;
+
+      addressInput.classList.remove("is-invalid");
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
+      // Still fill coordinates even if address lookup fails
+      const latEl = document.getElementById(this.latitudeInputId);
+      const lonEl = document.getElementById(this.longitudeInputId);
+      if (latEl) latEl.value = latitude;
+      if (lonEl) lonEl.value = longitude;
+      
+      alert("Location found but could not retrieve address. Please enter your address manually.");
+      addressInput.focus();
+    } finally {
+      setLoadingState(false);
+    }
+  }
+
+  getCurrentPositionAsync(options) {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    });
+  }
+
+  handleGeolocationError(error, addressInputEl) {
+    console.error("Geolocation error:", error);
+
+    let errorMessage = "Unable to get your location. ";
+
+    if (!error) {
+      errorMessage += "An unknown error occurred. Please enter your address manually.";
+    } else {
+      switch (error.code) {
+        case 1: // PERMISSION_DENIED
+          errorMessage +=
+            "Location access was denied. Please allow location access in your browser settings or enter your address manually.";
+          break;
+        case 2: // POSITION_UNAVAILABLE
+          errorMessage += "Location information is unavailable. Please ensure GPS is enabled or enter your address manually.";
+          break;
+        case 3: // TIMEOUT
+          errorMessage += "Location request timed out. This may happen on slow networks or if GPS signal is weak. Please try again or enter your address manually.";
+          break;
+        default:
+          errorMessage += "An unknown error occurred. Please enter your address manually.";
+      }
+    }
+
+    alert(errorMessage);
+    if (addressInputEl) addressInputEl.focus();
   }
 
   async searchAddress(query) {
@@ -211,7 +261,6 @@ export class LocationService {
     if (lonEl) lonEl.value = longitude ?? "";
 
     addressInput.classList.remove("is-invalid");
-    //addressInput.classList.add("is-valid");
 
     if (suggestionsDiv) {
       suggestionsDiv.style.display = "none";
