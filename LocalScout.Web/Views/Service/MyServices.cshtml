@@ -51,6 +51,9 @@
             <div class="card-header">
                 <h3 class="card-title">@(isActive ? "Active" : "Inactive") Services List</h3>
                 <div class="card-tools">
+                    <button class="btn btn-outline-primary btn-sm mr-2" onclick="openRequestCategoryModal()" title="Request a new service category">
+                        <i class="fas fa-plus-circle"></i> Request New Category
+                    </button>
                     @if (isVerified)
                     {
                         <button class="btn btn-primary btn-sm" onclick="openCreateModal()">
@@ -70,17 +73,11 @@
                     <thead>
                         <tr>
                             <th style="width: 60px;">Image</th>
-
                             <th style="width: 30%;">Service Name</th>
-
                             <th>Category</th>
-
                             <th style="width: 100px;">Price</th>
-
                             <th style="width: 80px;">Pricing Unit</th>
-
                             <th style="width: 100px">Created Date</th>
-
                             <th style="width: 150px;">Actions</th>
                         </tr>
                     </thead>
@@ -195,6 +192,14 @@
     </div>
 </div>
 
+<!-- Category Request Modal -->
+<div class="modal fade" id="modal-category-request">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" id="modal-category-request-content">
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         var dataTable;
@@ -249,6 +254,20 @@
             );
         }
 
+        function openRequestCategoryModal() {
+            $('#modal-category-request').modal('show');
+            $('#modal-category-request-content').html('<div class="text-center p-4"><div class="spinner-border text-primary"></div><p class="mt-2">Loading...</p></div>');
+            
+            AjaxClient.get('@Url.Action("RequestForm", "CategoryRequest")',
+                function (res) { 
+                    $('#modal-category-request-content').html(res); 
+                },
+                function (xhr) {
+                    $('#modal-category-request-content').html('<div class="alert alert-danger m-3">Failed to load form. Please try again.</div>');
+                }
+            );
+        }
+
         // Reload table data via AJAX (returns JSON, rebuilds table client-side)
         function reloadServicesTable() {
             var url = '@Url.Action("GetServicesTableData", "Service")?isActive=' + isActivePage;
@@ -258,18 +277,17 @@
                     if (response.success) {
                         rebuildTable(response.data);
                     } else {
-                        location.reload(); // Fallback
+                        location.reload();
                     }
                 },
                 function (xhr) {
-                    location.reload(); // Fallback on error
+                    location.reload();
                 }
             );
         }
 
         // Rebuild table with new data
         function rebuildTable(services) {
-            // Destroy existing DataTable
             if ($.fn.DataTable.isDataTable('#servicesTable')) {
                 dataTable.destroy();
             }
@@ -292,9 +310,6 @@
                 `);
             } else {
                 services.forEach(function (item) {
-
-                    // Centered image or placeholder
-                    // Added mx-auto to placeholder div
                     var imageHtml = item.firstImage
                         ? `
                             <div class="d-flex justify-content-center">
@@ -315,7 +330,6 @@
                         ? `<button class="btn btn-sm btn-warning" onclick="toggleStatus('${item.serviceId}', this)" title="Deactivate"><i class="fas fa-ban"></i></button>`
                         : `<button class="btn btn-sm btn-success" onclick="toggleStatus('${item.serviceId}', this)" title="Activate"><i class="fas fa-check"></i></button>`;
 
-                    // Added align-middle to td class
                     var row = `
                         <tr>
                             <td class="text-center align-middle">${imageHtml}</td>
@@ -336,10 +350,8 @@
                 });
             }
 
-            // Reinitialize DataTable
             initDataTable();
         }
-
 
         function toggleStatus(id, btn) {
             var action = isActivePage ? "Deactivate" : "Activate";
@@ -368,7 +380,6 @@
                                 confirmButtonText: 'OK',
                                 confirmButtonColor: '#28a745'
                             }).then(() => {
-                                // Remove row from current table
                                 dataTable.row($(btn).closest('tr')).remove().draw(false);
                             });
                         },
@@ -407,7 +418,6 @@
                                 confirmButtonText: 'OK',
                                 confirmButtonColor: '#28a745'
                             }).then(() => {
-                                // Remove row from table
                                 dataTable.row($(btn).closest('tr')).remove().draw(false);
                             });
                         },

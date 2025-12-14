@@ -2,7 +2,7 @@
 
 (function () {
     let notifications = [];
-    const POLLING_INTERVAL = 0; // 30 seconds
+    const POLLING_INTERVAL = 30000; // 30 seconds
 
     // Initialize on page load
     $(document).ready(function () {
