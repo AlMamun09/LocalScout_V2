@@ -1,7 +1,7 @@
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using LocalScout.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace LocalScout.Infrastructure.Services
 {
@@ -14,7 +14,7 @@ namespace LocalScout.Infrastructure.Services
         public LocationService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _apiKey = configuration["LocationIQ:ApiKey"] ?? "pk.936cc6f48eaceef4ab1520e01d54cb22";
+            _apiKey = configuration["LocationIQ:ApiKey"];
         }
 
         public async Task<AddressResult?> ReverseGeocodeAsync(double latitude, double longitude)

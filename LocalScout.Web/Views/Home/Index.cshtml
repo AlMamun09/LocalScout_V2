@@ -302,6 +302,7 @@
             const rating = service.rating ? service.rating.toFixed(1) : '4.6';
             const priceDisplay = service.pricingUnit === 'Hourly' ? `${service.price} Taka/h` : `${service.price} Taka`;
             const pricingLabel = service.pricingUnit || 'Price';
+            const serviceDetailsUrl = `/Service/Details/${service.serviceId}`;
 
             // Get short address (up to 2nd comma)
             let shortAddress = service.providerLocation;
@@ -331,7 +332,8 @@
 
             return `
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-                    <div class="card h-100 border-0 shadow-sm service-card" style="border-radius: 16px; overflow: hidden; transition: all 0.3s ease;">
+                    <a href="${serviceDetailsUrl}" class="text-decoration-none d-block h-100">
+                    <div class="card h-100 border-0 shadow-sm service-card" style="border-radius: 16px; overflow: hidden; transition: all 0.3s ease; cursor: pointer;">
                         <!-- Service Image -->
                         <div class="position-relative" style="height: 200px; overflow: hidden;">
                             <img src="${service.firstImagePath || '/images/placeholder-service.jpg'}" 
@@ -341,8 +343,9 @@
                                  onerror="this.src='/images/placeholder-service.jpg'">
                             
                             <!-- Bookmark Button -->
-                            <button class="btn btn-sm position-absolute bg-white shadow-sm" 
-                                    style="top: 10px; right: 10px; border-radius: 50%; width: 32px; height: 32px; padding: 0; border: none; transition: all 0.2s ease;">
+                            <button class="btn btn-sm position-absolute bg-white shadow-sm bookmark-btn" 
+                                    style="top: 10px; right: 10px; border-radius: 50%; width: 32px; height: 32px; padding: 0; border: none; transition: all 0.2s ease;"
+                                    onclick="event.preventDefault(); event.stopPropagation();">
                                 <i class="far fa-bookmark text-muted" style="font-size: 0.85rem;"></i>
                             </button>
                         </div>
@@ -399,12 +402,13 @@
                                     <small class="text-muted d-block" style="font-size: 0.65rem;">${pricingLabel}</small>
                                     <strong class="text-dark" style="font-size: 1.1rem; font-weight: 700;">${priceDisplay}</strong>
                                 </div>
-                                <button class="btn btn-primary btn-sm px-3 shadow-sm text-white" style="background-color: #005C89; border-color: #005C89; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">
+                                <span class="btn btn-primary btn-sm px-3 shadow-sm text-white" style="background-color: #005C89; border-color: #005C89; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">
                                     Book Now
-                                </button>
+                                </span>
                             </div>
                         </div>
                     </div>
+                    </a>
                 </div>
             `;
         }

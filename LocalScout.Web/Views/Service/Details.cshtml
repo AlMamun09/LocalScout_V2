@@ -1,0 +1,355 @@
+@model LocalScout.Application.DTOs.ServiceDetailsDto
+
+@{
+    ViewData["Title"] = Model.ServiceName;
+    var priceDisplay = Model.PricingUnit == "Hourly" ? $"{Model.Price:N0} Taka/hour" : $"{Model.Price:N0} Taka";
+    var mainImage = Model.ImagePaths.FirstOrDefault() ?? "/images/placeholder-service.jpg";
+}
+
+@section Styles {
+    <style>
+        /* Custom scrollbar for carousel */
+        .services-carousel::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .services-carousel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .services-carousel::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .services-carousel::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+}
+
+<div class="max-w-7xl mx-auto px-3 py-4">
+    <!-- Breadcrumb -->
+    <nav class="mb-3" aria-label="breadcrumb">
+        <div class="flex items-center text-xs">
+            <a href="/" class="text-blue-600 hover:text-blue-800 hover:underline">Home</a>
+            <span class="mx-1.5 text-gray-400">/</span>
+            <a href="/Home/Search?categoryId=@Model.CategoryId" class="text-blue-600 hover:text-blue-800 hover:underline">@Model.CategoryName</a>
+            <span class="mx-1.5 text-gray-400">/</span>
+            <span class="text-gray-600">@Model.ServiceName</span>
+        </div>
+    </nav>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 items-stretch">
+        <!-- Left: Image Carousel -->
+        <div class="lg:sticky lg:top-20 self-start flex flex-col h-full">
+            <div class="relative w-full rounded-xl overflow-hidden bg-gray-100 mb-2 flex-1 min-h-[320px] aspect-[4/3]">
+                <img id="mainImage" 
+                     src="@mainImage" 
+                     alt="@Model.ServiceName" 
+                     class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                     onerror="this.src='/images/placeholder-service.jpg'">
+                
+                @if (Model.ImagePaths.Count > 1)
+                {
+                    <!-- Previous Button -->
+                    <button onclick="previousImage()" 
+                            class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-lg transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Next Button -->
+                    <button onclick="nextImage()" 
+                            class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-lg transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Image Counter -->
+                    <div class="absolute bottom-2 right-2 bg-black/60 text-white px-2 py-0.5 rounded-full text-xs font-medium">
+                        <span id="currentImageIndex">1</span> / @Model.ImagePaths.Count
+                    </div>
+                }
+            </div>
+            
+            @if (Model.ImagePaths.Count > 1)
+            {
+                <div class="flex gap-1.5 overflow-x-auto pb-1">
+                    @for (int i = 0; i < Model.ImagePaths.Count; i++)
+                    {
+                        <div class="thumbnail flex-shrink-0 w-20 h-12 rounded-lg overflow-hidden cursor-pointer border-2 transition-all @(i == 0 ? "border-blue-600" : "border-transparent hover:border-gray-300")" 
+                             onclick="changeImage('@Model.ImagePaths[i]', this, @i)">
+                            <img src="@Model.ImagePaths[i]" 
+                                 alt="@Model.ServiceName - Image @(i + 1)"
+                                 class="w-full h-full object-cover"
+                                 onerror="this.src='/images/placeholder-service.jpg'">
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Right: Service Info -->
+        <div class="flex flex-col gap-3">
+            <!-- Category Badge -->
+            <div>
+                <span class="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                    <i class="fas fa-tag text-xs"></i>@Model.CategoryName
+                </span>
+            </div>
+
+            <!-- Service Title -->
+            <h1 class="text-2xl font-bold text-gray-900 leading-tight">@Model.ServiceName</h1>
+
+            <!-- Rating -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-0.5">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        if (i <= Math.Floor(Model.Rating))
+                        {
+                            <i class="fas fa-star text-yellow-400 text-sm"></i>
+                        }
+                        else if (i - Model.Rating < 1)
+                        {
+                            <i class="fas fa-star-half-alt text-yellow-400 text-sm"></i>
+                        }
+                        else
+                        {
+                            <i class="far fa-star text-yellow-400 text-sm"></i>
+                        }
+                    }
+                </div>
+                <span class="font-bold text-gray-900 text-sm">@Model.Rating.ToString("0.0")</span>
+                <span class="text-gray-500 text-xs">(@Model.ReviewCount reviews)</span>
+            </div>
+
+            <!-- Price -->
+            <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-lg">
+                <div class="text-xs text-gray-600 mb-0.5">@(Model.PricingUnit == "Hourly" ? "Hourly Rate" : "Price")</div>
+                <div class="text-2xl font-extrabold text-blue-700">
+                    ৳@Model.Price.ToString("N0")
+                    @if (Model.PricingUnit == "Hourly")
+                    {
+                        <span class="text-sm text-gray-600 font-normal">/hour</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Description -->
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <div class="space-y-1.5">
+                    <h5 class="flex items-center gap-1.5 text-sm font-bold text-gray-900">
+                        <i class="fas fa-info-circle text-blue-600 text-xs"></i>Description
+                    </h5>
+                    <p class="text-gray-700 leading-relaxed text-xs">@Model.Description</p>
+                </div>
+            }
+
+            <!-- Action Button -->
+            <div class="mt-1">
+                <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-calendar-check mr-1.5"></i>Book Now
+                </button>
+            </div>
+
+            <!-- Provider Card -->
+            <div class="bg-white rounded-xl p-3 shadow-md border border-gray-100">
+                <div class="flex gap-2.5">
+                    <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
+                        <img src="@(Model.ProviderProfilePicture ?? "/images/default-avatar.png")" 
+                             alt="@Model.ProviderName"
+                             class="w-full h-full object-cover"
+                             onerror="this.src='/images/default-avatar.png'">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-base font-bold text-gray-900 truncate">@Model.ProviderName</div>
+                        @if (!string.IsNullOrEmpty(Model.ProviderBusinessName))
+                        {
+                            <div class="text-gray-600 text-xs mb-0.5 truncate">@Model.ProviderBusinessName</div>
+                        }
+                        @if (Model.IsProviderVerified)
+                        {
+                            <span class="inline-flex items-center gap-0.5 bg-gradient-to-r from-green-500 to-teal-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                                <i class="fas fa-check-circle text-xs"></i> Verified
+                            </span>
+                        }
+                        <div class="flex flex-col gap-0.5 mt-1.5">
+                            @if (!string.IsNullOrEmpty(Model.ProviderLocation))
+                            {
+                                <div class="flex items-center gap-1 text-gray-600 text-xs">
+                                    <i class="fas fa-map-marker-alt text-blue-600 w-3 text-xs"></i>
+                                    <span class="truncate">@Model.ProviderLocation</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.WorkingDays))
+                            {
+                                <div class="flex items-center gap-1 text-gray-600 text-xs">
+                                    <i class="fas fa-calendar-alt text-blue-600 w-3 text-xs"></i>
+                                    <span>@Model.WorkingDays</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.WorkingHours))
+                            {
+                                <div class="flex items-center gap-1 text-gray-600 text-xs">
+                                    <i class="fas fa-clock text-blue-600 w-3 text-xs"></i>
+                                    <span>@Model.WorkingHours</span>
+                                </div>
+                            }
+                            <div class="flex items-center gap-1 text-gray-600 text-xs">
+                                <i class="fas fa-user-clock text-blue-600 w-3 text-xs"></i>
+                                <span>Member since @Model.ProviderJoinedDate.ToString("MMM yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ratings & Reviews Section -->
+    <section class="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100">
+        <h3 class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-3">
+            <i class="fas fa-star text-blue-600"></i> Ratings & Reviews
+        </h3>
+        <div class="text-center py-6 text-gray-500">
+            <i class="fas fa-comments text-4xl text-gray-300 mb-2"></i>
+            <h6 class="font-semibold text-gray-700 text-sm mb-0.5">Reviews Coming Soon</h6>
+            <p class="text-xs">We're working on bringing you ratings and reviews from customers.</p>
+        </div>
+    </section>
+
+    <!-- Other Services by Same Provider -->
+    @if (Model.OtherProviderServices.Any())
+    {
+        <section class="mb-6">
+            <h3 class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-3">
+                <i class="fas fa-store text-blue-600"></i> More from @Model.ProviderName
+            </h3>
+            <div class="services-carousel flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
+                @foreach (var service in Model.OtherProviderServices)
+                {
+                    <div class="flex-shrink-0 w-64 snap-start">
+                        @await Html.PartialAsync("_ServiceCard", service)
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Related Services from Other Providers -->
+    @if (Model.RelatedServices.Any())
+    {
+        <section class="mb-6">
+            <h3 class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-3">
+                <i class="fas fa-th-large text-blue-600"></i> Similar Services You May Like
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                @foreach (var service in Model.RelatedServices)
+                {
+                    @await Html.PartialAsync("_ServiceCard", service)
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Show empty state if no related services -->
+    @if (!Model.OtherProviderServices.Any() && !Model.RelatedServices.Any())
+    {
+        <div class="text-center py-4 text-gray-500 bg-gray-50 rounded-xl">
+            <i class="fas fa-search text-3xl text-gray-300 mb-1.5"></i>
+            <p class="text-xs">No related services found at this time.</p>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        let currentImageIndex = 0;
+        const imagePaths = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ImagePaths));
+
+        function changeImage(imagePath, thumbnailElement, index) {
+            currentImageIndex = index;
+            document.getElementById('mainImage').src = imagePath;
+            document.getElementById('currentImageIndex').textContent = index + 1;
+            
+            // Update active thumbnail
+            document.querySelectorAll('.thumbnail').forEach(t => {
+                t.classList.remove('border-blue-600');
+                t.classList.add('border-transparent', 'hover:border-gray-300');
+            });
+            thumbnailElement.classList.remove('border-transparent', 'hover:border-gray-300');
+            thumbnailElement.classList.add('border-blue-600');
+        }
+
+        function nextImage() {
+            currentImageIndex = (currentImageIndex + 1) % imagePaths.length;
+            updateImage();
+        }
+
+        function previousImage() {
+            currentImageIndex = (currentImageIndex - 1 + imagePaths.length) % imagePaths.length;
+            updateImage();
+        }
+
+        function updateImage() {
+            const imagePath = imagePaths[currentImageIndex];
+            document.getElementById('mainImage').src = imagePath;
+            document.getElementById('currentImageIndex').textContent = currentImageIndex + 1;
+            
+            // Update active thumbnail
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            thumbnails.forEach((t, index) => {
+                if (index === currentImageIndex) {
+                    t.classList.remove('border-transparent', 'hover:border-gray-300');
+                    t.classList.add('border-blue-600');
+                } else {
+                    t.classList.remove('border-blue-600');
+                    t.classList.add('border-transparent', 'hover:border-gray-300');
+                }
+            });
+        }
+
+        // Auto-advance carousel every 5 seconds
+        let autoAdvance;
+        if (imagePaths.length > 1) {
+            autoAdvance = setInterval(nextImage, 5000);
+            
+            // Pause auto-advance when user hovers over the image
+            const imageContainer = document.getElementById('mainImage').parentElement;
+            imageContainer.addEventListener('mouseenter', () => clearInterval(autoAdvance));
+            imageContainer.addEventListener('mouseleave', () => {
+                autoAdvance = setInterval(nextImage, 5000);
+            });
+        }
+
+        // Add click navigation to service cards
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.service-card').forEach(function(card) {
+                const link = card.querySelector('a');
+                if (link) {
+                    card.style.cursor = 'pointer';
+                    card.addEventListener('click', function(e) {
+                        // Don't navigate if clicking on buttons
+                        if (e.target.closest('button')) return;
+                        link.click();
+                    });
+                }
+            });
+        });
+
+        // Keyboard navigation for carousel
+        document.addEventListener('keydown', function(e) {
+            if (imagePaths.length > 1) {
+                if (e.key === 'ArrowLeft') previousImage();
+                if (e.key === 'ArrowRight') nextImage();
+            }
+        });
+    </script>
+}

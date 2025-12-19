@@ -338,9 +338,12 @@
                 }
             }
 
+            const serviceDetailsUrl = `/Service/Details/${service.serviceId}`;
+
             return `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 border-0 shadow-sm service-card" style="border-radius: 16px; overflow: hidden; transition: all 0.3s ease;">
+                    <a href="${serviceDetailsUrl}" class="text-decoration-none d-block h-100">
+                    <div class="card h-100 border-0 shadow-sm service-card" style="border-radius: 16px; overflow: hidden; transition: all 0.3s ease; cursor: pointer;">
                         <div class="position-relative" style="height: 200px; overflow: hidden;">
                             <img src="${service.firstImagePath || '/images/placeholder-service.jpg'}"
                                  alt="${service.serviceName}"
@@ -399,6 +402,7 @@
                             </div>
                         </div>
                     </div>
+                    </a>
                 </div>
             `;
         }

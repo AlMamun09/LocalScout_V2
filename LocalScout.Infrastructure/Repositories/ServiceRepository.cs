@@ -134,5 +134,29 @@ namespace LocalScout.Infrastructure.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<IEnumerable<Service>> GetOtherServicesByProviderAsync(string providerId, Guid excludeServiceId, int maxResults = 4)
+        {
+            return await _context.Services
+                .Where(s => s.Id == providerId 
+                    && s.ServiceId != excludeServiceId 
+                    && s.IsActive 
+                    && !s.IsDeleted)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(maxResults)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Service>> GetRelatedServicesAsync(Guid categoryId, string excludeProviderId, int maxResults = 6)
+        {
+            return await _context.Services
+                .Where(s => s.ServiceCategoryId == categoryId 
+                    && s.Id != excludeProviderId 
+                    && s.IsActive 
+                    && !s.IsDeleted)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(maxResults)
+                .ToListAsync();
+        }
     }
 }

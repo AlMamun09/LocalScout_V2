@@ -43,6 +43,127 @@ namespace LocalScout.Web.Controllers
             return RedirectToAction(nameof(ActiveServices));
         }
 
+        // GET: Service/Details/{id} - Public service details page
+        [AllowAnonymous]
+        public async Task<IActionResult> Details(Guid id)
+        {
+            try
+            {
+                var service = await _serviceRepository.GetServiceByIdAsync(id);
+                if (service == null || !service.IsActive || service.IsDeleted)
+                {
+                    return NotFound();
+                }
+
+                // Get provider information
+                var provider = await _userManager.FindByIdAsync(service.Id ?? "");
+                if (provider == null || !provider.IsActive)
+                {
+                    return NotFound();
+                }
+
+                // Get category information
+                var category = await _categoryRepository.GetCategoryByIdAsync(service.ServiceCategoryId);
+                var categoryName = category?.CategoryName ?? "General";
+
+                // Parse image paths
+                var imagePaths = new List<string>();
+                if (!string.IsNullOrEmpty(service.ImagePaths))
+                {
+                    try
+                    {
+                        imagePaths = JsonSerializer.Deserialize<List<string>>(service.ImagePaths) ?? new List<string>();
+                    }
+                    catch { }
+                }
+
+                // Get other services by same provider
+                var otherProviderServices = await _serviceRepository.GetOtherServicesByProviderAsync(
+                    service.Id ?? "", service.ServiceId, 4);
+                
+                // Get related services (same category, different provider)
+                var relatedServices = await _serviceRepository.GetRelatedServicesAsync(
+                    service.ServiceCategoryId, service.Id ?? "", 6);
+
+                // Build category dictionary for service cards
+                var categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
+                var categoryDict = categories.ToDictionary(c => c.ServiceCategoryId, c => c.CategoryName);
+
+                // Build the DTO
+                var dto = new ServiceDetailsDto
+                {
+                    ServiceId = service.ServiceId,
+                    ServiceName = service.ServiceName ?? "Unnamed Service",
+                    Description = service.Description,
+                    Price = service.Price,
+                    PricingUnit = service.PricingUnit ?? "Fixed",
+                    ImagePaths = imagePaths,
+                    CreatedAt = service.CreatedAt,
+                    CategoryId = service.ServiceCategoryId,
+                    CategoryName = categoryName,
+                    ProviderId = provider.Id,
+                    ProviderName = provider.FullName ?? "Unknown Provider",
+                    ProviderBusinessName = provider.BusinessName,
+                    ProviderProfilePicture = provider.ProfilePictureUrl,
+                    ProviderDescription = provider.Description,
+                    ProviderLocation = provider.Address,
+                    ProviderPhone = provider.PhoneNumber,
+                    WorkingDays = provider.WorkingDays,
+                    WorkingHours = provider.WorkingHours,
+                    ProviderJoinedDate = provider.CreatedAt,
+                    IsProviderVerified = provider.IsVerified,
+                    Rating = 4.6, // Placeholder
+                    ReviewCount = 0, // Placeholder
+                    OtherProviderServices = await BuildServiceCardsAsync(otherProviderServices, categoryDict),
+                    RelatedServices = await BuildServiceCardsAsync(relatedServices, categoryDict)
+                };
+
+                return View(dto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading service details for {ServiceId}", id);
+                return StatusCode(500);
+            }
+        }
+
+        // Helper method to build service cards from services
+        private async Task<List<ServiceCardDto>> BuildServiceCardsAsync(IEnumerable<Service> services, Dictionary<Guid, string?> categoryDict)
+        {
+            var cards = new List<ServiceCardDto>();
+
+            foreach (var service in services)
+            {
+                if (string.IsNullOrEmpty(service.Id)) continue;
+
+                var provider = await _userManager.FindByIdAsync(service.Id);
+                if (provider == null || !provider.IsActive) continue;
+
+                var firstImage = GetFirstImagePath(service.ImagePaths);
+
+                cards.Add(new ServiceCardDto
+                {
+                    ServiceId = service.ServiceId,
+                    ServiceName = service.ServiceName ?? "Unnamed Service",
+                    CategoryName = categoryDict.GetValueOrDefault(service.ServiceCategoryId) ?? "General",
+                    Description = service.Description,
+                    Price = service.Price,
+                    PricingUnit = service.PricingUnit ?? "Fixed",
+                    FirstImagePath = firstImage,
+                    CreatedAt = service.CreatedAt,
+                    ProviderId = provider.Id,
+                    ProviderName = provider.FullName ?? "Unknown Provider",
+                    ProviderLocation = provider.Address,
+                    ProviderJoinedDate = provider.CreatedAt,
+                    WorkingDays = provider.WorkingDays,
+                    WorkingHours = provider.WorkingHours,
+                    Rating = 4.6
+                });
+            }
+
+            return cards;
+        }
+
         // GET: Service/ActiveServices
         public async Task<IActionResult> ActiveServices()
         {
