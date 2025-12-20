@@ -311,8 +311,22 @@
             });
 
             const rating = service.rating ? service.rating.toFixed(1) : '4.6';
-            const priceDisplay = service.pricingUnit === 'Hourly' ? `${service.price} Taka/h` : `${service.price} Taka`;
-            const pricingLabel = service.pricingUnit || 'Price';
+            
+            // Build price display
+            let priceDisplay;
+            const unit = service.pricingUnit === 'Per Hour' ? '/Hour' : 
+                         service.pricingUnit === 'Per Day' ? '/Day' : 
+                         service.pricingUnit === 'Per Project' ? '' : '';
+            
+            if (service.pricingUnit === 'Fixed') {
+                priceDisplay = `${service.minPrice.toLocaleString()} Tk`;
+            } else {
+                priceDisplay = `From ${service.minPrice.toLocaleString()} Tk${unit}`;
+            }
+
+            const pricingLabel = service.pricingUnit === 'Per Hour' ? 'Hourly' :
+                                service.pricingUnit === 'Per Day' ? 'Daily' :
+                                service.pricingUnit === 'Per Project' ? 'Project' : 'Price';
 
             let shortAddress = service.providerLocation;
             if (shortAddress) {

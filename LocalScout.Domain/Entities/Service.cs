@@ -11,7 +11,7 @@ namespace LocalScout.Domain.Entities
         public string? ServiceName { get; set; }
         public string? Description { get; set; }
         public string? PricingUnit { get; set; }
-        public decimal Price { get; set; }
+        public decimal MinPrice { get; set; }
         public string? ImagePaths { get; set; }
         public bool IsActive { get; set; } = true;
         public bool IsDeleted { get; set; } = false;

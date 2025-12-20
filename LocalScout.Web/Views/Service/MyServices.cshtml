@@ -126,7 +126,7 @@
                                     <span class="badge badge-info">@item.CategoryName</span>
                                 </td>
                                 <td>
-                                    <strong class="text-success">Tk @item.Price.ToString("N2")</strong>
+                                    <strong class="text-success">@item.GetPriceDisplay()</strong>
                                 </td>
                                 <td>@(item.PricingUnit ?? "Fixed")</td>
                                 <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
@@ -326,6 +326,18 @@
                         ? `<br /><small class="text-muted">${item.description.length > 50 ? item.description.substring(0, 50) + '...' : item.description}</small>`
                         : '';
 
+                    // Build price display
+                    var priceDisplay;
+                    var unit = item.pricingUnit === 'Per Hour' ? '/Hour' : 
+                               item.pricingUnit === 'Per Day' ? '/Day' : 
+                               item.pricingUnit === 'Per Project' ? '' : '';
+                    
+                    if (item.pricingUnit === 'Fixed') {
+                        priceDisplay = `${item.minPrice.toLocaleString()} Tk`;
+                    } else {
+                        priceDisplay = `Starts at ${item.minPrice.toLocaleString()} Tk${unit}`;
+                    }
+
                     var toggleBtn = isActivePage
                         ? `<button class="btn btn-sm btn-warning" onclick="toggleStatus('${item.serviceId}', this)" title="Deactivate"><i class="fas fa-ban"></i></button>`
                         : `<button class="btn btn-sm btn-success" onclick="toggleStatus('${item.serviceId}', this)" title="Activate"><i class="fas fa-check"></i></button>`;
@@ -335,7 +347,7 @@
                             <td class="text-center align-middle">${imageHtml}</td>
                             <td><strong>${item.serviceName}</strong>${descHtml}</td>
                             <td><span class="badge badge-info">${item.categoryName}</span></td>
-                            <td><strong class="text-success">Tk ${parseFloat(item.price).toFixed(2)}</strong></td>
+                            <td><strong class="text-success">${priceDisplay}</strong></td>
                             <td>${item.pricingUnit}</td>
                             <td>${item.createdAt}</td>
                             <td class="text-center">

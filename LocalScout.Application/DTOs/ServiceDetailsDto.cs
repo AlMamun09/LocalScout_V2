@@ -6,7 +6,7 @@ namespace LocalScout.Application.DTOs
         public Guid ServiceId { get; set; }
         public string ServiceName { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public decimal Price { get; set; }
+        public decimal MinPrice { get; set; }
         public string PricingUnit { get; set; } = "Fixed";
         public List<string> ImagePaths { get; set; } = new();
         public DateTime CreatedAt { get; set; }
@@ -35,5 +35,24 @@ namespace LocalScout.Application.DTOs
         // Related Services
         public List<ServiceCardDto> OtherProviderServices { get; set; } = new();
         public List<ServiceCardDto> RelatedServices { get; set; } = new();
+
+        // Price display helper
+        public string GetPriceDisplay()
+        {
+            var unit = PricingUnit switch
+            {
+                "Per Hour" => "/Hour",
+                "Per Day" => "/Day",
+                "Per Project" => "",
+                _ => ""
+            };
+
+            if (PricingUnit == "Fixed")
+            {
+                return $"{MinPrice:N0} Tk";
+            }
+
+            return $"From {MinPrice:N0} Tk{unit}";
+        }
     }
 }

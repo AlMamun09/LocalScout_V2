@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = Model.ServiceName;
-    var priceDisplay = Model.PricingUnit == "Hourly" ? $"{Model.Price:N0} Taka/hour" : $"{Model.Price:N0} Taka";
+    var priceDisplay = Model.GetPriceDisplay();
     var mainImage = Model.ImagePaths.FirstOrDefault() ?? "/images/placeholder-service.jpg";
 }
 
@@ -131,13 +131,9 @@
 
             <!-- Price -->
             <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-lg">
-                <div class="text-xs text-gray-600 mb-0.5">@(Model.PricingUnit == "Hourly" ? "Hourly Rate" : "Price")</div>
+                <div class="text-xs text-gray-600 mb-0.5">@(Model.PricingUnit == "Per Hour" ? "Hourly Rate" : Model.PricingUnit == "Per Day" ? "Daily Rate" : Model.PricingUnit == "Per Project" ? "Project Rate" : "Price")</div>
                 <div class="text-2xl font-extrabold text-blue-700">
-                    ৳@Model.Price.ToString("N0")
-                    @if (Model.PricingUnit == "Hourly")
-                    {
-                        <span class="text-sm text-gray-600 font-normal">/hour</span>
-                    }
+                    @priceDisplay
                 </div>
             </div>
 

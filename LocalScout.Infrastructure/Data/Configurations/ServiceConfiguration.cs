@@ -22,7 +22,7 @@ namespace LocalScout.Infrastructure.Data.Configurations
             entity.Property(e => e.PricingUnit)
                 .HasMaxLength(50);
 
-            entity.Property(e => e.Price)
+            entity.Property(e => e.MinPrice)
                 .HasColumnType("decimal(18,2)");
 
             entity.HasIndex(e => e.Id)

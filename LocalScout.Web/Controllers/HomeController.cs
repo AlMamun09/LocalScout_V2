@@ -98,7 +98,7 @@ namespace LocalScout.Web.Controllers
                     ServiceName = service.ServiceName ?? "Unnamed Service",
                     CategoryName = categoryDict.GetValueOrDefault(service.ServiceCategoryId) ?? "General",
                     Description = service.Description,
-                    Price = service.Price,
+                    MinPrice = service.MinPrice,
                     PricingUnit = service.PricingUnit ?? "Fixed",
                     FirstImagePath = firstImage,
                     CreatedAt = service.CreatedAt,

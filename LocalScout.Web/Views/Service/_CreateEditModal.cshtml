@@ -15,7 +15,7 @@
     }
 
     // Pricing unit options
-    var pricingUnits = new[] { "Fixed", "Per Hour", "Per Day", "Per Month", "Per Project" };
+    var pricingUnits = new[] { "Fixed", "Per Hour", "Per Day", "Per Project" };
 
     // Max images limit
     var maxImages = 10;
@@ -68,23 +68,24 @@
         <div class="col-md-6">
             <div class="form-group">
                 <label asp-for="PricingUnit">Pricing Unit</label>
-                <select asp-for="PricingUnit" class="form-control">
-                    @foreach (var unit in pricingUnits)
-                    {
-                        <option value="@unit"
-                                selected="@(Model.PricingUnit == unit ? "selected" : null)">
-                            @unit
-                        </option>
-                    }
+                <select asp-for="PricingUnit" id="pricingUnit" class="form-control">
+                    <option value="Fixed">Fixed</option>
+                    <option value="Per Hour">Per Hour</option>
+                    <option value="Per Day">Per Day</option>
+                    <option value="Per Project">Per Project</option>
                 </select>
+                <small class="form-text text-muted">
+                    Select <strong>Fixed</strong> for one-time jobs, or choose rate-based pricing for flexible services.
+                </small>
             </div>
         </div>
         <div class="col-md-6">
             <div class="form-group">
-                <label asp-for="Price">Price (Taka) <span class="text-danger">*</span></label>
-                <input asp-for="Price" type="number" step="1" min="0" class="form-control"
+                <label asp-for="MinPrice">Price (Tk) <span class="text-danger">*</span></label>
+                <input asp-for="MinPrice" id="minPrice" type="number" step="1" min="0" class="form-control"
                        placeholder="Enter price" required />
-                <span asp-validation-for="Price" class="text-danger"></span>
+                <span asp-validation-for="MinPrice" class="text-danger"></span>
+                <span id="minPriceError" class="text-danger" style="display: none; font-size: 0.875rem;"></span>
             </div>
         </div>
     </div>
@@ -183,6 +184,45 @@
         // Custom file input
         bsCustomFileInput.init();
 
+        // Pricing Unit toggle for MaxPrice field
+        function toggleMaxPrice() {
+            var isFixed = $('#pricingUnit').val() === 'Fixed';
+            $('#maxPriceGroup').toggle(!isFixed);
+            $('#minPriceLabel').text(isFixed ? 'Price (Tk) *' : 'Min Price (Tk) *');
+            
+            // Clear max price if switching to Fixed
+            if (isFixed) {
+                $('#maxPrice').val('');
+                $('#maxPriceError').hide();
+            }
+            
+            // Clear validation errors when switching
+            $('#minPriceError').hide();
+        }
+
+        $('#pricingUnit').on('change', toggleMaxPrice);
+        toggleMaxPrice(); // Initial state
+
+        // Client-side validation for price
+        function validatePriceRange() {
+            var minPrice = parseFloat($('#minPrice').val()) || 0;
+            var isValid = true;
+
+            // Clear previous errors
+            $('#minPriceError').hide().text('');
+
+            // Validate min price
+            if (minPrice <= 0) {
+                $('#minPriceError').text('Price must be greater than zero.').show();
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Validate on input change
+        $('#minPrice').on('input blur', validatePriceRange);
+
         // Update image count display
         updateImageCount();
 
@@ -252,6 +292,18 @@
         // Form Submission
         $('#createEditServiceForm').on('submit', function (e) {
             e.preventDefault();
+
+            // Validate price range before submitting
+            if (!validatePriceRange()) {
+                Swal.fire({
+                    title: 'Invalid Price Range',
+                    text: 'Please correct the pricing errors before submitting.',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
 
             // Validate total image count before submit
             var totalImages = $('.image-preview-item').length + $('.new-image-preview').length;

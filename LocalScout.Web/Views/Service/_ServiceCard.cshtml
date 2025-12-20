@@ -5,8 +5,8 @@
     var serviceDetailsUrl = $"/Service/Details/{Model.ServiceId}";
     var joinedDate = Model.ProviderJoinedDate.ToString("MMM dd, yyyy");
     var rating = Model.Rating?.ToString("0.0") ?? "4.6";
-    var priceDisplay = Model.PricingUnit == "Hourly" ? $"{Model.Price} Taka/h" : $"{Model.Price} Taka";
-    var pricingLabel = Model.PricingUnit ?? "Price";
+    var priceDisplay = Model.GetPriceDisplay();
+    var pricingLabel = Model.PricingUnit == "Per Hour" ? "Hourly" : Model.PricingUnit == "Per Day" ? "Daily" : Model.PricingUnit == "Per Project" ? "Project" : "Price";
     
     var shortAddress = Model.ProviderLocation;
     if (!string.IsNullOrEmpty(shortAddress))
@@ -106,7 +106,7 @@
             }
 
             <!-- Price & Book Button Row -->
-            <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 mt-3">
                 <div>
                     <small class="text-muted d-block" style="font-size: 0.65rem;">@pricingLabel</small>
                     <strong class="text-dark" style="font-size: 1.1rem; font-weight: 700;">@priceDisplay</strong>

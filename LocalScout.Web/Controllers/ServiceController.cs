@@ -95,7 +95,7 @@ namespace LocalScout.Web.Controllers
                     ServiceId = service.ServiceId,
                     ServiceName = service.ServiceName ?? "Unnamed Service",
                     Description = service.Description,
-                    Price = service.Price,
+                    MinPrice = service.MinPrice,
                     PricingUnit = service.PricingUnit ?? "Fixed",
                     ImagePaths = imagePaths,
                     CreatedAt = service.CreatedAt,
@@ -147,7 +147,7 @@ namespace LocalScout.Web.Controllers
                     ServiceName = service.ServiceName ?? "Unnamed Service",
                     CategoryName = categoryDict.GetValueOrDefault(service.ServiceCategoryId) ?? "General",
                     Description = service.Description,
-                    Price = service.Price,
+                    MinPrice = service.MinPrice,
                     PricingUnit = service.PricingUnit ?? "Fixed",
                     FirstImagePath = firstImage,
                     CreatedAt = service.CreatedAt,
@@ -247,7 +247,7 @@ namespace LocalScout.Web.Controllers
                     serviceName = s.ServiceName,
                     description = s.Description,
                     categoryName = categoryDict.GetValueOrDefault(s.ServiceCategoryId) ?? "Unknown",
-                    price = s.Price,
+                    minPrice = s.MinPrice,
                     pricingUnit = s.PricingUnit ?? "Fixed",
                     createdAt = s.CreatedAt.ToString("MMM dd, yyyy"),
                     firstImage = GetFirstImagePath(s.ImagePaths),
@@ -339,7 +339,7 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Please select a category." });
                 }
 
-                if (dto.Price <= 0)
+                if (dto.MinPrice <= 0)
                 {
                     return BadRequest(new { message = "Price must be greater than zero." });
                 }
@@ -398,7 +398,7 @@ namespace LocalScout.Web.Controllers
                         ServiceName = dto.ServiceName,
                         Description = dto.Description,
                         PricingUnit = dto.PricingUnit ?? "Fixed",
-                        Price = dto.Price,
+                        MinPrice = dto.MinPrice,
                         ImagePaths = JsonSerializer.Serialize(imagePaths),
                         IsActive = dto.IsActive,
                         IsDeleted = false,
@@ -428,7 +428,7 @@ namespace LocalScout.Web.Controllers
                     service.ServiceName = dto.ServiceName;
                     service.Description = dto.Description;
                     service.PricingUnit = dto.PricingUnit ?? "Fixed";
-                    service.Price = dto.Price;
+                    service.MinPrice = dto.MinPrice;
                     service.ImagePaths = JsonSerializer.Serialize(imagePaths);
                     service.IsActive = dto.IsActive;
 
@@ -519,7 +519,7 @@ namespace LocalScout.Web.Controllers
                 ServiceName = service.ServiceName,
                 Description = service.Description,
                 PricingUnit = service.PricingUnit,
-                Price = service.Price,
+                MinPrice = service.MinPrice,
                 ImagePaths = service.ImagePaths,
                 IsActive = service.IsActive,
                 IsDeleted = service.IsDeleted,

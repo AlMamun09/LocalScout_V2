@@ -11,15 +11,34 @@ namespace LocalScout.Application.DTOs
         public string? ServiceName { get; set; }
         public string? Description { get; set; }
         public string? PricingUnit { get; set; }
-        public decimal Price { get; set; }
+        public decimal MinPrice { get; set; }
         public string? ImagePaths { get; set; }
         public bool IsActive { get; set; } = true;
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        
+
         // For file uploads
         public List<IFormFile>? Images { get; set; }
         public string? ExistingImageUrls { get; set; }
+
+        // Price display helper
+        public string GetPriceDisplay()
+        {
+            var unit = PricingUnit switch
+            {
+                "Per Hour" => "/Hour",
+                "Per Day" => "/Day",
+                "Per Project" => "",
+                _ => ""
+            };
+
+            if (PricingUnit == "Fixed")
+            {
+                return $"{MinPrice:N0} Tk";
+            }
+
+            return $"From {MinPrice:N0} Tk{unit}";
+        }
     }
 }

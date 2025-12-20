@@ -300,8 +300,22 @@
             });
 
             const rating = service.rating ? service.rating.toFixed(1) : '4.6';
-            const priceDisplay = service.pricingUnit === 'Hourly' ? `${service.price} Taka/h` : `${service.price} Taka`;
-            const pricingLabel = service.pricingUnit || 'Price';
+            
+            // Build price display
+            let priceDisplay;
+            const unit = service.pricingUnit === 'Per Hour' ? '/Hour' : 
+                         service.pricingUnit === 'Per Day' ? '/Day' : 
+                         service.pricingUnit === 'Per Project' ? '' : '';
+            
+            if (service.pricingUnit === 'Fixed') {
+                priceDisplay = `${service.minPrice.toLocaleString()} Tk`;
+            } else {
+                priceDisplay = `From ${service.minPrice.toLocaleString()} Tk${unit}`;
+            }
+
+            const pricingLabel = service.pricingUnit === 'Per Hour' ? 'Hourly' :
+                                service.pricingUnit === 'Per Day' ? 'Daily' :
+                                service.pricingUnit === 'Per Project' ? 'Project' : 'Price';
             const serviceDetailsUrl = `/Service/Details/${service.serviceId}`;
 
             // Get short address (up to 2nd comma)
@@ -397,12 +411,12 @@
                             ` : ''}
 
                             <!-- Price & Book Button Row -->
-                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 mt-3">
                                 <div>
                                     <small class="text-muted d-block" style="font-size: 0.65rem;">${pricingLabel}</small>
                                     <strong class="text-dark" style="font-size: 1.1rem; font-weight: 700;">${priceDisplay}</strong>
                                 </div>
-                                <span class="btn btn-primary btn-sm px-3 shadow-sm text-white" style="background-color: #005C89; border-color: #005C89; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">
+                                <span class="btn btn-primary btn-sm px-3 mt-3 shadow-sm text-white" style="background-color: #005C89; border-color: #005C89; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">
                                     Book Now
                                 </span>
                             </div>
