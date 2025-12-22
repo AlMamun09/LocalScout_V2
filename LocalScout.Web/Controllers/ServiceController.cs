@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
+using LocalScout.Application.Utilities;
 
 namespace LocalScout.Web.Controllers
 {
@@ -55,18 +56,28 @@ namespace LocalScout.Web.Controllers
                     return NotFound();
                 }
 
-                // Get provider information
                 var provider = await _userManager.FindByIdAsync(service.Id ?? "");
                 if (provider == null || !provider.IsActive)
                 {
                     return NotFound();
                 }
 
-                // Get category information
+                // Get current user's location if logged in
+                double? userLat = null;
+                double? userLon = null;
+                if (User.Identity?.IsAuthenticated == true)
+                {
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        userLat = currentUser.Latitude;
+                        userLon = currentUser.Longitude;
+                    }
+                }
+
                 var category = await _categoryRepository.GetCategoryByIdAsync(service.ServiceCategoryId);
                 var categoryName = category?.CategoryName ?? "General";
 
-                // Parse image paths
                 var imagePaths = new List<string>();
                 if (!string.IsNullOrEmpty(service.ImagePaths))
                 {
@@ -77,17 +88,17 @@ namespace LocalScout.Web.Controllers
                     catch { }
                 }
 
-                // Get other services by same provider
                 var otherProviderServices = await _serviceRepository.GetOtherServicesByProviderAsync(
                     service.Id ?? "", service.ServiceId, 4);
                 
-                // Get related services (same category, different provider)
                 var relatedServices = await _serviceRepository.GetRelatedServicesAsync(
                     service.ServiceCategoryId, service.Id ?? "", 6);
 
-                // Build category dictionary for service cards
                 var categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
                 var categoryDict = categories.ToDictionary(c => c.ServiceCategoryId, c => c.CategoryName);
+
+                // Calculate distance to provider
+                var distance = DistanceCalculator.CalculateDistance(userLat, userLon, provider.Latitude, provider.Longitude);
 
                 // Build the DTO
                 var dto = new ServiceDetailsDto
@@ -107,15 +118,18 @@ namespace LocalScout.Web.Controllers
                     ProviderProfilePicture = provider.ProfilePictureUrl,
                     ProviderDescription = provider.Description,
                     ProviderLocation = provider.Address,
+                    ProviderLatitude = provider.Latitude,
+                    ProviderLongitude = provider.Longitude,
                     ProviderPhone = provider.PhoneNumber,
                     WorkingDays = provider.WorkingDays,
                     WorkingHours = provider.WorkingHours,
                     ProviderJoinedDate = provider.CreatedAt,
                     IsProviderVerified = provider.IsVerified,
+                    DistanceInKm = distance,
                     Rating = 4.6, // Placeholder
                     ReviewCount = 0, // Placeholder
-                    OtherProviderServices = await BuildServiceCardsAsync(otherProviderServices, categoryDict),
-                    RelatedServices = await BuildServiceCardsAsync(relatedServices, categoryDict)
+                    OtherProviderServices = await BuildServiceCardsAsync(otherProviderServices, categoryDict, userLat, userLon),
+                    RelatedServices = await BuildServiceCardsAsync(relatedServices, categoryDict, userLat, userLon)
                 };
 
                 return View(dto);
@@ -128,7 +142,7 @@ namespace LocalScout.Web.Controllers
         }
 
         // Helper method to build service cards from services
-        private async Task<List<ServiceCardDto>> BuildServiceCardsAsync(IEnumerable<Service> services, Dictionary<Guid, string?> categoryDict)
+        private async Task<List<ServiceCardDto>> BuildServiceCardsAsync(IEnumerable<Service> services, Dictionary<Guid, string?> categoryDict, double? userLat = null, double? userLon = null)
         {
             var cards = new List<ServiceCardDto>();
 
@@ -140,6 +154,9 @@ namespace LocalScout.Web.Controllers
                 if (provider == null || !provider.IsActive) continue;
 
                 var firstImage = GetFirstImagePath(service.ImagePaths);
+
+                // Calculate distance
+                var distance = DistanceCalculator.CalculateDistance(userLat, userLon, provider.Latitude, provider.Longitude);
 
                 cards.Add(new ServiceCardDto
                 {
@@ -154,10 +171,13 @@ namespace LocalScout.Web.Controllers
                     ProviderId = provider.Id,
                     ProviderName = provider.FullName ?? "Unknown Provider",
                     ProviderLocation = provider.Address,
+                    ProviderLatitude = provider.Latitude,
+                    ProviderLongitude = provider.Longitude,
                     ProviderJoinedDate = provider.CreatedAt,
                     WorkingDays = provider.WorkingDays,
                     WorkingHours = provider.WorkingHours,
-                    Rating = 4.6
+                    Rating = 4.6,
+                    DistanceInKm = distance
                 });
             }
 

@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Linq;
 using LocalScout.Application.DTOs;
 using LocalScout.Application.Interfaces;
+using LocalScout.Application.Utilities;
 using LocalScout.Domain.Entities;
 using LocalScout.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
@@ -42,8 +43,31 @@ namespace LocalScout.Web.Controllers
         {
             try
             {
-                var services = await _serviceRepository.GetNearbyServicesAsync(latitude, longitude, count);
-                var serviceCards = await BuildServiceCardsAsync(services);
+                // Get user's location from parameters or from logged in user
+                double? userLat = latitude;
+                double? userLon = longitude;
+
+                if ((!userLat.HasValue || !userLon.HasValue) && User.Identity?.IsAuthenticated == true)
+                {
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        userLat = currentUser.Latitude;
+                        userLon = currentUser.Longitude;
+                    }
+                }
+
+                var services = await _serviceRepository.GetNearbyServicesAsync(userLat, userLon, count);
+                var serviceCards = await BuildServiceCardsAsync(services, userLat, userLon);
+
+                // Sort by distance if we have user location
+                if (userLat.HasValue && userLon.HasValue)
+                {
+                    serviceCards = serviceCards
+                        .OrderBy(s => s.DistanceInKm ?? double.MaxValue)
+                        .ToList();
+                }
+
                 return Json(new { success = true, data = serviceCards });
             }
             catch (Exception ex)
@@ -58,8 +82,31 @@ namespace LocalScout.Web.Controllers
         {
             try
             {
+                // Get user's location if authenticated
+                double? userLat = null;
+                double? userLon = null;
+
+                if (User.Identity?.IsAuthenticated == true)
+                {
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        userLat = currentUser.Latitude;
+                        userLon = currentUser.Longitude;
+                    }
+                }
+
                 var services = await _serviceRepository.SearchServicesAsync(query, categoryId, take);
-                var serviceCards = await BuildServiceCardsAsync(services);
+                var serviceCards = await BuildServiceCardsAsync(services, userLat, userLon);
+
+                // Sort by distance if we have user location
+                if (userLat.HasValue && userLon.HasValue)
+                {
+                    serviceCards = serviceCards
+                        .OrderBy(s => s.DistanceInKm ?? double.MaxValue)
+                        .ToList();
+                }
+
                 return Json(new { success = true, data = serviceCards });
             }
             catch (Exception ex)
@@ -69,7 +116,7 @@ namespace LocalScout.Web.Controllers
             }
         }
 
-        private async Task<List<ServiceCardDto>> BuildServiceCardsAsync(IEnumerable<Service> services)
+        private async Task<List<ServiceCardDto>> BuildServiceCardsAsync(IEnumerable<Service> services, double? userLat = null, double? userLon = null)
         {
             var cards = new List<ServiceCardDto>();
             var categories = await _serviceCategoryRepository.GetActiveAndApprovedCategoryAsync();
@@ -92,6 +139,9 @@ namespace LocalScout.Web.Controllers
 
                 var firstImage = GetFirstImagePath(service.ImagePaths);
 
+                // Calculate distance using Haversine formula
+                var distance = DistanceCalculator.CalculateDistance(userLat, userLon, provider.Latitude, provider.Longitude);
+
                 cards.Add(new ServiceCardDto
                 {
                     ServiceId = service.ServiceId,
@@ -105,10 +155,13 @@ namespace LocalScout.Web.Controllers
                     ProviderId = provider.Id,
                     ProviderName = provider.FullName ?? "Unknown Provider",
                     ProviderLocation = provider.Address,
+                    ProviderLatitude = provider.Latitude,
+                    ProviderLongitude = provider.Longitude,
                     ProviderJoinedDate = provider.CreatedAt,
                     WorkingDays = provider.WorkingDays,
                     WorkingHours = provider.WorkingHours,
-                    Rating = 4.6 // TODO: Implement actual rating system
+                    Rating = 4.6,
+                    DistanceInKm = distance
                 });
             }
 

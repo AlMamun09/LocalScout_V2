@@ -15,10 +15,15 @@ namespace LocalScout.Application.DTOs
         public string ProviderId { get; set; } = string.Empty;
         public string ProviderName { get; set; } = string.Empty;
         public string? ProviderLocation { get; set; }
+        public double? ProviderLatitude { get; set; }
+        public double? ProviderLongitude { get; set; }
         public DateTime ProviderJoinedDate { get; set; }
         public string? WorkingDays { get; set; }
         public string? WorkingHours { get; set; }
         public double? Rating { get; set; }
+
+        // Distance (in kilometers)
+        public double? DistanceInKm { get; set; }
 
         // Price display helper
         public string GetPriceDisplay()
@@ -37,6 +42,18 @@ namespace LocalScout.Application.DTOs
             }
 
             return $"From {MinPrice:N0} Tk{unit}";
+        }
+
+        // Distance display helper
+        public string GetDistanceDisplay()
+        {
+            if (!DistanceInKm.HasValue)
+                return string.Empty;
+
+            if (DistanceInKm.Value < 1)
+                return $"{(DistanceInKm.Value * 1000):N0}m away";
+            
+            return $"{DistanceInKm.Value:N1}km away";
         }
     }
 }

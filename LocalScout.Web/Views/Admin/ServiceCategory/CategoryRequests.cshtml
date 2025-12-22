@@ -41,11 +41,11 @@
                     <table id="requestsTable" class="table table-bordered table-hover">
                         <thead>
                             <tr>
-                                <th>Provider</th>
-                                <th>Requested Category</th>
-                                <th>Description</th>
-                                <th>Requested Date</th>
-                                <th>Actions</th>
+                                <th style="width: 22%;">Provider</th>
+                                <th style="width: 22%;">Requested Category</th>
+                                <th style="width: 32%;">Description</th>
+                                <th style="width: 14%;">Requested Date</th>
+                                <th style="width: 10%;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -67,7 +67,7 @@
                                     <td>@(item.Description ?? "-")</td>
                                     <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-success" onclick="approveRequest('@item.CategoryRequestId', this)" title="Approve">
+                                        <button class="btn btn-sm btn-success" onclick="openApproveModal('@item.CategoryRequestId', this)" title="Approve">
                                             <i class="fas fa-check"></i>
                                         </button>
                                         <button class="btn btn-sm btn-danger" onclick="rejectRequest('@item.CategoryRequestId', this)" title="Reject">
@@ -101,12 +101,36 @@
     </div>
 </div>
 
+<div class="modal fade" id="modal-create-edit">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="modalTitle">Approve Category Request</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent"></div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        var requestsTable;
+        var currentRow;
+
         $(function () {
             if ($("#requestsTable").length) {
-                $("#requestsTable").DataTable({
-                    "responsive": true, "autoWidth": false, "pageLength": 10
+                requestsTable = $("#requestsTable").DataTable({
+                    "responsive": true,
+                    "autoWidth": false,
+                    "pageLength": 10,
+                    "columnDefs": [
+                        { "targets": 0, "width": "22%" },
+                        { "targets": 1, "width": "22%" },
+                        { "targets": 2, "width": "32%" },
+                        { "targets": 3, "width": "14%" },
+                        { "targets": 4, "width": "10%", "orderable": false, "searchable": false }
+                    ]
                 });
             }
 
@@ -126,24 +150,23 @@
             });
         });
 
-        function approveRequest(id, btn) {
-            Swal.fire({
-                title: 'Approve Request?',
-                text: "This will create the new service category.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#28a745',
-                confirmButtonText: 'Yes, Approve!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    AjaxClient.post('@Url.Action("Approve", "CategoryRequest")', { id: id },
-                        function (res) {
-                            Swal.fire('Success', res.message, 'success');
-                            $(btn).closest('tr').remove();
-                        },
-                        function (xhr) { Swal.fire('Error', 'Failed to approve', 'error'); }
-                    );
-                }
+        function openApproveModal(id, btn) {
+            currentRow = $(btn).closest('tr');
+            $('#modalTitle').text('Approve Category Request');
+            $('#modal-create-edit').modal('show');
+            $('#modalContent').html('<div class="text-center p-4"><div class="spinner-border text-primary"></div><p class="mt-2">Loading...</p></div>');
+
+            $.get('@Url.Action("GetApproveModal", "CategoryRequest")', { id: id }, function (html) {
+                $('#modalContent').html(html);
+                window.handleCategoryModalSuccess = function (response) {
+                    if (requestsTable) {
+                        requestsTable.row(currentRow).remove().draw(false);
+                    } else {
+                        currentRow.remove();
+                    }
+                };
+            }).fail(function () {
+                $('#modalContent').html('<div class="alert alert-danger">Failed to load approval form.</div>');
             });
         }
 
@@ -168,7 +191,11 @@
                         { id: id, reason: result.value },
                         function (res) {
                             Swal.fire('Rejected', res.message, 'success');
-                            $(btn).closest('tr').remove();
+                            if (requestsTable) {
+                                requestsTable.row($(btn).closest('tr')).remove().draw(false);
+                            } else {
+                                $(btn).closest('tr').remove();
+                            }
                         },
                         function (xhr) { Swal.fire('Error', 'Failed to reject', 'error'); }
                     );

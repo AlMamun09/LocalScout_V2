@@ -181,7 +181,11 @@
                             {
                                 <div class="flex items-center gap-1 text-gray-600 text-xs">
                                     <i class="fas fa-map-marker-alt text-blue-600 w-3 text-xs"></i>
-                                    <span class="truncate">@Model.ProviderLocation</span>
+                                    <span class="truncate flex-1">@Model.ProviderLocation</span>
+                                    @if (Model.DistanceInKm.HasValue)
+                                    {
+                                        <span class="text-blue-700 font-bold ml-auto whitespace-nowrap">@Model.GetDistanceDisplay()</span>
+                                    }
                                 </div>
                             }
                             @if (!string.IsNullOrEmpty(Model.WorkingDays))

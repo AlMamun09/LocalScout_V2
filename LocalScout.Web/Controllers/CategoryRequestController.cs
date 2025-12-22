@@ -6,6 +6,7 @@ using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
 
 namespace LocalScout.Web.Controllers
 {
@@ -160,6 +161,88 @@ namespace LocalScout.Web.Controllers
             );
 
             return Ok(new { success = true, message = "Category approved and created successfully!" });
+        }
+
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpGet]
+        public async Task<IActionResult> GetApproveModal(Guid id)
+        {
+            var request = await _categoryRequestRepo.GetByIdAsync(id);
+            if (request == null || request.Status != VerificationStatus.Pending)
+            {
+                return NotFound();
+            }
+
+            var dto = new ServiceCategoryDto
+            {
+                CategoryName = request.RequestedCategoryName,
+                Description = request.Description
+            };
+
+            ViewBag.FormAction = Url.Action("ApproveWithCategory", "CategoryRequest");
+            ViewBag.SubmitButtonText = "Approve";
+            ViewBag.CategoryRequestId = request.CategoryRequestId.ToString();
+
+            return PartialView("~/Views/Admin/ServiceCategory/_CreateEditModal.cshtml", dto);
+        }
+
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveWithCategory(Guid categoryRequestId, ServiceCategoryDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Invalid data submitted." });
+            }
+
+            var request = await _categoryRequestRepo.GetByIdAsync(categoryRequestId);
+            if (request == null || request.Status != VerificationStatus.Pending)
+            {
+                return BadRequest(new { message = "Request not found or already processed." });
+            }
+
+            // Handle File Upload (same as SaveCategory)
+            if (model.IconFile != null && model.IconFile.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "categories");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid() + "_" + model.IconFile.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await model.IconFile.CopyToAsync(fileStream);
+                }
+
+                model.IconPath = "/images/categories/" + uniqueFileName;
+            }
+
+            var newCategory = new ServiceCategory
+            {
+                ServiceCategoryId = Guid.NewGuid(),
+                CategoryName = model.CategoryName,
+                Description = model.Description,
+                IconPath = model.IconPath,
+                IsActive = true,
+                IsApproved = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _categoryRepo.AddCategoryAsync(newCategory);
+            await _categoryRequestRepo.UpdateStatusAsync(categoryRequestId, VerificationStatus.Approved);
+
+            await _notificationRepo.CreateNotificationAsync(
+                request.ProviderId,
+                "Category Request Approved",
+                $"Your request for category \"{request.RequestedCategoryName}\" has been approved."
+            );
+
+            return Json(new { success = true, message = "Category approved and created successfully!" });
         }
 
         [Authorize(Roles = RoleNames.Admin)]

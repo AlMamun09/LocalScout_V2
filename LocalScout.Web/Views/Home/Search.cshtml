@@ -312,21 +312,31 @@
 
             const rating = service.rating ? service.rating.toFixed(1) : '4.6';
             
-            // Build price display
-            let priceDisplay;
-            const unit = service.pricingUnit === 'Per Hour' ? '/Hour' : 
-                         service.pricingUnit === 'Per Day' ? '/Day' : 
-                         service.pricingUnit === 'Per Project' ? '' : '';
-            
-            if (service.pricingUnit === 'Fixed') {
-                priceDisplay = `${service.minPrice.toLocaleString()} Tk`;
-            } else {
-                priceDisplay = `From ${service.minPrice.toLocaleString()} Tk${unit}`;
+            // Format distance
+            let distanceDisplay = '';
+            if (service.distanceInKm !== null && service.distanceInKm !== undefined) {
+                if (service.distanceInKm < 1) {
+                    distanceDisplay = `${Math.round(service.distanceInKm * 1000)}m away`;
+                } else {
+                    distanceDisplay = `${service.distanceInKm.toFixed(1)}km away`;
+                }
             }
+             
+             // Build price display
+             let priceDisplay;
+             const unit = service.pricingUnit === 'Per Hour' ? '/Hour' : 
+                          service.pricingUnit === 'Per Day' ? '/Day' : 
+                          service.pricingUnit === 'Per Project' ? '' : '';
+             
+             if (service.pricingUnit === 'Fixed') {
+                 priceDisplay = `${service.minPrice.toLocaleString()} Tk`;
+             } else {
+                 priceDisplay = `From ${service.minPrice.toLocaleString()} Tk${unit}`;
+             }
 
-            const pricingLabel = service.pricingUnit === 'Per Hour' ? 'Hourly' :
-                                service.pricingUnit === 'Per Day' ? 'Daily' :
-                                service.pricingUnit === 'Per Project' ? 'Project' : 'Price';
+             const pricingLabel = service.pricingUnit === 'Per Hour' ? 'Hourly' :
+                                 service.pricingUnit === 'Per Day' ? 'Daily' :
+                                 service.pricingUnit === 'Per Project' ? 'Project' : 'Price';
 
             let shortAddress = service.providerLocation;
             if (shortAddress) {
@@ -393,11 +403,12 @@
                                 <span class="text-muted ml-2" style="font-size: 0.75rem;">Joined ${joinedDate}</span>
                             </div>
                             ${shortAddress ? `
-                                <div class="d-flex align-items-center mb-2">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
                                     <i class="fas fa-map-marker-alt text-muted" style="font-size: 0.75rem; width: 16px;"></i>
-                                    <span class="text-muted ml-2" style="font-size: 0.75rem;">${shortAddress}</span>
-                                </div>
-                            ` : ''}
+                                    <span class="text-muted ml-2 flex-1" style="font-size: 0.75rem;">${shortAddress}</span>
+                                    ${distanceDisplay ? `<span class="text-primary ml-2 font-weight-bold" style="font-size: 0.7rem;">${distanceDisplay}</span>` : ''}
+                                 </div>
+                             ` : ''}
                             ${service.workingDays && service.workingHours ? `
                                 <div class="d-flex align-items-center mb-3">
                                     <i class="far fa-clock text-muted" style="font-size: 0.75rem; width: 16px;"></i>

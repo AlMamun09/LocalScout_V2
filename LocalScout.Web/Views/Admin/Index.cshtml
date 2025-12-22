@@ -175,7 +175,9 @@
                             <div class="col-md-3 mb-2">
                                 <a asp-action="VerificationRequests" class="btn btn-outline-warning btn-block text-dark">
                                     <i class="fas fa-check-circle mr-2"></i> Verifications
-                                    <span class="badge badge-danger ml-2" id="verificationBadge">0</span>
+                                    <span class="badge badge-danger ml-2" id="verificationBadge" style="display: none;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
                                 </a>
                             </div>
                             <div class="col-md-3 mb-2">
@@ -292,11 +294,20 @@
                     $('#activeProviders').text(data.activeProviders || 0);
                     $('#blockedProviders').text(data.blockedProviders || 0);
                     $('#pendingVerifications').text(data.pendingVerifications || 0);
-                    $('#verificationBadge').text(data.pendingVerifications || 0);
+                    
+                    // Update verification badge with visibility toggle
+                    var pendingCount = data.pendingVerifications || 0;
+                    var $badge = $('#verificationBadge');
+                    
+                    if (pendingCount > 0) {
+                        $badge.text(pendingCount).show();
+                    } else {
+                        $badge.hide();
+                    }
 
-                    // Load lists
-                    loadRecentUsers(data.recentUsers);
-                    loadRecentProviders(data.recentProviders);
+                     // Load lists
+                     loadRecentUsers(data.recentUsers);
+                     loadRecentProviders(data.recentProviders);
                 },
                 error: function () {
                     $('.card h3').not('.card-title').text('0');

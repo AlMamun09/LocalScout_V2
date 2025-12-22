@@ -22,6 +22,8 @@ namespace LocalScout.Application.DTOs
         public string? ProviderProfilePicture { get; set; }
         public string? ProviderDescription { get; set; }
         public string? ProviderLocation { get; set; }
+        public double? ProviderLatitude { get; set; }
+        public double? ProviderLongitude { get; set; }
         public string? ProviderPhone { get; set; }
         public string? WorkingDays { get; set; }
         public string? WorkingHours { get; set; }
@@ -31,6 +33,9 @@ namespace LocalScout.Application.DTOs
         // Rating (placeholder for now)
         public double Rating { get; set; } = 4.6;
         public int ReviewCount { get; set; } = 0;
+
+        // Distance (in kilometers)
+        public double? DistanceInKm { get; set; }
 
         // Related Services
         public List<ServiceCardDto> OtherProviderServices { get; set; } = new();
@@ -53,6 +58,18 @@ namespace LocalScout.Application.DTOs
             }
 
             return $"From {MinPrice:N0} Tk{unit}";
+        }
+
+        // Distance display helper
+        public string GetDistanceDisplay()
+        {
+            if (!DistanceInKm.HasValue)
+                return string.Empty;
+
+            if (DistanceInKm.Value < 1)
+                return $"{(DistanceInKm.Value * 1000):N0}m away";
+
+            return $"{DistanceInKm.Value:N1}km away";
         }
     }
 }
