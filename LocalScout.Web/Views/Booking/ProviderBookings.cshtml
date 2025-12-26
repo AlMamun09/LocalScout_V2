@@ -1,0 +1,373 @@
+@using LocalScout.Domain.Enums
+
+@{
+    ViewData["Title"] = "My Booking Requests";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Booking Requests</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Provider" asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Bookings</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card card-primary card-outline card-tabs">
+            <div class="card-header p-0 pt-1 border-bottom-0">
+                <ul class="nav nav-tabs" id="providerBookingTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#tab-all" role="tab" data-status="">
+                            <i class="fas fa-list mr-1"></i> All
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tab-new" role="tab" data-status="@((int)BookingStatus.PendingProviderReview)">
+                            <i class="fas fa-clock mr-1 text-warning"></i> New Requests
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tab-accepted" role="tab" data-status="@((int)BookingStatus.AcceptedByProvider)">
+                            <i class="fas fa-check mr-1"></i> Accepted
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tab-paid" role="tab" data-status="@((int)BookingStatus.PaymentReceived)">
+                            <i class="fas fa-money-bill mr-1"></i> Paid
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tab-completed" role="tab" data-status="@((int)BookingStatus.Completed)">
+                            <i class="fas fa-check-circle mr-1"></i> Completed
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tab-cancelled" role="tab" data-status="@((int)BookingStatus.Cancelled)">
+                            <i class="fas fa-times-circle mr-1"></i> Cancelled
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Content Container -->
+<div class="tab-content" id="providerBookingTabContent">
+    <div class="tab-pane fade show active" id="tab-all" role="tabpanel">
+        <div id="content-all" class="bookings-container">
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p class="mt-2 text-muted">Loading bookings...</p>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="tab-new" role="tabpanel">
+        <div id="content-new" class="bookings-container"></div>
+    </div>
+    <div class="tab-pane fade" id="tab-accepted" role="tabpanel">
+        <div id="content-accepted" class="bookings-container"></div>
+    </div>
+    <div class="tab-pane fade" id="tab-paid" role="tabpanel">
+        <div id="content-paid" class="bookings-container"></div>
+    </div>
+    <div class="tab-pane fade" id="tab-completed" role="tabpanel">
+        <div id="content-completed" class="bookings-container"></div>
+    </div>
+    <div class="tab-pane fade" id="tab-cancelled" role="tabpanel">
+        <div id="content-cancelled" class="bookings-container"></div>
+    </div>
+</div>
+
+<!-- Accept & Set Price Modal -->
+<div class="modal fade" id="acceptModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle mr-2"></i>Accept Booking</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="acceptForm">
+                <div class="modal-body">
+                    <input type="hidden" id="acceptBookingId" name="BookingId" />
+                    
+                    <div class="alert alert-info">
+                        <strong>Service:</strong> <span id="acceptServiceName"></span><br>
+                        <strong>Customer:</strong> <span id="acceptCustomerName"></span><br>
+                        <strong>Base Price:</strong> Tk <span id="acceptBasePrice"></span>
+                    </div>
+                    
+                    <p class="text-muted">Enter the final negotiated price after discussing with the customer. This will be the amount they need to pay.</p>
+                    
+                    <div class="form-group">
+                        <label for="negotiatedPrice">Final Price (Tk) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Tk</span>
+                            </div>
+                            <input type="number" class="form-control form-control-lg" id="negotiatedPrice" name="NegotiatedPrice" min="1" step="1" required placeholder="Enter final price">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="providerNotes">Notes for Customer (Optional)</label>
+                        <textarea class="form-control" id="providerNotes" name="ProviderNotes" rows="3" placeholder="Any details about the price, what's included, timeline, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check mr-1"></i> Accept & Send to Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Decline Modal -->
+<div class="modal fade" id="declineModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle mr-2"></i>Decline Booking</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="declineForm">
+                <div class="modal-body">
+                    <input type="hidden" id="declineBookingId" name="BookingId" />
+                    <p>Are you sure you want to decline this booking request?</p>
+                    <div class="form-group">
+                        <label for="declineReason">Reason (Optional but recommended)</label>
+                        <textarea class="form-control" id="declineReason" name="Reason" rows="3" placeholder="Let the customer know why you can't accept this request..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times mr-1"></i> Decline Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            var loadedTabs = {};
+            
+            // Load tab content via AJAX
+            function loadTabContent(tabId, status) {
+                var contentContainer = $('#content-' + tabId);
+                
+                // Show loading indicator
+                contentContainer.html(`
+                    <div class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2 text-muted">Loading bookings...</p>
+                    </div>
+                `);
+                
+                var url = '@Url.Action("GetProviderBookingsTab", "Booking")';
+                if (status !== '') {
+                    url += '?status=' + status;
+                }
+                
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    success: function(html) {
+                        contentContainer.html(html);
+                        loadedTabs[tabId] = true;
+                        bindEventHandlers(contentContainer);
+                    },
+                    error: function(xhr) {
+                        contentContainer.html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                Failed to load bookings. Please try again.
+                            </div>
+                        `);
+                    }
+                });
+            }
+            
+            // Bind event handlers for dynamically loaded content
+            function bindEventHandlers(container) {
+                // Accept button - show modal
+                container.find('.btn-accept').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    var serviceName = $(this).data('service-name');
+                    var customerName = $(this).data('customer-name');
+                    var basePrice = $(this).data('base-price');
+                    
+                    $('#acceptBookingId').val(bookingId);
+                    $('#acceptServiceName').text(serviceName);
+                    $('#acceptCustomerName').text(customerName);
+                    $('#acceptBasePrice').text(formatNumber(basePrice));
+                    $('#negotiatedPrice').val(basePrice);
+                    $('#providerNotes').val('');
+                    $('#acceptModal').modal('show');
+                });
+
+                // Decline button - show modal
+                container.find('.btn-decline').off('click').on('click', function() {
+                    $('#declineBookingId').val($(this).data('booking-id'));
+                    $('#declineReason').val('');
+                    $('#declineModal').modal('show');
+                });
+
+                // Mark job done
+                container.find('.btn-mark-done').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    
+                    Swal.fire({
+                        title: 'Mark Job as Done',
+                        text: 'Are you sure the job has been completed? The customer will be notified to confirm.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#007bff',
+                        confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Yes, Mark as Done'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("MarkJobDone", "Booking")',
+                                type: 'POST',
+                                data: { bookingId: bookingId },
+                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                                success: function(response) {
+                                    if (response.success) {
+                                        Swal.fire('Done!', response.message, 'success').then(() => {
+                                            refreshCurrentTab();
+                                        });
+                                    } else {
+                                        Swal.fire('Error', response.message, 'error');
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+            
+            // Refresh current active tab
+            function refreshCurrentTab() {
+                var activeTab = $('#providerBookingTabs .nav-link.active');
+                var tabId = activeTab.attr('href').replace('#tab-', '');
+                var status = activeTab.data('status');
+                loadedTabs[tabId] = false;
+                loadTabContent(tabId, status);
+            }
+            
+            // Format number with commas
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+            
+            // Tab change event
+            $('#providerBookingTabs a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+                var tabId = $(e.target).attr('href').replace('#tab-', '');
+                var status = $(e.target).data('status');
+                
+                // Only load if not already loaded
+                if (!loadedTabs[tabId]) {
+                    loadTabContent(tabId, status);
+                }
+            });
+            
+            // Accept form submit
+            $('#acceptForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var price = parseFloat($('#negotiatedPrice').val());
+                if (!price || price <= 0) {
+                    Swal.fire('Error', 'Please enter a valid price', 'error');
+                    return;
+                }
+                
+                var data = {
+                    BookingId: $('#acceptBookingId').val(),
+                    NegotiatedPrice: price,
+                    ProviderNotes: $('#providerNotes').val()
+                };
+
+                $.ajax({
+                    url: '@Url.Action("Accept", "Booking")',
+                    type: 'POST',
+                    data: data,
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        $('#acceptModal').modal('hide');
+                        if (response.success) {
+                            Swal.fire('Accepted!', response.message, 'success').then(() => {
+                                refreshCurrentTab();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#acceptModal').modal('hide');
+                        Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                    }
+                });
+            });
+
+            // Decline form submit
+            $('#declineForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var data = {
+                    BookingId: $('#declineBookingId').val(),
+                    Reason: $('#declineReason').val()
+                };
+
+                $.ajax({
+                    url: '@Url.Action("ProviderCancel", "Booking")',
+                    type: 'POST',
+                    data: data,
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        $('#declineModal').modal('hide');
+                        if (response.success) {
+                            Swal.fire('Declined', response.message, 'success').then(() => {
+                                refreshCurrentTab();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#declineModal').modal('hide');
+                        Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                    }
+                });
+            });
+            
+            // Load initial tab (All)
+            loadTabContent('all', '');
+        });
+    </script>
+    @Html.AntiForgeryToken()
+}

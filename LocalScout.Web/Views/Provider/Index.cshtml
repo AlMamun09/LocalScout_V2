@@ -214,7 +214,7 @@
                 <div class="card-header border-0">
                     <h3 class="card-title">Recent Booking Requests</h3>
                     <div class="card-tools">
-                        <a href="#" class="btn btn-tool btn-sm">
+                        <a asp-controller="Booking" asp-action="ProviderBookings" class="btn btn-tool btn-sm">
                             <i class="fas fa-bars"></i>
                         </a>
                     </div>
@@ -238,22 +238,26 @@
                                     // UI Logic: Determine badge color based on status string
                                     var badgeClass = "badge-secondary";
                                     if (booking.Status == "Pending") { badgeClass = "badge-warning"; }
-                                    else if (booking.Status == "Confirmed") { badgeClass = "badge-info"; }
+                                    else if (booking.Status == "Accepted") { badgeClass = "badge-info"; }
                                     else if (booking.Status == "Completed") { badgeClass = "badge-success"; }
                                     else if (booking.Status == "Cancelled") { badgeClass = "badge-danger"; }
+                                    else if (booking.Status == "Paid") { badgeClass = "badge-primary"; }
 
                                     <tr>
                                         <td class="font-weight-bold">@booking.CustomerName</td>
                                         <td>@booking.ServiceName</td>
                                         <td>
                                             <div class="text-muted small"><i class="far fa-calendar-alt mr-1"></i> @booking.Date</div>
-                                            <div class="text-muted small"><i class="fas fa-map-marker-alt mr-1"></i> @booking.Location</div>
+                                            @if (!string.IsNullOrEmpty(booking.Location))
+                                            {
+                                                <div class="text-muted small"><i class="fas fa-map-marker-alt mr-1"></i> @booking.Location</div>
+                                            }
                                         </td>
                                         <td class="text-center">
                                             <span class="badge @badgeClass" style="font-size: 0.9em;">@booking.Status</span>
                                         </td>
                                         <td class="text-right">
-                                            <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <a asp-controller="Booking" asp-action="ProviderDetails" asp-route-id="@booking.BookingId" class="btn btn-sm btn-outline-primary" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </td>
@@ -273,7 +277,7 @@
                     </table>
                 </div>
                 <div class="card-footer clearfix">
-                    <a href="#" class="btn btn-sm btn-secondary float-right">View All Orders</a>
+                    <a asp-controller="Booking" asp-action="ProviderBookings" class="btn btn-sm btn-secondary float-right">View All Orders</a>
                 </div>
             </div>
         </div>

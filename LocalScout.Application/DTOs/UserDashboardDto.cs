@@ -1,3 +1,5 @@
+using LocalScout.Application.DTOs.BookingDTOs;
+
 namespace LocalScout.Application.DTOs
 {
     public class UserDashboardDto

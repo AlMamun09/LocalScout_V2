@@ -1,3 +1,4 @@
+using LocalScout.Application.DTOs.BookingDTOs;
 using LocalScout.Domain.Entities;
 
 namespace LocalScout.Application.DTOs

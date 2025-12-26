@@ -1,8 +1,9 @@
 using LocalScout.Application.DTOs;
+using LocalScout.Application.DTOs.BookingDTOs;
 using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Constants;
-using LocalScout.Infrastructure.Data; // Ensure this namespace exists for ApplicationDbContext
+using LocalScout.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 
 namespace LocalScout.Infrastructure.Repositories

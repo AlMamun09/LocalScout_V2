@@ -1,0 +1,546 @@
+@model LocalScout.Application.DTOs.BookingDTOs.BookingDetailsForProviderDto
+@using LocalScout.Domain.Enums
+
+@{
+    ViewData["Title"] = "Booking Details";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    
+    var badgeClass = Model.Status switch
+    {
+        BookingStatus.PendingProviderReview => "badge-warning",
+        BookingStatus.AcceptedByProvider => "badge-info",
+        BookingStatus.AwaitingPayment => "badge-info",
+        BookingStatus.PaymentReceived => "badge-primary",
+        BookingStatus.InProgress => "badge-primary",
+        BookingStatus.JobDone => "badge-success",
+        BookingStatus.Completed => "badge-success",
+        BookingStatus.Cancelled => "badge-danger",
+        BookingStatus.Disputed => "badge-danger",
+        _ => "badge-secondary"
+    };
+}
+
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Booking Details</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Provider" asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a asp-action="ProviderBookings">Bookings</a></li>
+                    <li class="breadcrumb-item active">Details</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column - Booking Info -->
+    <div class="col-md-8">
+        <!-- Status Card -->
+        <div class="card @(Model.Status == BookingStatus.PendingProviderReview ? "card-warning" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    @if (Model.Status == BookingStatus.PendingProviderReview)
+                    {
+                        <span class="badge badge-warning mr-2">ACTION REQUIRED</span>
+                    }
+                    <i class="fas fa-info-circle mr-2"></i>Booking Status
+                </h5>
+                <span class="badge @badgeClass" style="font-size: 1em; padding: 8px 15px;">@Model.StatusDisplay</span>
+            </div>
+            <div class="card-body">
+                <!-- Progress Timeline -->
+                <div class="timeline-progress mb-4">
+                    @{
+                        var steps = new[] {
+                            ("Received", Model.CreatedAt != default, Model.CreatedAt),
+                            ("Accepted", Model.AcceptedAt.HasValue, Model.AcceptedAt),
+                            ("Paid", Model.PaymentReceivedAt.HasValue, Model.PaymentReceivedAt),
+                            ("Job Done", Model.JobDoneAt.HasValue, Model.JobDoneAt),
+                            ("Completed", Model.CompletedAt.HasValue, Model.CompletedAt)
+                        };
+                    }
+                    <div class="d-flex justify-content-between">
+                        @foreach (var (label, completed, date) in steps)
+                        {
+                            <div class="text-center" style="flex: 1;">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center @(completed ? "bg-success" : "bg-secondary")" style="width: 40px; height: 40px;">
+                                    <i class="fas @(completed ? "fa-check" : "fa-circle") text-white"></i>
+                                </div>
+                                <p class="small mb-0 mt-1 @(completed ? "text-success font-weight-bold" : "text-muted")">@label</p>
+                                @if (date.HasValue && completed)
+                                {
+                                    <small class="text-muted">@date.Value.ToString("MMM dd")</small>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.Status == BookingStatus.Cancelled)
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        <strong>This booking has been cancelled.</strong>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Service Details Card -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-briefcase mr-2"></i>Service Details
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <p class="mb-0">
+                    <strong>Service Name:</strong> @Model.ServiceName
+                </p>
+
+                @if (!string.IsNullOrEmpty(Model.ServiceDescription))
+                {
+                    <p class="text-muted">@Model.ServiceDescription</p>
+                }
+
+                <p class="mb-0">
+                    <strong>Your Base Price:</strong>
+                    Tk @Model.ServiceMinPrice.ToString("N0") @Model.ServicePricingUnit
+                </p>
+            </div>
+        </div>
+
+        <!-- Customer Request Details -->
+        <div class="card">
+            <div class="card-header py-2">
+                <h6 class="mb-0">
+                    <i class="fas fa-clipboard-list mr-2"></i>
+                    Customer Request
+                </h6>
+            </div>
+
+            <div class="card-body py-3">
+                <!-- Request Meta -->
+                <div class="flex flex-wrap text-sm text-gray-700 mb-3">
+                    <div class="w-full md:w-1/2 mb-2">
+                        <i class="fas fa-calendar-alt text-primary mr-1"></i>
+                        <span class="font-semibold">Requested:</span>
+                        @Model.CreatedAt.ToString("MMM dd, yyyy · hh:mm tt")
+                    </div>
+
+                    <div class="w-full md:w-1/2 mb-2">
+                        <i class="fas fa-map-marker-alt text-danger mr-1"></i>
+                        <span class="font-semibold">Location:</span>
+                        @(Model.AddressArea ?? "Not specified")
+                    </div>
+                </div>
+
+                <!-- Customer Notes -->
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="bg-gray-50 border rounded p-3 text-sm mb-4">
+                        <div class="font-semibold mb-1 text-gray-800">
+                            <i class="fas fa-comment text-info mr-1"></i>
+                            Customer Notes
+                        </div>
+                        <div class="text-gray-700 leading-relaxed">
+                            @Model.Description
+                        </div>
+                    </div>
+                }
+
+                <!-- Image Gallery -->
+                @if (Model.ImagePaths != null && Model.ImagePaths.Any())
+                {
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h6 class="mb-0 text-sm font-semibold">
+                                <i class="fas fa-images text-success mr-1"></i>
+                                Images (@Model.ImagePaths.Count)
+                            </h6>
+                            <span class="text-xs text-muted">
+                                Click to enlarge
+                            </span>
+                        </div>
+
+                        <div class="flex flex-wrap -mx-1">
+                            @foreach (var img in Model.ImagePaths)
+                            {
+                                <div class="w-1/5 px-1 mb-2">
+                                    <a href="@img"
+                                       data-lightbox="booking-images"
+                                       data-title="Customer Image"
+                                       class="block">
+                                        <img src="@img"
+                                             alt="Booking image"
+                                             class="w-full h-[120px] object-cover rounded border hover:scale-105 transition-transform duration-200" />
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Price Section -->
+        @if (Model.NegotiatedPrice.HasValue || Model.CanAcceptAndSetPrice)
+        {
+            <div class="card @(Model.NegotiatedPrice.HasValue ? "card-success" : "card-warning")">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-money-bill-wave mr-2"></i>Price & Payment</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.NegotiatedPrice.HasValue)
+                    {
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h3 class="text-success mb-0">Tk @Model.NegotiatedPrice.Value.ToString("N0")</h3>
+                                <p class="text-muted mb-0">Your Quoted Price</p>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                @if (Model.PaymentReceivedAt.HasValue)
+                                {
+                                    <span class="badge badge-success" style="font-size: 1em; padding: 10px 20px;">
+                                        <i class="fas fa-check-circle mr-1"></i> Payment Received @Model.PaymentReceivedAt.Value.ToString("MMM dd, yyyy")
+                                    </span>
+                                }
+                                else if (Model.Status == BookingStatus.AcceptedByProvider || Model.Status == BookingStatus.AwaitingPayment)
+                                {
+                                    <span class="badge badge-info" style="font-size: 1em; padding: 10px 20px;">
+                                        <i class="fas fa-clock mr-1"></i> Awaiting Customer Payment
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.ProviderNotes))
+                        {
+                            <hr>
+                            <p><strong>Your Notes to Customer:</strong></p>
+                            <p class="bg-light p-3 rounded">@Model.ProviderNotes</p>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <strong>Action Required:</strong> Review this request and either accept with your price or decline.
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Right Column - Customer Info & Actions -->
+    <div class="col-md-4">
+        <!-- Customer Card - ALWAYS VISIBLE TO PROVIDER -->
+        <div class="card card-info card-outline">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user mr-2"></i>Customer Information
+                </h5>
+            </div>
+
+            <div class="card-body text-center">
+                <!-- Profile Picture (Centered) -->
+                @if (!string.IsNullOrEmpty(Model.UserProfilePicture))
+                {
+                    <img src="@Model.UserProfilePicture"
+                         alt="Customer"
+                         class="img-circle elevation-2 mb-3 mx-auto d-block"
+                         style="width: 100px; height: 100px; object-fit: cover;">
+                }
+                else
+                {
+                    <div class="bg-info rounded-circle d-flex align-items-center justify-content-center mb-3 mx-auto"
+                         style="width: 100px; height: 100px;">
+                        <i class="fas fa-user fa-3x text-white"></i>
+                    </div>
+                }
+
+                <h4 class="mb-3">@Model.UserName</h4>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="card-footer bg-light">
+                <h6 class="text-info mb-3">
+                    <i class="fas fa-address-card mr-1"></i>Contact Details
+                </h6>
+
+                <div class="d-flex flex-column align-items-center">
+                    @if (!string.IsNullOrEmpty(Model.UserPhone))
+                    {
+                        <a href="tel:@Model.UserPhone" class="btn btn-success btn-block mb-2">
+                            <i class="fas fa-phone mr-2"></i>
+                            @Model.UserPhone
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.UserEmail))
+                    {
+                        <a href="mailto:@Model.UserEmail" class="btn btn-info btn-block mb-2">
+                            <i class="fas fa-envelope mr-2"></i>
+                            @Model.UserEmail
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.UserAddress))
+                    {
+                        <p class="mb-0 text-muted small text-center">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            @Model.UserAddress
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs mr-2"></i>Actions
+                </h5>
+            </div>
+
+            <div class="card-body">
+                @if (Model.CanAcceptAndSetPrice)
+                {
+                    <button type="button"
+                            class="btn btn-success btn-block btn-accept mb-2"
+                            data-booking-id="@Model.BookingId"
+                            data-service-name="@Model.ServiceName"
+                            data-customer-name="@Model.UserName"
+                            data-base-price="@Model.ServiceMinPrice">
+                        <i class="fas fa-check mr-2"></i>Accept & Set Price
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-outline-danger btn-block btn-decline mb-2"
+                            data-booking-id="@Model.BookingId">
+                        <i class="fas fa-times mr-2"></i>Decline Request
+                    </button>
+                }
+
+                @if (Model.CanMarkJobDone)
+                {
+                    <button type="button"
+                            class="btn btn-primary btn-block btn-mark-done mb-2"
+                            data-booking-id="@Model.BookingId">
+                        <i class="fas fa-check-circle mr-2"></i>Mark Job as Done
+                    </button>
+                }
+
+                @if (Model.CanCancel && Model.Status != BookingStatus.PendingProviderReview)
+                {
+                    <button type="button"
+                            class="btn btn-outline-danger btn-block btn-decline mb-2"
+                            data-booking-id="@Model.BookingId">
+                        <i class="fas fa-times mr-2"></i>Cancel Booking
+                    </button>
+                }
+
+                <a asp-action="ProviderBookings" class="btn btn-outline-secondary btn-block">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to All Bookings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accept Modal -->
+<div class="modal fade" id="acceptModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle mr-2"></i>Accept Booking</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="acceptForm">
+                <div class="modal-body">
+                    <input type="hidden" id="acceptBookingId" name="BookingId" />
+                    
+                    <div class="alert alert-info">
+                        <strong>Service:</strong> <span id="acceptServiceName"></span><br>
+                        <strong>Customer:</strong> <span id="acceptCustomerName"></span><br>
+                        <strong>Base Price:</strong> Tk <span id="acceptBasePrice"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="negotiatedPrice">Final Price (Tk) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Tk</span>
+                            </div>
+                            <input type="number" class="form-control form-control-lg" id="negotiatedPrice" name="NegotiatedPrice" min="1" step="1" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="providerNotes">Notes (Optional)</label>
+                        <textarea class="form-control" id="providerNotes" name="ProviderNotes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check mr-1"></i> Accept
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Decline Modal -->
+<div class="modal fade" id="declineModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle mr-2"></i>Decline Booking</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="declineForm">
+                <div class="modal-body">
+                    <input type="hidden" id="declineBookingId" name="BookingId" />
+                    <div class="form-group">
+                        <label for="declineReason">Reason (Optional)</label>
+                        <textarea class="form-control" id="declineReason" name="Reason" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times mr-1"></i> Decline
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Lightbox2 for image gallery -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Initialize lightbox
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'albumLabel': "Image %1 of %2"
+            });
+            
+            // Accept
+            $('.btn-accept').on('click', function() {
+                $('#acceptBookingId').val($(this).data('booking-id'));
+                $('#acceptServiceName').text($(this).data('service-name'));
+                $('#acceptCustomerName').text($(this).data('customer-name'));
+                $('#acceptBasePrice').text($(this).data('base-price'));
+                $('#negotiatedPrice').val($(this).data('base-price'));
+                $('#acceptModal').modal('show');
+            });
+
+            $('#acceptForm').on('submit', function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '@Url.Action("Accept", "Booking")',
+                    type: 'POST',
+                    data: {
+                        BookingId: $('#acceptBookingId').val(),
+                        NegotiatedPrice: $('#negotiatedPrice').val(),
+                        ProviderNotes: $('#providerNotes').val()
+                    },
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        $('#acceptModal').modal('hide');
+                        if (response.success) {
+                            Swal.fire('Success!', response.message, 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#acceptModal').modal('hide');
+                        Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                    }
+                });
+            });
+
+            // Decline
+            $('.btn-decline').on('click', function() {
+                $('#declineBookingId').val($(this).data('booking-id'));
+                $('#declineModal').modal('show');
+            });
+
+            $('#declineForm').on('submit', function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '@Url.Action("ProviderCancel", "Booking")',
+                    type: 'POST',
+                    data: { BookingId: $('#declineBookingId').val(), Reason: $('#declineReason').val() },
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        $('#declineModal').modal('hide');
+                        if (response.success) {
+                            Swal.fire('Declined', response.message, 'success').then(() => window.location.href = '@Url.Action("ProviderBookings")');
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#declineModal').modal('hide');
+                        Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                    }
+                });
+            });
+
+            // Mark done
+            $('.btn-mark-done').on('click', function() {
+                var bookingId = $(this).data('booking-id');
+                Swal.fire({
+                    title: 'Mark Job as Done',
+                    text: 'Has the job been completed?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Mark Done'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("MarkJobDone", "Booking")',
+                            type: 'POST',
+                            data: { bookingId: bookingId },
+                            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire('Done!', response.message, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+    @Html.AntiForgeryToken()
+}

@@ -1,0 +1,162 @@
+﻿@model LocalScout.Application.DTOs.BookingDTOs.CreateBookingModalDto
+
+<div class="modal-header bg-primary text-white">
+    <h5 class="modal-title"><i class="fas fa-calendar-plus mr-2"></i>Book Service</h5>
+    <button type="button" class="close text-white" data-dismiss="modal">
+        <span>&times;</span>
+    </button>
+</div>
+<form id="createBookingForm" enctype="multipart/form-data">
+    <div class="modal-body">
+        <input type="hidden" name="ServiceId" value="@Model.ServiceId" />
+        
+        <!-- Service Info -->
+        <div class="alert alert-info">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="mb-1">@Model.ServiceName</h5>
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-user mr-1"></i> @Model.ProviderName
+                        @if (!string.IsNullOrEmpty(Model.ProviderBusinessName))
+                        {
+                            <span>(@Model.ProviderBusinessName)</span>
+                        }
+                    </p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <h5 class="mb-0">From Tk @Model.ServiceMinPrice.ToString("N0")</h5>
+                    <small class="text-muted">@Model.ServicePricingUnit</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout callout-info">
+            <h6>
+                <i class="fas fa-info-circle mr-1"></i>
+                How It Works
+            </h6>
+            <ul class="mb-0 pl-3 list-unstyled">
+                <li class="mb-1">
+                    <i class="fas fa-arrow-right mr-2 text-info"></i>
+                    <small>Describe your requirements and upload any relevant images</small>
+                </li>
+                <li class="mb-1">
+                    <i class="fas fa-arrow-right mr-2 text-info"></i>
+                    <small>The provider reviews your request and may contact you for clarification</small>
+                </li>
+                <li class="mb-1">
+                    <i class="fas fa-arrow-right mr-2 text-info"></i>
+                    <small>Once confirmed, you’ll receive the final price</small>
+                </li>
+                <li>
+                    <i class="fas fa-arrow-right mr-2 text-info"></i>
+                    <small>Approve the price, complete payment, and the work begins</small>
+                </li>
+            </ul>
+        </div>
+
+        <div class="form-group">
+            <label for="addressArea">Job Location <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addressArea" name="AddressArea" 
+                   value="@Model.UserAddress" placeholder="Where do you need the service?" required>
+            <small class="form-text text-muted">Enter the address or area where the service is needed</small>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Describe Your Requirements</label>
+            <textarea class="form-control" id="description" name="Description" rows="4" 
+                      placeholder="Please describe what you need, any specific requirements, preferred timing, etc."></textarea>
+            <small class="form-text text-muted">The more details you provide, the better the provider can understand your needs</small>
+        </div>
+
+        <div class="form-group">
+            <label>Attach Images (Optional)</label>
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="bookingImages" name="images" multiple accept=".jpg,.jpeg,.png,.webp">
+                <label class="custom-file-label" for="bookingImages">Choose files (max 5 images)</label>
+            </div>
+            <small class="form-text text-muted">Upload photos to help explain what you need (JPG, PNG, WebP - max 5MB each)</small>
+        </div>
+
+        <div id="imagePreview" class="row mt-2"></div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitBookingBtn">
+            <i class="fas fa-paper-plane mr-1"></i> Send Booking Request
+        </button>
+    </div>
+</form>
+
+<script>
+    $(function() {
+        bsCustomFileInput.init();
+        
+        // Image preview
+        $('#bookingImages').on('change', function() {
+            var preview = $('#imagePreview');
+            preview.empty();
+            
+            var files = this.files;
+            if (files.length > 5) {
+                Swal.fire('Warning', 'Maximum 5 images allowed. Only first 5 will be uploaded.', 'warning');
+            }
+            
+            for (var i = 0; i < Math.min(files.length, 5); i++) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.append(`
+                        <div class="col-3 mb-2">
+                            <img src="${e.target.result}" class="img-thumbnail" style="height: 80px; width: 100%; object-fit: cover;">
+                        </div>
+                    `);
+                };
+                reader.readAsDataURL(files[i]);
+            }
+        });
+
+        // Form submit
+        $('#createBookingForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var submitBtn = $('#submitBookingBtn');
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');
+            
+            var formData = new FormData(this);
+            
+            $.ajax({
+                url: '@Url.Action("Create", "Booking")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#bookingModal').modal('hide');
+                        Swal.fire({
+                            title: 'Request Sent!',
+                            text: response.message,
+                            icon: 'success',
+                            confirmButtonText: 'View My Bookings'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = '@Url.Action("MyBookings", "Booking")';
+                            }
+                        });
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send Booking Request');
+                    }
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON?.message || 'An error occurred. Please try again.';
+                    Swal.fire('Error', msg, 'error');
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send Booking Request');
+                }
+            });
+        });
+    });
+</script>

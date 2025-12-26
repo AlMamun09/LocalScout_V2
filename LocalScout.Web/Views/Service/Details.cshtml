@@ -1,9 +1,12 @@
 @model LocalScout.Application.DTOs.ServiceDetailsDto
+@using LocalScout.Infrastructure.Constants
 
 @{
     ViewData["Title"] = Model.ServiceName;
     var priceDisplay = Model.GetPriceDisplay();
     var mainImage = Model.ImagePaths.FirstOrDefault() ?? "/images/placeholder-service.jpg";
+    var isUser = User.IsInRole(RoleNames.User);
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
 }
 
 @section Styles {
@@ -150,9 +153,26 @@
 
             <!-- Action Button -->
             <div class="mt-1">
-                <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-                    <i class="fas fa-calendar-check mr-1.5"></i>Book Now
-                </button>
+                @if (isAuthenticated && isUser)
+                {
+                    <button id="bookNowBtn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                            data-service-id="@Model.ServiceId">
+                        <i class="fas fa-calendar-check mr-1.5"></i>Book Now
+                    </button>
+                }
+                else if (isAuthenticated)
+                {
+                    <div class="bg-gray-100 text-gray-600 px-5 py-2.5 rounded-lg text-center text-sm">
+                        <i class="fas fa-info-circle mr-1.5"></i>Sign in as a user to book this service
+                    </div>
+                }
+                else
+                {
+                    <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path" 
+                       class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-center px-5 py-2.5 rounded-lg font-semibold text-sm transition-all transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-sign-in-alt mr-1.5"></i>Sign in to Book
+                    </a>
+                }
             </div>
 
             <!-- Provider Card -->
@@ -269,7 +289,18 @@
     }
 </div>
 
+<!-- Booking Modal -->
+<div class="modal fade" id="bookingModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id="bookingModalContent">
+            <!-- Content loaded via AJAX -->
+        </div>
+    </div>
+</div>
+
 @section Scripts {
+    <script src="~/adminlte/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+    <script src="~/adminlte/plugins/sweetalert2/sweetalert2.min.js"></script>
     <script>
         let currentImageIndex = 0;
         const imagePaths = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ImagePaths));
@@ -342,7 +373,30 @@
                     });
                 }
             });
+            
+            // Book Now button click
+            $('#bookNowBtn').on('click', function() {
+                var serviceId = $(this).data('service-id');
+                loadBookingModal(serviceId);
+            });
         });
+
+        function loadBookingModal(serviceId) {
+            $.ajax({
+                url: '@Url.Action("GetCreateBookingModal", "Booking")',
+                type: 'GET',
+                data: { serviceId: serviceId },
+                success: function(response) {
+                    $('#bookingModalContent').html(response);
+                    $('#bookingModal').modal('show');
+                    bsCustomFileInput.init();
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON?.message || 'Failed to load booking form.';
+                    Swal.fire('Error', msg, 'error');
+                }
+            });
+        }
 
         // Keyboard navigation for carousel
         document.addEventListener('keydown', function(e) {
@@ -352,4 +406,5 @@
             }
         });
     </script>
+    @Html.AntiForgeryToken()
 }

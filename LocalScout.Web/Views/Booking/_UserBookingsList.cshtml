@@ -1,0 +1,174 @@
+@model List<LocalScout.Application.DTOs.BookingDTOs.BookingListItemDto>
+@using LocalScout.Domain.Enums
+
+@if (Model != null && Model.Any())
+{
+    foreach (var booking in Model)
+    {
+        <div class="card card-outline @(booking.Status == BookingStatus.AcceptedByProvider ? "card-info" : booking.Status == BookingStatus.Completed ? "card-success" : "")">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <strong>@booking.ServiceName</strong>
+                        </h5>
+                        <small class="text-muted">Requested: @booking.CreatedAtFormatted</small>
+                    </div>
+                    <span class="badge @booking.StatusBadgeClass" style="font-size: 0.9em;">@booking.StatusDisplay</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center border-right">
+
+                        @if (!string.IsNullOrEmpty(booking.ProviderProfilePicture))
+                        {
+                            <img src="@booking.ProviderProfilePicture"
+                                 alt="Provider"
+                                 class="img-circle elevation-2 mb-2 mx-auto d-block"
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mb-2 mx-auto"
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                        }
+
+                        <h6 class="mb-0">@booking.ProviderName</h6>
+
+                        @if (!string.IsNullOrEmpty(booking.ProviderBusinessName))
+                        {
+                            <small class="text-muted d-block">@booking.ProviderBusinessName</small>
+                        }
+
+                        @if (booking.IsProviderVerified)
+                        {
+                            <span class="badge badge-success mt-1 d-inline-block">
+                                <i class="fas fa-check-circle"></i> Verified
+                            </span>
+                        }
+
+                    </div>
+                    <div class="col-md-5">
+                        @if (!string.IsNullOrEmpty(booking.AddressArea))
+                        {
+                            <p class="mb-1">
+                                <i class="fas fa-map-marker-alt text-muted mr-2"></i>
+                                <strong>Location:</strong> @booking.AddressArea
+                            </p>
+                        }
+                        @if (!string.IsNullOrEmpty(booking.Description))
+                        {
+                            <p class="mb-1">
+                                <i class="fas fa-comment text-muted mr-2"></i>
+                                <strong>Notes:</strong> @(booking.Description.Length > 100 ? booking.Description.Substring(0, 100) + "..." : booking.Description)
+                            </p>
+                        }
+                        @if (booking.NegotiatedPrice.HasValue)
+                        {
+                            <p class="mb-1">
+                                <i class="fas fa-money-bill-wave text-success mr-2"></i>
+                                <strong>Price:</strong> <span class="text-success font-weight-bold">Tk @booking.NegotiatedPrice.Value.ToString("N0")</span>
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="mb-1">
+                                <i class="fas fa-money-bill-wave text-muted mr-2"></i>
+                                <strong>Starting from:</strong> Tk @booking.ServiceMinPrice.ToString("N0")
+                            </p>
+                        }
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Provider Contact Info - Only shown after acceptance -->
+                        @if (booking.CanSeeProviderContact)
+                        {
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-primary mb-2"><i class="fas fa-address-card mr-1"></i> Provider Contact</h6>
+                                @if (!string.IsNullOrEmpty(booking.ProviderPhone))
+                                {
+                                    <p class="mb-1">
+                                        <i class="fas fa-phone text-success mr-2"></i>
+                                        <a href="tel:@booking.ProviderPhone">@booking.ProviderPhone</a>
+                                    </p>
+                                }
+                                @if (!string.IsNullOrEmpty(booking.ProviderEmail))
+                                {
+                                    <p class="mb-1">
+                                        <i class="fas fa-envelope text-info mr-2"></i>
+                                        <a href="mailto:@booking.ProviderEmail">@booking.ProviderEmail</a>
+                                    </p>
+                                }
+                                @if (!string.IsNullOrEmpty(booking.ProviderAddress))
+                                {
+                                    <p class="mb-0">
+                                        <i class="fas fa-map-marker-alt text-danger mr-2"></i>
+                                        @booking.ProviderAddress
+                                    </p>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="bg-light p-3 rounded text-center">
+                                <i class="fas fa-lock fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0 small">Provider contact details will be available once they accept your booking.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        @if (!string.IsNullOrEmpty(booking.AcceptedAtFormatted))
+                        {
+                            <small class="text-muted">Accepted: @booking.AcceptedAtFormatted</small>
+                        }
+                    </div>
+                    <div>
+                        <a asp-action="UserDetails" asp-route-id="@booking.BookingId" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye mr-1"></i> View Details
+                        </a>
+                        
+                        @if (booking.CanPay)
+                        {
+                            <button type="button" class="btn btn-sm btn-success btn-pay" data-booking-id="@booking.BookingId" data-price="@booking.NegotiatedPrice">
+                                <i class="fas fa-credit-card mr-1"></i> Pay Now Tk @booking.NegotiatedPrice?.ToString("N0")
+                            </button>
+                        }
+                        
+                        @if (booking.CanConfirmCompletion)
+                        {
+                            <button type="button" class="btn btn-sm btn-success btn-confirm-completion" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-check-circle mr-1"></i> Confirm Completion
+                            </button>
+                        }
+                        
+                        @if (booking.CanCancel)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-cancel" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-times mr-1"></i> Cancel
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No bookings found</h4>
+            <p class="text-muted">You haven't made any bookings in this category yet.</p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                <i class="fas fa-search mr-1"></i> Browse Services
+            </a>
+        </div>
+    </div>
+}

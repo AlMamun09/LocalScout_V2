@@ -14,6 +14,7 @@ namespace LocalScout.Infrastructure.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<CategoryRequest> CategoryRequests { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
