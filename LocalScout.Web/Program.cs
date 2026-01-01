@@ -49,6 +49,12 @@ builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<ICategoryRequestRepository, CategoryRequestRepository>();
 builder.Services.AddHttpClient<IAIService, AIService>();
 
+// SSLCommerz Payment Gateway
+builder.Services.Configure<LocalScout.Application.DTOs.PaymentDTOs.SSLCommerzSettings>(
+    builder.Configuration.GetSection("SSLCommerz"));
+builder.Services.AddHttpClient<LocalScout.Application.Interfaces.ISSLCommerzService, 
+    LocalScout.Infrastructure.Services.SSLCommerzService>();
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 

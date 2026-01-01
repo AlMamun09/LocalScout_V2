@@ -95,25 +95,25 @@
         <!-- Service Details Card -->
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-briefcase mr-2"></i>Service Details
-                </h5>
+                <h5 class="mb-0"><i class="fas fa-briefcase mr-2"></i>Service Details</h5>
             </div>
-
             <div class="card-body">
-                <p class="mb-0">
-                    <strong>Service Name:</strong> @Model.ServiceName
-                </p>
-
-                @if (!string.IsNullOrEmpty(Model.ServiceDescription))
-                {
-                    <p class="text-muted">@Model.ServiceDescription</p>
-                }
-
-                <p class="mb-0">
-                    <strong>Your Base Price:</strong>
-                    Tk @Model.ServiceMinPrice.ToString("N0") @Model.ServicePricingUnit
-                </p>
+                <div class="d-flex">
+                    @if (!string.IsNullOrEmpty(Model.ServiceImagePath))
+                    {
+                        <img src="@Model.ServiceImagePath" alt="Service" class="img-thumbnail mr-3" style="width: 120px; height: 120px; object-fit: cover;">
+                    }
+                    <div>
+                        <h4>@Model.ServiceName</h4>
+                        @if (!string.IsNullOrEmpty(Model.ServiceDescription))
+                        {
+                            <p class="text-muted">@Model.ServiceDescription</p>
+                        }
+                        <p class="mb-0">
+                            <strong>Starting Price:</strong> Tk @Model.ServiceMinPrice.ToString("N0") @Model.ServicePricingUnit
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 

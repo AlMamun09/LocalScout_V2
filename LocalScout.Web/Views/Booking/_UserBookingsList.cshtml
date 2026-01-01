@@ -153,6 +153,14 @@
                                 <i class="fas fa-times mr-1"></i> Cancel
                             </button>
                         }
+                        
+                        @if (booking.Status >= BookingStatus.PaymentReceived)
+                        {
+                            <a asp-controller="Payment" asp-action="DownloadReceipt" asp-route-bookingId="@booking.BookingId" 
+                               class="btn btn-sm btn-outline-info" title="Download Payment Receipt">
+                                <i class="fas fa-file-pdf mr-1"></i> Receipt
+                            </a>
+                        }
                     </div>
                 </div>
             </div>

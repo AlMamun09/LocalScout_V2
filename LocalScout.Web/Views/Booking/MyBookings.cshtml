@@ -164,39 +164,50 @@
             
             // Bind event handlers for dynamically loaded content
             function bindEventHandlers(container) {
-                // Pay button click
+                // Pay button click - redirect to SSLCommerz
                 container.find('.btn-pay').off('click').on('click', function() {
                     var bookingId = $(this).data('booking-id');
                     var price = $(this).data('price');
                     
                     Swal.fire({
-                        title: 'Confirm Payment',
-                        html: `<p>You are about to pay <strong>Tk ${formatNumber(price)}</strong> for this service.</p><p class="text-muted small">This is a simulated payment. In production, you would be redirected to a payment gateway.</p>`,
+                        title: 'Proceed to Payment',
+                        html: `<p>You are about to pay <strong>Tk ${formatNumber(price)}</strong> for this service.</p><p class="text-muted small">You will be redirected to our secure payment gateway (SSLCommerz).</p>`,
                         icon: 'question',
                         showCancelButton: true,
                         confirmButtonColor: '#28a745',
                         cancelButtonColor: '#6c757d',
-                        confirmButtonText: '<i class="fas fa-credit-card mr-1"></i> Pay Now'
+                        confirmButtonText: '<i class="fas fa-credit-card mr-1"></i> Pay Now',
+                        showLoaderOnConfirm: true,
+                        allowOutsideClick: () => !Swal.isLoading()
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            $.ajax({
-                                url: '@Url.Action("ConfirmPayment", "Booking")',
-                                type: 'POST',
-                                data: { bookingId: bookingId },
-                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                                success: function(response) {
-                                    if (response.success) {
-                                        Swal.fire('Success!', response.message, 'success').then(() => {
-                                            refreshCurrentTab();
-                                        });
-                                    } else {
-                                        Swal.fire('Error', response.message, 'error');
-                                    }
-                                },
-                                error: function(xhr) {
-                                    Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                            // Show loading
+                            Swal.fire({
+                                title: 'Redirecting to Payment Gateway...',
+                                html: '<p>Please wait while we redirect you to the secure payment page.</p>',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
                                 }
                             });
+                            
+                            // Create and submit form to initiate payment
+                            var form = $('<form>', {
+                                method: 'POST',
+                                action: '@Url.Action("Initiate", "Payment")'
+                            });
+                            form.append($('<input>', {
+                                type: 'hidden',
+                                name: 'bookingId',
+                                value: bookingId
+                            }));
+                            form.append($('<input>', {
+                                type: 'hidden',
+                                name: '__RequestVerificationToken',
+                                value: $('input[name="__RequestVerificationToken"]').val()
+                            }));
+                            form.appendTo('body').submit();
                         }
                     });
                 });

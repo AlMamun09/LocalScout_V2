@@ -212,6 +212,47 @@ namespace LocalScout.Infrastructure.Repositories
             return true;
         }
 
+        public async Task<bool> MarkPaymentReceivedAsync(Guid bookingId, string transactionId, string validationId, string paymentMethod, string? bankTxnId)
+        {
+            var booking = await GetByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+
+            booking.Status = BookingStatus.PaymentReceived;
+            booking.PaymentReceivedAt = DateTime.UtcNow;
+            booking.TransactionId = transactionId;
+            booking.ValidationId = validationId;
+            booking.PaymentMethod = paymentMethod;
+            booking.BankTransactionId = bankTxnId;
+            booking.PaymentStatus = "VALID";
+            booking.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<Booking?> GetByTransactionIdAsync(string transactionId)
+        {
+            return await _context.Bookings.FirstOrDefaultAsync(b => b.TransactionId == transactionId);
+        }
+
+        public async Task<bool> SetTransactionIdAsync(Guid bookingId, string transactionId)
+        {
+            var booking = await GetByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+
+            booking.TransactionId = transactionId;
+            booking.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+
         public async Task<bool> MarkJobDoneAsync(Guid bookingId)
         {
             var booking = await GetByIdAsync(bookingId);

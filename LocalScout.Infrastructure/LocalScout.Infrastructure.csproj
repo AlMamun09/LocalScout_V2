@@ -21,6 +21,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageReference Include="QuestPDF" Version="2025.12.1" />
   </ItemGroup>
 
 </Project>

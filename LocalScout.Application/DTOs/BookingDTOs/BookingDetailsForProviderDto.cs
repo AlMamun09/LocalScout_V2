@@ -13,6 +13,7 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public string? ServiceDescription { get; set; }
         public decimal ServiceMinPrice { get; set; }
         public string? ServicePricingUnit { get; set; }
+        public string? ServiceImagePath { get; set; }
 
         // User info - ALWAYS visible to provider once booking is created
         public string UserId { get; set; } = string.Empty;

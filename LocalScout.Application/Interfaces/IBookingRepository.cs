@@ -30,6 +30,9 @@ namespace LocalScout.Application.Interfaces
         Task<bool> UpdateStatusAsync(Guid bookingId, BookingStatus newStatus);
         Task<bool> CancelBookingAsync(Guid bookingId, string cancelledBy, string? reason);
         Task<bool> MarkPaymentReceivedAsync(Guid bookingId);
+        Task<bool> MarkPaymentReceivedAsync(Guid bookingId, string transactionId, string validationId, string paymentMethod, string? bankTxnId);
+        Task<Booking?> GetByTransactionIdAsync(string transactionId);
+        Task<bool> SetTransactionIdAsync(Guid bookingId, string transactionId);
         Task<bool> MarkJobDoneAsync(Guid bookingId);
         Task<bool> MarkCompletedAsync(Guid bookingId);
         
