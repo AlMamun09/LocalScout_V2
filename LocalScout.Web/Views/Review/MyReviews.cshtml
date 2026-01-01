@@ -1,0 +1,100 @@
+@model List<LocalScout.Application.DTOs.ReviewDTOs.UserReviewListDto>
+
+@{
+    ViewData["Title"] = "My Reviews";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">My Reviews</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="User" asp-action="Dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item active">My Reviews</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<section class="content">
+    <div class="container-fluid">
+        @if (Model != null && Model.Any())
+        {
+            <div class="row">
+                @foreach (var review in Model)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card card-outline card-primary h-100">
+                            <div class="card-header border-0 pb-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title text-truncate" style="max-width: 70%;">
+                                        <a asp-controller="Service" asp-action="Details" asp-route-id="@review.ServiceId" class="text-dark">
+                                            @review.ServiceName
+                                        </a>
+                                    </h5>
+                                    <small class="text-muted">@review.CreatedAtFormatted</small>
+                                </div>
+                                <p class="card-text text-sm text-muted mb-0">Provided by @review.ProviderName</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= review.Rating)
+                                        {
+                                            <i class="fas fa-star text-warning"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="far fa-star text-warning"></i>
+                                        }
+                                    }
+                                    <span class="ml-1 font-weight-bold">@review.Rating.ToString("0.0")</span>
+                                </div>
+                                
+                                <div class="review-comment bg-light p-2 rounded">
+                                    @if (!string.IsNullOrEmpty(review.Comment))
+                                    {
+                                        <p class="card-text text-sm mb-0">
+                                            <i class="fas fa-quote-left text-muted mr-1 text-xs"></i>
+                                            @review.Comment
+                                        </p>
+                                    }
+                                    else
+                                    {
+                                        <p class="card-text text-sm text-muted font-italic mb-0">No written comment</p>
+                                    }
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0 pt-0">
+                                <a asp-controller="Service" asp-action="Details" asp-route-id="@review.ServiceId" 
+                                   class="btn btn-sm btn-outline-primary btn-block">
+                                    View Service
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="callout callout-info">
+                        <h5>No reviews yet!</h5>
+                        <p>You haven't submitted any reviews yet. Complete a booking to rate a service.</p>
+                        <a asp-controller="Booking" asp-action="MyBookings" class="btn btn-primary mt-2">Go to My Bookings</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>

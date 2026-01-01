@@ -4,7 +4,8 @@
 @{
     var serviceDetailsUrl = $"/Service/Details/{Model.ServiceId}";
     var joinedDate = Model.ProviderJoinedDate.ToString("MMM dd, yyyy");
-    var rating = Model.Rating?.ToString("0.0") ?? "4.6";
+    var hasRating = Model.Rating.HasValue;
+    var rating = Model.Rating?.ToString("0.0");
     var priceDisplay = Model.GetPriceDisplay();
     var pricingLabel = Model.PricingUnit == "Per Hour" ? "Hourly" : Model.PricingUnit == "Per Day" ? "Daily" : Model.PricingUnit == "Per Project" ? "Project" : "Price";
     
@@ -65,9 +66,17 @@
                     @Model.ServiceName
                 </h6>
                 <div class="d-flex align-items-center ml-2">
-                    <i class="fas fa-star text-warning" style="font-size: 0.75rem;"></i>
-                    <span class="font-weight-bold text-dark ml-1" style="font-size: 0.8rem;">@rating</span>
-                    <span class="text-muted" style="font-size: 0.7rem;">/5</span>
+                    @if (hasRating)
+                    {
+                        <i class="fas fa-star text-warning" style="font-size: 0.75rem;"></i>
+                        <span class="font-weight-bold text-dark ml-1" style="font-size: 0.8rem;">@rating</span>
+                        <span class="text-muted" style="font-size: 0.7rem;">/5</span>
+                    }
+                    else
+                    {
+                        <i class="far fa-star text-muted" style="font-size: 0.75rem;"></i>
+                        <span class="text-muted ml-1" style="font-size: 0.7rem;">No Rating</span>
+                    }
                 </div>
             </div>
 

@@ -30,9 +30,13 @@ namespace LocalScout.Application.DTOs
         public DateTime ProviderJoinedDate { get; set; }
         public bool IsProviderVerified { get; set; }
 
-        // Rating (placeholder for now)
-        public double Rating { get; set; } = 4.6;
+        // Rating (dynamic from reviews)
+        public double Rating { get; set; } = 0;
         public int ReviewCount { get; set; } = 0;
+        
+        // Detailed review data
+        public LocalScout.Application.DTOs.ReviewDTOs.ServiceRatingDto? RatingSummary { get; set; }
+        public List<LocalScout.Application.DTOs.ReviewDTOs.ReviewDisplayDto> Reviews { get; set; } = new();
 
         // Distance (in kilometers)
         public double? DistanceInKm { get; set; }

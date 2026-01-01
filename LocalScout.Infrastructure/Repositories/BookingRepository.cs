@@ -295,5 +295,94 @@ namespace LocalScout.Infrastructure.Repositories
         {
             return await _context.Bookings.AnyAsync(b => b.BookingId == bookingId && b.ProviderId == providerId);
         }
+
+        public async Task<bool> HasPendingCompletionAsync(string userId)
+        {
+            return await _context.Bookings.AnyAsync(b => 
+                b.UserId == userId && 
+                b.Status == BookingStatus.JobDone);
+        }
+
+        public async Task<List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>> GetPaymentHistoryForUserAsync(string userId)
+        {
+            var bookings = await _context.Bookings
+                .Where(b => b.UserId == userId && 
+                       (b.Status == BookingStatus.PaymentReceived || 
+                        b.Status == BookingStatus.JobDone || 
+                        b.Status == BookingStatus.Completed) &&
+                       !string.IsNullOrEmpty(b.TransactionId))
+                .OrderByDescending(b => b.PaymentReceivedAt)
+                .ToListAsync();
+
+            if (!bookings.Any())
+                return new List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>();
+
+            var serviceIds = bookings.Select(b => b.ServiceId).Distinct().ToList();
+            var providerIds = bookings.Select(b => b.ProviderId).Distinct().ToList();
+
+            var services = await _context.Services
+                .Where(s => serviceIds.Contains(s.ServiceId))
+                .ToDictionaryAsync(s => s.ServiceId, s => s.ServiceName);
+
+            var providers = await _context.Users
+                .Where(u => providerIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.ProfilePictureUrl });
+
+            return bookings.Select(b => new LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto
+            {
+                BookingId = b.BookingId,
+                ServiceId = b.ServiceId,
+                TransactionId = b.TransactionId,
+                ValidationId = b.ValidationId,
+                Amount = b.NegotiatedPrice ?? 0,
+                PaymentMethod = b.PaymentMethod,
+                PaymentDate = b.PaymentReceivedAt ?? b.UpdatedAt,
+                Status = b.PaymentStatus ?? "Success",
+                ServiceName = services.ContainsKey(b.ServiceId) ? services[b.ServiceId] ?? "Unknown Service" : "Unknown Service",
+                OtherPartyName = providers.ContainsKey(b.ProviderId) ? providers[b.ProviderId].FullName ?? "Unknown Provider" : "Unknown Provider",
+                OtherPartyImage = providers.ContainsKey(b.ProviderId) ? providers[b.ProviderId].ProfilePictureUrl : null
+            }).ToList();
+        }
+
+        public async Task<List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>> GetPaymentHistoryForProviderAsync(string providerId)
+        {
+            var bookings = await _context.Bookings
+                .Where(b => b.ProviderId == providerId && 
+                       (b.Status == BookingStatus.PaymentReceived || 
+                        b.Status == BookingStatus.JobDone || 
+                        b.Status == BookingStatus.Completed) &&
+                       !string.IsNullOrEmpty(b.TransactionId))
+                .OrderByDescending(b => b.PaymentReceivedAt)
+                .ToListAsync();
+
+            if (!bookings.Any())
+                return new List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>();
+
+            var serviceIds = bookings.Select(b => b.ServiceId).Distinct().ToList();
+            var userIds = bookings.Select(b => b.UserId).Distinct().ToList();
+
+            var services = await _context.Services
+                .Where(s => serviceIds.Contains(s.ServiceId))
+                .ToDictionaryAsync(s => s.ServiceId, s => s.ServiceName);
+
+            var users = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.ProfilePictureUrl });
+
+            return bookings.Select(b => new LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto
+            {
+                BookingId = b.BookingId,
+                ServiceId = b.ServiceId,
+                TransactionId = b.TransactionId,
+                ValidationId = b.ValidationId,
+                Amount = b.NegotiatedPrice ?? 0,
+                PaymentMethod = b.PaymentMethod,
+                PaymentDate = b.PaymentReceivedAt ?? b.UpdatedAt,
+                Status = b.PaymentStatus ?? "Success",
+                ServiceName = services.ContainsKey(b.ServiceId) ? services[b.ServiceId] ?? "Unknown Service" : "Unknown Service",
+                OtherPartyName = users.ContainsKey(b.UserId) ? users[b.UserId].FullName ?? "Unknown User" : "Unknown User",
+                OtherPartyImage = users.ContainsKey(b.UserId) ? users[b.UserId].ProfilePictureUrl : null
+            }).ToList();
+        }
     }
 }

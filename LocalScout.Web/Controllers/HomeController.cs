@@ -17,18 +17,21 @@ namespace LocalScout.Web.Controllers
         private readonly IServiceCategoryRepository _serviceCategoryRepository;
         private readonly IServiceRepository _serviceRepository;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IReviewRepository _reviewRepository;
 
         public HomeController(
             ILogger<HomeController> logger,
             IServiceCategoryRepository serviceCategoryRepository,
             IServiceRepository serviceRepository,
-            UserManager<ApplicationUser> userManager
+            UserManager<ApplicationUser> userManager,
+            IReviewRepository reviewRepository
         )
         {
             _logger = logger;
             _serviceCategoryRepository = serviceCategoryRepository;
             _serviceRepository = serviceRepository;
             _userManager = userManager;
+            _reviewRepository = reviewRepository;
         }
 
         public async Task<IActionResult> Index()
@@ -142,6 +145,15 @@ namespace LocalScout.Web.Controllers
                 // Calculate distance using Haversine formula
                 var distance = DistanceCalculator.CalculateDistance(userLat, userLon, provider.Latitude, provider.Longitude);
 
+                // Calculate dynamic rating from reviews
+                var reviews = await _reviewRepository.GetReviewsByServiceIdAsync(service.ServiceId);
+                var activeReviews = reviews.Where(r => !r.IsDeleted).ToList();
+                double? averageRating = null;
+                if (activeReviews.Any())
+                {
+                    averageRating = activeReviews.Average(r => r.Rating);
+                }
+
                 cards.Add(new ServiceCardDto
                 {
                     ServiceId = service.ServiceId,
@@ -160,7 +172,7 @@ namespace LocalScout.Web.Controllers
                     ProviderJoinedDate = provider.CreatedAt,
                     WorkingDays = provider.WorkingDays,
                     WorkingHours = provider.WorkingHours,
-                    Rating = 4.6,
+                    Rating = averageRating,
                     DistanceInKm = distance
                 });
             }

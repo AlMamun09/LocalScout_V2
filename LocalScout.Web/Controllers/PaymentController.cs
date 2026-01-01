@@ -369,7 +369,7 @@ namespace LocalScout.Web.Controllers
                 }
 
                 // User can only download their own receipts
-                if (booking.UserId != user.Id)
+                if (booking.UserId != user.Id && booking.ProviderId != user.Id)
                 {
                     TempData["Error"] = "Unauthorized access.";
                     return RedirectToAction("MyBookings", "Booking");
@@ -416,6 +416,37 @@ namespace LocalScout.Web.Controllers
                 TempData["Error"] = "Failed to generate receipt.";
                 return RedirectToAction("MyBookings", "Booking");
             }
+        }
+        /// <summary>
+        /// Provider's Payment History
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        public async Task<IActionResult> History()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account", new { area = "Identity" });
+            }
+
+            var payments = await _bookingRepository.GetPaymentHistoryForProviderAsync(user.Id);
+            return View(payments);
+        }
+
+        /// <summary>
+        /// User's Payment History
+        /// </summary>
+        [Authorize(Roles = RoleNames.User)]
+        public async Task<IActionResult> UserHistory()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account", new { area = "Identity" });
+            }
+
+            var payments = await _bookingRepository.GetPaymentHistoryForUserAsync(user.Id);
+            return View(payments);
         }
     }
 }

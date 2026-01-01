@@ -39,5 +39,14 @@ namespace LocalScout.Application.Interfaces
         // Validation
         Task<bool> IsBookingOwnerAsync(Guid bookingId, string userId);
         Task<bool> IsBookingProviderAsync(Guid bookingId, string providerId);
+        
+        /// <summary>
+        /// Check if user has a booking in JobDone status awaiting completion confirmation
+        /// </summary>
+        Task<bool> HasPendingCompletionAsync(string userId);
+        
+        // Payment History
+        Task<List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>> GetPaymentHistoryForUserAsync(string userId);
+        Task<List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>> GetPaymentHistoryForProviderAsync(string providerId);
     }
 }

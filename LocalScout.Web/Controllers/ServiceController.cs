@@ -16,6 +16,7 @@ namespace LocalScout.Web.Controllers
     {
         private readonly IServiceRepository _serviceRepository;
         private readonly IServiceCategoryRepository _categoryRepository;
+        private readonly IReviewRepository _reviewRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ServiceController> _logger;
@@ -27,12 +28,14 @@ namespace LocalScout.Web.Controllers
         public ServiceController(
             IServiceRepository serviceRepository,
             IServiceCategoryRepository categoryRepository,
+            IReviewRepository reviewRepository,
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment,
             ILogger<ServiceController> logger)
         {
             _serviceRepository = serviceRepository;
             _categoryRepository = categoryRepository;
+            _reviewRepository = reviewRepository;
             _userManager = userManager;
             _environment = environment;
             _logger = logger;
@@ -126,11 +129,18 @@ namespace LocalScout.Web.Controllers
                     ProviderJoinedDate = provider.CreatedAt,
                     IsProviderVerified = provider.IsVerified,
                     DistanceInKm = distance,
-                    Rating = 4.6, // Placeholder
-                    ReviewCount = 0, // Placeholder
                     OtherProviderServices = await BuildServiceCardsAsync(otherProviderServices, categoryDict, userLat, userLon),
                     RelatedServices = await BuildServiceCardsAsync(relatedServices, categoryDict, userLat, userLon)
                 };
+
+                // Fetch dynamic rating and reviews
+                var ratingSummary = await _reviewRepository.GetServiceRatingAsync(service.ServiceId);
+                var reviews = await _reviewRepository.GetServiceReviewsAsync(service.ServiceId, 1, 10);
+                
+                dto.Rating = ratingSummary.AverageRating;
+                dto.ReviewCount = ratingSummary.TotalReviews;
+                dto.RatingSummary = ratingSummary;
+                dto.Reviews = reviews;
 
                 return View(dto);
             }

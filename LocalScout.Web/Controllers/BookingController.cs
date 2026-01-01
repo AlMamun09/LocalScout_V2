@@ -17,6 +17,7 @@ namespace LocalScout.Web.Controllers
         private readonly IBookingRepository _bookingRepository;
         private readonly IServiceRepository _serviceRepository;
         private readonly INotificationRepository _notificationRepository;
+        private readonly IReviewRepository _reviewRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<BookingController> _logger;
@@ -28,6 +29,7 @@ namespace LocalScout.Web.Controllers
             IBookingRepository bookingRepository,
             IServiceRepository serviceRepository,
             INotificationRepository notificationRepository,
+            IReviewRepository reviewRepository,
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment,
             ILogger<BookingController> logger)
@@ -35,6 +37,7 @@ namespace LocalScout.Web.Controllers
             _bookingRepository = bookingRepository;
             _serviceRepository = serviceRepository;
             _notificationRepository = notificationRepository;
+            _reviewRepository = reviewRepository;
             _userManager = userManager;
             _environment = environment;
             _logger = logger;
@@ -121,6 +124,20 @@ namespace LocalScout.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCreateBookingModal(Guid serviceId)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                // Check if user has pending completion
+                var hasPendingCompletion = await _bookingRepository.HasPendingCompletionAsync(userId);
+                if (hasPendingCompletion)
+                {
+                    return BadRequest(new { 
+                        message = "You have a booking awaiting completion confirmation. Please confirm the previous service completion before booking a new service.",
+                        hasPendingCompletion = true
+                    });
+                }
+            }
+
             var service = await _serviceRepository.GetServiceByIdAsync(serviceId);
             if (service == null || !service.IsActive || service.IsDeleted)
             {
@@ -328,12 +345,12 @@ namespace LocalScout.Web.Controllers
         }
 
         /// <summary>
-        /// User confirms job completion
+        /// User confirms job completion (with optional review)
         /// </summary>
         [Authorize(Roles = RoleNames.User)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfirmCompletion(Guid bookingId)
+        public async Task<IActionResult> ConfirmCompletion(Guid bookingId, int? rating = null, string? comment = null)
         {
             try
             {
@@ -354,18 +371,36 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Job completion not yet marked by provider." });
                 }
 
+                // Mark booking as completed
                 var result = await _bookingRepository.MarkCompletedAsync(bookingId);
                 if (!result)
                 {
                     return BadRequest(new { message = "Failed to confirm completion." });
                 }
 
-                // Notify provider - simplified notification
+                // Create review if rating provided
+                if (rating.HasValue && rating.Value >= 1 && rating.Value <= 5)
+                {
+                    var review = new Review
+                    {
+                        BookingId = bookingId,
+                        ServiceId = booking.ServiceId,
+                        UserId = userId,
+                        ProviderId = booking.ProviderId,
+                        Rating = rating.Value,
+                        Comment = comment?.Trim()
+                    };
+
+                    await _reviewRepository.CreateReviewAsync(review);
+                }
+
+                // Notify provider
                 var user = await _userManager.FindByIdAsync(userId);
+                var reviewText = rating.HasValue ? $" with a {rating}-star rating" : "";
                 await _notificationRepository.CreateNotificationAsync(
                     booking.ProviderId,
                     "Job Completed",
-                    $"{user?.FullName ?? "User"} has confirmed the job completion. Thank you for your service!",
+                    $"{user?.FullName ?? "User"} has confirmed the job completion{reviewText}. Thank you for your service!",
                     null
                 );
 

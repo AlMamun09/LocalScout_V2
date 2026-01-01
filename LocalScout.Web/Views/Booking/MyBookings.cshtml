@@ -91,6 +91,9 @@
     </div>
 </div>
 
+<!-- Review Modal -->
+@await Html.PartialAsync("_ReviewModal")
+
 <!-- Cancel Modal -->
 <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
@@ -212,40 +215,19 @@
                     });
                 });
 
-                // Confirm completion button click
+                // Confirm completion button click - open review modal
                 container.find('.btn-confirm-completion').off('click').on('click', function() {
                     var bookingId = $(this).data('booking-id');
+                    console.log('Confirm completion button clicked for booking:', bookingId);
                     
-                    Swal.fire({
-                        title: 'Confirm Job Completion',
-                        text: 'Are you satisfied with the service? By confirming, you acknowledge that the job has been completed satisfactorily.',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#28a745',
-                        cancelButtonColor: '#6c757d',
-                        confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Confirm'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: '@Url.Action("ConfirmCompletion", "Booking")',
-                                type: 'POST',
-                                data: { bookingId: bookingId },
-                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                                success: function(response) {
-                                    if (response.success) {
-                                        Swal.fire('Completed!', response.message, 'success').then(() => {
-                                            refreshCurrentTab();
-                                        });
-                                    } else {
-                                        Swal.fire('Error', response.message, 'error');
-                                    }
-                                },
-                                error: function(xhr) {
-                                    Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
-                                }
-                            });
-                        }
-                    });
+                    // Check if function exists
+                    if (typeof window.openReviewModal === 'function') {
+                        console.log('Calling openReviewModal function');
+                        window.openReviewModal(bookingId);
+                    } else {
+                        console.error('openReviewModal function not found!');
+                        Swal.fire('Error', 'Review modal not available. Please refresh the page.', 'error');
+                    }
                 });
 
                 // Cancel button click - show modal

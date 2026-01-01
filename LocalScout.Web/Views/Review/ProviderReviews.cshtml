@@ -1,0 +1,121 @@
+@model List<LocalScout.Application.DTOs.ReviewDTOs.ProviderReviewListDto>
+
+@{
+    ViewData["Title"] = "Reviews Received";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    
+    double avgRating = ViewBag.AverageRating ?? 0;
+    int totalReviews = ViewBag.TotalReviews ?? 0;
+}
+
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Reviews Received</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Provider" asp-action="Dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Reviews</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<section class="content">
+    <div class="container-fluid">
+        <!-- Stats -->
+        <div class="row mb-3">
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="info-box">
+                    <span class="info-box-icon bg-warning text-white"><i class="fas fa-star"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Average Rating</span>
+                        <span class="info-box-number">@avgRating.ToString("0.0") / 5.0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info text-white"><i class="fas fa-comments"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Total Reviews</span>
+                        <span class="info-box-number">@totalReviews</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model != null && Model.Any())
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Latest Reviews</h3>
+                </div>
+                <!-- /.card-header -->
+                <div class="card-body p-0">
+                    <ul class="products-list product-list-in-card pl-2 pr-2">
+                        @foreach (var review in Model)
+                        {
+                            <li class="item">
+                                <div class="product-img">
+                                    <img src="@(review.UserProfilePicture ?? "/images/default-avatar.png")" alt="Product Image" class="img-circle img-size-50">
+                                </div>
+                                <div class="product-info">
+                                    <div class="product-title font-weight-bold">
+                                        @review.UserName
+                                        <span class="badge badge-light float-right text-muted font-weight-normal">@review.CreatedAtFormatted</span>
+                                    </div>
+                                    <div class="mb-1">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            if (i <= review.Rating)
+                                            {
+                                                <i class="fas fa-star text-warning text-xs"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="far fa-star text-warning text-xs"></i>
+                                            }
+                                        }
+                                        <span class="text-xs text-muted ml-1">for <strong>@review.ServiceName</strong></span>
+                                    </div>
+                                    <span class="product-description text-dark">
+                                        @if (!string.IsNullOrEmpty(review.Comment))
+                                        {
+                                            @review.Comment
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted font-italic">No written comment</span>
+                                        }
+                                    </span>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <!-- /.card-body -->
+                <div class="card-footer text-center">
+                    <span class="text-muted">Showing all reviews</span>
+                </div>
+                <!-- /.card-footer -->
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="callout callout-info">
+                        <h5>No reviews yet!</h5>
+                        <p>You haven't received any reviews yet.</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>

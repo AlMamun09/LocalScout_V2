@@ -1,0 +1,274 @@
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title" id="reviewModalLabel">
+                    <i class="fas fa-star mr-2"></i>Rate Your Experience
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reviewBookingId" value="" />
+                
+                <div class="text-center mb-4">
+                    <p class="text-muted mb-3">How was your experience with this service?</p>
+                    
+                    <!-- Star Rating -->
+                    <div class="star-rating mb-3" id="starRating">
+                        <i class="far fa-star star" data-rating="1"></i>
+                        <i class="far fa-star star" data-rating="2"></i>
+                        <i class="far fa-star star" data-rating="3"></i>
+                        <i class="far fa-star star" data-rating="4"></i>
+                        <i class="far fa-star star" data-rating="5"></i>
+                    </div>
+                    <p class="rating-text text-muted small" id="ratingText">Click to rate</p>
+                    <input type="hidden" id="selectedRating" value="0" />
+                </div>
+                
+                <!-- Comment -->
+                <div class="form-group">
+                    <label for="reviewComment" class="font-weight-bold">Your Review (Optional)</label>
+                    <textarea class="form-control" id="reviewComment" rows="3" 
+                              placeholder="Share your experience with this service..."></textarea>
+                    <small class="text-muted">Help others by sharing what you liked or disliked</small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" id="skipReviewBtn">
+                    <i class="fas fa-forward mr-1"></i>Skip & Confirm
+                </button>
+                <button type="button" class="btn btn-primary" id="submitReviewBtn" disabled>
+                    <i class="fas fa-check mr-1"></i>Submit & Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .star-rating {
+        font-size: 2.5rem;
+        cursor: pointer;
+    }
+    .star-rating .star {
+        color: #ddd;
+        transition: all 0.2s ease;
+        margin: 0 3px;
+        cursor: pointer;
+    }
+    .star-rating .star:hover,
+    .star-rating .star.hovered {
+        color: #ffc107;
+        transform: scale(1.1);
+    }
+    .star-rating .star.selected {
+        color: #ffc107;
+    }
+    .star-rating .star.fas {
+        color: #ffc107;
+    }
+</style>
+
+<script>
+// Bootstrap 4 Compatible Review Modal - Immediate Initialization
+(function() {
+    'use strict';
+    
+    console.log('[ReviewModal] Script loaded');
+    
+    // Initialize immediately if jQuery is available, otherwise wait
+    function initReviewModal() {
+        if (typeof jQuery === 'undefined') {
+            console.warn('[ReviewModal] jQuery not loaded yet, waiting...');
+            setTimeout(initReviewModal, 100);
+            return;
+        }
+        
+        if (typeof window.reviewModalInitialized !== 'undefined') {
+            console.log('[ReviewModal] Already initialized, skipping...');
+            return;
+        }
+        
+        console.log('[ReviewModal] Initializing...');
+        
+        var $ = jQuery;
+        var reviewSelectedRating = 0;
+        var reviewRatingTexts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+        
+        // Function to highlight stars
+        function reviewHighlightStars(rating) {
+            $('#starRating .star').each(function() {
+                var starRating = parseInt($(this).attr('data-rating'));
+                if (starRating <= rating) {
+                    $(this).removeClass('far').addClass('fas selected');
+                } else {
+                    $(this).removeClass('fas selected').addClass('far');
+                }
+            });
+        }
+        
+        // Star hover - show preview
+        $(document).on('mouseenter', '#starRating .star', function() {
+            var rating = parseInt($(this).attr('data-rating'));
+            reviewHighlightStars(rating);
+        });
+        
+        // Star hover out - restore selection
+        $(document).on('mouseleave', '#starRating', function() {
+            reviewHighlightStars(reviewSelectedRating);
+        });
+        
+        // Star click - select rating
+        $(document).on('click', '#starRating .star', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            reviewSelectedRating = parseInt($(this).attr('data-rating'));
+            $('#selectedRating').val(reviewSelectedRating);
+            reviewHighlightStars(reviewSelectedRating);
+            $('#ratingText').text(reviewRatingTexts[reviewSelectedRating]);
+            $('#submitReviewBtn').prop('disabled', false);
+            
+            console.log('[ReviewModal] Star clicked:', reviewSelectedRating);
+        });
+        
+        // Skip review button
+        $(document).on('click', '#skipReviewBtn', function(e) {
+            e.preventDefault();
+            
+            var bookingId = $('#reviewBookingId').val();
+            console.log('[ReviewModal] Skip button clicked for booking:', bookingId);
+            
+            if (!bookingId) {
+                Swal.fire('Error', 'Invalid booking ID', 'error');
+                return;
+            }
+            submitReviewCompletion(bookingId, null, null);
+        });
+        
+        // Submit review button
+        $(document).on('click', '#submitReviewBtn', function(e) {
+            e.preventDefault();
+            
+            var bookingId = $('#reviewBookingId').val();
+            var rating = reviewSelectedRating;
+            
+            console.log('[ReviewModal] Submit button clicked for booking:', bookingId, 'rating:', rating);
+            
+            if (!bookingId) {
+                Swal.fire('Error', 'Invalid booking ID', 'error');
+                return;
+            }
+            
+            if (rating === 0) {
+                Swal.fire('Error', 'Please select a rating', 'warning');
+                return;
+            }
+            
+            var comment = $('#reviewComment').val().trim();
+            submitReviewCompletion(bookingId, rating, comment);
+        });
+        
+        // Submit function
+        function submitReviewCompletion(bookingId, rating, comment) {
+            var data = { bookingId: bookingId };
+            if (rating) data.rating = rating;
+            if (comment) data.comment = comment;
+            
+            console.log('[ReviewModal] Submitting review completion:', data);
+            
+            // Hide modal
+            $('#reviewModal').modal('hide');
+            
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Confirming job completion',
+                allowOutsideClick: false,
+                onBeforeOpen: function() {
+                    Swal.showLoading();
+                }
+            });
+            
+            $.ajax({
+                url: '@Url.Action("ConfirmCompletion", "Booking")',
+                type: 'POST',
+                data: data,
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Completed!',
+                            text: response.message,
+                            icon: 'success'
+                        }).then(function() {
+                            if (typeof window.refreshCurrentTab === 'function') {
+                                window.refreshCurrentTab();
+                            } else {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                }
+            });
+        }
+        
+        // Bootstrap 4 modal event - reset on close
+        $('#reviewModal').on('hidden.bs.modal', function() {
+            console.log('[ReviewModal] Modal closed, resetting state');
+            reviewSelectedRating = 0;
+            $('#selectedRating').val(0);
+            $('#reviewComment').val('');
+            $('#ratingText').text('Click to rate');
+            $('#submitReviewBtn').prop('disabled', true);
+            $('#starRating .star').removeClass('fas selected').addClass('far');
+        });
+        
+        // Global function to open review modal
+        window.openReviewModal = function(bookingId) {
+            console.log('[ReviewModal] openReviewModal called with bookingId:', bookingId);
+            
+            if (!bookingId) {
+                console.error('[ReviewModal] Invalid booking ID');
+                Swal.fire('Error', 'Invalid booking ID', 'error');
+                return;
+            }
+            
+            // Check if modal exists
+            if ($('#reviewModal').length === 0) {
+                console.error('[ReviewModal] Modal element not found in DOM');
+                Swal.fire('Error', 'Review modal not found. Please refresh the page.', 'error');
+                return;
+            }
+            
+            console.log('[ReviewModal] Opening modal for booking:', bookingId);
+            
+            // Reset state
+            reviewSelectedRating = 0;
+            $('#reviewBookingId').val(bookingId);
+            $('#selectedRating').val(0);
+            $('#reviewComment').val('');
+            $('#ratingText').text('Click to rate');
+            $('#submitReviewBtn').prop('disabled', true);
+            $('#starRating .star').removeClass('fas selected').addClass('far');
+            
+            // Show modal
+            $('#reviewModal').modal('show');
+        };
+        
+        // Mark as initialized
+        window.reviewModalInitialized = true;
+        console.log('[ReviewModal] Initialization complete');
+    }
+    
+    // Start initialization
+    initReviewModal();
+})();
+</script>

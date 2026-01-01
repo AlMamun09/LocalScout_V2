@@ -299,7 +299,8 @@
                 year: 'numeric' 
             });
 
-            const rating = service.rating ? service.rating.toFixed(1) : '4.6';
+            const hasRating = service.rating !== null && service.rating !== undefined;
+            const rating = hasRating ? service.rating.toFixed(1) : null;
             
             // Format distance
             let distanceDisplay = '';
@@ -354,6 +355,21 @@
                  }
              }
 
+            // Rating HTML
+            let ratingHtml;
+            if (hasRating) {
+                ratingHtml = `
+                    <i class="fas fa-star text-warning" style="font-size: 0.75rem;"></i>
+                    <span class="font-weight-bold text-dark ml-1" style="font-size: 0.8rem;">${rating}</span>
+                    <span class="text-muted" style="font-size: 0.7rem;">/5</span>
+                `;
+            } else {
+                ratingHtml = `
+                    <i class="far fa-star text-muted" style="font-size: 0.75rem;"></i>
+                    <span class="text-muted ml-1" style="font-size: 0.7rem;">No Rating</span>
+                `;
+            }
+
             return `
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
                     <a href="${serviceDetailsUrl}" class="text-decoration-none d-block h-100">
@@ -382,9 +398,7 @@
                                     ${service.serviceName}
                                 </h6>
                                 <div class="d-flex align-items-center ml-2">
-                                    <i class="fas fa-star text-warning" style="font-size: 0.75rem;"></i>
-                                    <span class="font-weight-bold text-dark ml-1" style="font-size: 0.8rem;">${rating}</span>
-                                    <span class="text-muted" style="font-size: 0.7rem;">/5</span>
+                                    ${ratingHtml}
                                 </div>
                             </div>
 
