@@ -483,3 +483,4 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 LocalScout.Web/appsettings.json
+LocalScout.Web/wwwroot/images/
