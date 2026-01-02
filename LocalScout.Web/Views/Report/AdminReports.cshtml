@@ -1,0 +1,160 @@
+@model LocalScout.Application.DTOs.ReportDTOs.AdminReportDto
+@{
+    ViewData["Title"] = "Platform Analytics";
+    var startDateStr = Model.StartDate.ToString("yyyyMMdd");
+    var endDateStr = Model.EndDate.ToString("yyyyMMdd");
+}
+
+<div class="overflow-hidden px-3">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap pt-3">
+                <h4 class="mb-0"><i class="fas fa-chart-pie mr-2 text-primary"></i>Platform Analytics</h4>
+                <button type="button" class="btn btn-success" onclick="exportSummary()">
+                    <i class="fas fa-file-csv mr-1"></i> Export Summary
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="row align-items-end">
+                <div class="col-md-3 col-sm-6 mb-2 mb-md-0">
+                    <label class="form-label fw-bold text-muted small mb-1">Date Range</label>
+                    <select id="dateRangeSelect" class="form-control" onchange="handleDateRangeChange()">
+                        @Html.Raw($"<option value=\"last7\" {(Model.DateRange == "last7" ? "selected" : "")}>Last 7 Days</option>")
+                        @Html.Raw($"<option value=\"last30\" {(Model.DateRange == "last30" ? "selected" : "")}>Last 30 Days</option>")
+                        @Html.Raw($"<option value=\"month\" {(Model.DateRange == "month" ? "selected" : "")}>Specific Month</option>")
+                        @Html.Raw($"<option value=\"custom\" {(Model.DateRange == "custom" ? "selected" : "")}>Custom Range</option>")
+                    </select>
+                </div>
+                
+                <div class="col-md-2 col-sm-6 mb-2 mb-md-0" id="monthField" style="display: none;">
+                    <label class="form-label text-muted small mb-1">Month</label>
+                    <select id="monthSelect" class="form-control" onchange="applyFilter()">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            var monthName = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i);
+                            @Html.Raw($"<option value=\"{i}\">{monthName}</option>")
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6 mb-2 mb-md-0" id="yearField" style="display: none;">
+                    <label class="form-label text-muted small mb-1">Year</label>
+                    <select id="yearSelect" class="form-control" onchange="applyFilter()">
+                        @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+                        {
+                            @Html.Raw($"<option value=\"{y}\">{y}</option>")
+                        }
+                    </select>
+                </div>
+                
+                <div class="col-md-2 col-sm-6 mb-2 mb-md-0" id="startDateField" style="display: none;">
+                    <label class="form-label text-muted small mb-1">Start Date</label>
+                    <input type="date" id="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" onchange="applyFilter()">
+                </div>
+                <div class="col-md-2 col-sm-6 mb-2 mb-md-0" id="endDateField" style="display: none;">
+                    <label class="form-label text-muted small mb-1">End Date</label>
+                    <input type="date" id="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" onchange="applyFilter()">
+                </div>
+                
+                <div class="col-md-2 col-sm-6">
+                    <div id="loadingIndicator" class="text-center d-none">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="reportContent">
+        @await Html.PartialAsync("_AdminReportContent", Model)
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var reportFilename = 'admin_report_@(startDateStr)_to_@(endDateStr).csv';
+        
+        function handleDateRangeChange() {
+            toggleDateFields();
+            var range = document.getElementById('dateRangeSelect').value;
+            if (range === 'last7' || range === 'last30') {
+                applyFilter();
+            }
+        }
+        
+        function toggleDateFields() {
+            var range = document.getElementById('dateRangeSelect').value;
+            document.getElementById('monthField').style.display = 'none';
+            document.getElementById('yearField').style.display = 'none';
+            document.getElementById('startDateField').style.display = 'none';
+            document.getElementById('endDateField').style.display = 'none';
+            
+            if (range === 'month') {
+                document.getElementById('monthField').style.display = 'block';
+                document.getElementById('yearField').style.display = 'block';
+            } else if (range === 'custom') {
+                document.getElementById('startDateField').style.display = 'block';
+                document.getElementById('endDateField').style.display = 'block';
+            }
+        }
+        
+        function applyFilter() {
+            var range = document.getElementById('dateRangeSelect').value;
+            var params = { dateRange: range };
+            
+            if (range === 'month') {
+                params.month = document.getElementById('monthSelect').value;
+                params.year = document.getElementById('yearSelect').value;
+            } else if (range === 'custom') {
+                params.startDate = document.getElementById('startDate').value;
+                params.endDate = document.getElementById('endDate').value;
+            }
+            
+            document.getElementById('loadingIndicator').classList.remove('d-none');
+            
+            $.ajax({
+                url: '@Url.Action("GetAdminReportData", "Report")',
+                data: params,
+                success: function(html) {
+                    document.getElementById('reportContent').innerHTML = html;
+                    document.getElementById('loadingIndicator').classList.add('d-none');
+                },
+                error: function() {
+                    document.getElementById('loadingIndicator').classList.add('d-none');
+                    Swal.fire('Error', 'Failed to load report data', 'error');
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', toggleDateFields);
+        
+        function exportSummary() {
+            var table = document.getElementById('summaryTable');
+            if (!table) {
+                Swal.fire('No Data', 'No data to export', 'warning');
+                return;
+            }
+            var csv = [];
+            var rows = table.querySelectorAll('tr');
+            for (var row of rows) {
+                var cols = row.querySelectorAll('th, td');
+                var rowData = [];
+                for (var col of cols) {
+                    rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+                }
+                csv.push(rowData.join(','));
+            }
+            var blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = reportFilename;
+            a.click();
+        }
+    </script>
+}

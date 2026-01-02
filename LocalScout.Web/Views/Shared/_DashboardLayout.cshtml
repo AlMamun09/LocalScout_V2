@@ -379,19 +379,19 @@
                     </a>
                     @if (User.IsInRole(RoleNames.Admin))
                     {
-                        <a asp-controller="Admin" asp-action="Reports" class="sidebar-footer-btn" title="Reports">
+                        <a asp-controller="Report" asp-action="AdminReports" class="sidebar-footer-btn" title="Reports">
                             <i class="fas fa-chart-bar"></i>
                         </a>
                     }
                     else if (User.IsInRole(RoleNames.ServiceProvider))
                     {
-                        <a asp-controller="Provider" asp-action="Reports" class="sidebar-footer-btn" title="Reports">
+                        <a asp-controller="Report" asp-action="ProviderReports" class="sidebar-footer-btn" title="Reports">
                             <i class="fas fa-chart-bar"></i>
                         </a>
                     }
                     else if (User.IsInRole(RoleNames.User))
                     {
-                        <a asp-controller="User" asp-action="Reports" class="sidebar-footer-btn" title="Reports">
+                        <a asp-controller="Report" asp-action="UserReports" class="sidebar-footer-btn" title="Reports">
                             <i class="fas fa-chart-bar"></i>
                         </a>
                     }

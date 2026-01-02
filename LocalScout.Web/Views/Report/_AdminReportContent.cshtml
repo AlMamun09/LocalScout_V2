@@ -1,0 +1,200 @@
+@model LocalScout.Application.DTOs.ReportDTOs.AdminReportDto
+
+<!-- Report Period Info -->
+<div class="alert alert-light border-left-primary mb-4 py-3" style="border-left: 4px solid var(--color-primary);">
+    <i class="fas fa-calendar-alt text-primary mr-2"></i>
+    <strong>Report Period:</strong> 
+    <span class="text-primary font-weight-bold">@Model.StartDate.ToString("MMM dd, yyyy")</span> 
+    to 
+    <span class="text-primary font-weight-bold">@Model.EndDate.ToString("MMM dd, yyyy")</span>
+</div>
+
+<!-- Platform Overview Section -->
+<div class="mb-4">
+    <h5 class="text-muted mb-3"><i class="fas fa-globe mr-2"></i>Platform Overview (All Time)</h5>
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 report-stat-card">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="stat-icon bg-info text-white rounded-circle mr-3">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="mb-0 font-weight-bold">@Model.TotalUsers</h3>
+                        <p class="text-muted mb-0 small">Total Users</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 report-stat-card">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="stat-icon bg-success text-white rounded-circle mr-3">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="mb-0 font-weight-bold text-success">@Model.ActiveUsers</h3>
+                        <p class="text-muted mb-0 small">Active Users</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 report-stat-card">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="stat-icon bg-primary text-white rounded-circle mr-3">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="mb-0 font-weight-bold">@Model.TotalProviders</h3>
+                        <p class="text-muted mb-0 small">Total Providers</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 report-stat-card">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="stat-icon bg-warning text-dark rounded-circle mr-3">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="mb-0 font-weight-bold">@Model.ActiveProviders</h3>
+                        <p class="text-muted mb-0 small">Verified Providers</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Growth in Selected Period Section -->
+<div class="mb-4">
+    <h5 class="text-muted mb-3"><i class="fas fa-chart-line mr-2"></i>Growth in Selected Period</h5>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="stat-icon bg-info text-white rounded-circle mr-3">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 font-weight-bold">@Model.NewUsersInPeriod</h4>
+                            <p class="text-muted mb-0 small">New Users</p>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        @{
+                            var userPercent = Model.TotalUsers > 0 ? (Model.NewUsersInPeriod * 100.0 / Model.TotalUsers) : 0;
+                        }
+                        <div class="progress-bar bg-info" role="progressbar" style="width: @userPercent%"></div>
+                    </div>
+                    <small class="text-muted">@userPercent.ToString("F1")% of total users</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="stat-icon bg-success text-white rounded-circle mr-3">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 font-weight-bold">@Model.NewProvidersInPeriod</h4>
+                            <p class="text-muted mb-0 small">New Providers</p>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        @{
+                            var providerPercent = Model.TotalProviders > 0 ? (Model.NewProvidersInPeriod * 100.0 / Model.TotalProviders) : 0;
+                        }
+                        <div class="progress-bar bg-success" role="progressbar" style="width: @providerPercent%"></div>
+                    </div>
+                    <small class="text-muted">@providerPercent.ToString("F1")% of total providers</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics Table -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 font-weight-bold"><i class="fas fa-table mr-2 text-primary"></i>Summary Statistics</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="summaryTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="border-0 text-muted small py-3 pl-3">Metric</th>
+                        <th class="border-0 text-muted small py-3 text-center">All Time</th>
+                        <th class="border-0 text-muted small py-3 text-center pr-3">This Period</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="align-middle pl-3">
+                            <i class="fas fa-users text-info mr-2"></i>
+                            <strong>Users</strong>
+                        </td>
+                        <td class="align-middle text-center font-weight-bold">@Model.TotalUsers</td>
+                        <td class="align-middle text-center pr-3">
+                            <span class="badge badge-success px-2 py-1">+@Model.NewUsersInPeriod</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="align-middle pl-3">
+                            <i class="fas fa-user-check text-success mr-2"></i>
+                            <strong>Active Users</strong>
+                        </td>
+                        <td class="align-middle text-center font-weight-bold">@Model.ActiveUsers</td>
+                        <td class="align-middle text-center text-muted pr-3">—</td>
+                    </tr>
+                    <tr>
+                        <td class="align-middle pl-3">
+                            <i class="fas fa-user-tie text-primary mr-2"></i>
+                            <strong>Providers</strong>
+                        </td>
+                        <td class="align-middle text-center font-weight-bold">@Model.TotalProviders</td>
+                        <td class="align-middle text-center pr-3">
+                            <span class="badge badge-success px-2 py-1">+@Model.NewProvidersInPeriod</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="align-middle pl-3">
+                            <i class="fas fa-shield-alt text-warning mr-2"></i>
+                            <strong>Verified Providers</strong>
+                        </td>
+                        <td class="align-middle text-center font-weight-bold">@Model.ActiveProviders</td>
+                        <td class="align-middle text-center text-muted pr-3">—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-stat-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .report-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1)!important;
+    }
+    .stat-icon {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .stat-content h3, .stat-content h4 {
+        font-size: 1.25rem;
+    }
+</style>

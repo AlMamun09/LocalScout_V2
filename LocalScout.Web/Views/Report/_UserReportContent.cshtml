@@ -1,0 +1,170 @@
+@model LocalScout.Application.DTOs.ReportDTOs.UserReportDto
+
+<!-- Report Period Info -->
+<div class="alert alert-light border-left-primary mb-4 py-3" style="border-left: 4px solid var(--color-primary);">
+    <i class="fas fa-calendar-alt text-primary mr-2"></i>
+    <strong>Report Period:</strong> 
+    <span class="text-primary font-weight-bold">@Model.StartDate.ToString("MMM dd, yyyy")</span> 
+    to 
+    <span class="text-primary font-weight-bold">@Model.EndDate.ToString("MMM dd, yyyy")</span>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100 report-stat-card">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="stat-icon bg-info text-white rounded-circle mr-3">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="mb-0 font-weight-bold">@Model.TotalBookings</h3>
+                    <p class="text-muted mb-0 small">Total Bookings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100 report-stat-card">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="stat-icon bg-success text-white rounded-circle mr-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="mb-0 font-weight-bold text-success">@Model.CompletedBookings</h3>
+                    <p class="text-muted mb-0 small">Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100 report-stat-card">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="stat-icon bg-danger text-white rounded-circle mr-3">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="mb-0 font-weight-bold text-danger">@Model.CancelledBookings</h3>
+                    <p class="text-muted mb-0 small">Cancelled</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100 report-stat-card">
+            <div class="card-body p-3 d-flex align-items-center">
+                <div class="stat-icon bg-warning text-white rounded-circle mr-3">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="mb-0 font-weight-bold">Tk @Model.TotalSpent.ToString("N0")</h3>
+                    <p class="text-muted mb-0 small">Total Spent</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Details Table -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 font-weight-bold"><i class="fas fa-list mr-2 text-primary"></i>Booking Details</h5>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Bookings.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="bookingsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 text-muted small py-3 pl-3">#</th>
+                            <th class="border-0 text-muted small py-3">Service</th>
+                            <th class="border-0 text-muted small py-3">Provider</th>
+                            <th class="border-0 text-muted small py-3">Booking Date</th>
+                            <th class="border-0 text-muted small py-3">Completed Date</th>
+                            <th class="border-0 text-muted small py-3">Status</th>
+                            <th class="border-0 text-muted small py-3 text-right pr-3">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ var index = 1; }
+                        @foreach (var booking in Model.Bookings)
+                        {
+                            var statusClass = booking.Status switch
+                            {
+                                "Completed" => "badge-success",
+                                "Cancelled" => "badge-danger",
+                                "PendingProviderReview" => "badge-warning",
+                                "InProgress" => "badge-info",
+                                "PaymentReceived" => "badge-primary",
+                                _ => "badge-secondary"
+                            };
+                            
+                            <tr>
+                                <td class="align-middle text-muted pl-3">@index</td>
+                                <td class="align-middle font-weight-bold">@booking.ServiceName</td>
+                                <td class="align-middle">@booking.ProviderName</td>
+                                <td class="align-middle">@booking.BookingDate.ToString("MMM dd, yyyy")</td>
+                                <td class="align-middle">
+                                    @if (booking.CompletedDate.HasValue)
+                                    {
+                                        @booking.CompletedDate.Value.ToString("MMM dd, yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="align-middle"><span class="badge @statusClass px-2 py-1">@booking.Status</span></td>
+                                <td class="align-middle text-right font-weight-bold pr-3">
+                                    @if (booking.Amount.HasValue)
+                                    {
+                                        <span class="text-success">Tk @booking.Amount.Value.ToString("N0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-inbox fa-3x mb-3 text-secondary"></i>
+                <p class="mb-0 mt-3">No bookings found for this period.</p>
+                <small class="text-muted">Try adjusting the date range above</small>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .report-stat-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .report-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1)!important;
+    }
+    .stat-icon {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .stat-content h3 {
+        font-size: 1.25rem;
+    }
+    .border-left-primary {
+        border-left-color: var(--color-primary) !important;
+    }
+</style>
