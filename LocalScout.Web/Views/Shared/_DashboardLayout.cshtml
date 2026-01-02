@@ -105,23 +105,36 @@
             </a>
             <div class="sidebar">
 
-                <div class="user-panel mt-2 pb-3 mb-3 d-flex">
-                    <div class="image">
+                <div class="user-panel mt-1 pb-1 d-flex align-items-center">
+                    <div class="image position-relative">
                         @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
                         {
                             <img src="@currentUser.ProfilePictureUrl" class="img-circle elevation-2" alt="User Image"
-                                 style="width: 2.1rem; height: 2.1rem; object-fit: cover;">
+                                 style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
                         }
                         else
                         {
                             <img src="~/adminlte/dist/img/user2-160x160.jpg" class="img-circle elevation-2"
-                                 alt="User Image">
+                                 alt="User Image" style="width: 2.5rem; height: 2.5rem; object-fit: cover;">
                         }
+                        <span class="user-status-indicator online"></span>
                     </div>
-                    <div class="info">
-                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="d-block">
+                    <div class="info d-flex flex-column">
+                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="d-block user-name mb-1">
                             @(currentUser?.FullName ?? User.Identity?.Name ?? "Guest")
                         </a>
+                        @if (User.IsInRole(RoleNames.Admin))
+                        {
+                            <span class="role-badge role-admin"><i class="fas fa-shield-alt mr-1"></i>Administrator</span>
+                        }
+                        else if (User.IsInRole(RoleNames.ServiceProvider))
+                        {
+                            <span class="role-badge role-provider"><i class="fas fa-briefcase mr-1"></i>Service Provider</span>
+                        }
+                        else if (User.IsInRole(RoleNames.User))
+                        {
+                            <span class="role-badge role-user"><i class="fas fa-user mr-1"></i>User</span>
+                        }
                     </div>
                 </div>
 
@@ -148,13 +161,16 @@
                         @* =============== ADMIN MENU =============== *@
                         @if (User.IsInRole(RoleNames.Admin))
                         {
+                            <li class="nav-header">MAIN</li>
                             <li class="nav-item">
                                 <a asp-controller="Admin" asp-action="Index"
                                    class="nav-link @(currentAction == "Index" && currentController == "Admin" ? "active" : "")">
                                     <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>Admin Dashboard</p>
+                                    <p>Dashboard</p>
                                 </a>
                             </li>
+                            
+                            <li class="nav-header">MANAGEMENT</li>
 
                             <li class="nav-item @(isUserMenuOpen ? "menu-open" : "")">
                                 <a href="#" class="nav-link @(isUserMenuOpen ? "active" : "")">
@@ -252,13 +268,16 @@
                         @* =============== SERVICE PROVIDER MENU =============== *@
                         @if (User.IsInRole(RoleNames.ServiceProvider))
                         {
+                            <li class="nav-header">MAIN</li>
                             <li class="nav-item">
                                 <a asp-controller="Provider" asp-action="Index"
                                    class="nav-link @(currentController == "Provider" && currentAction == "Index" ? "active" : "")">
                                     <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>My Dashboard</p>
+                                    <p>Dashboard</p>
                                 </a>
                             </li>
+                            
+                            <li class="nav-header">SERVICES</li>
 
                             <li class="nav-item @(isServiceMenuOpen ? "menu-open" : "")">
                                 <a href="#" class="nav-link @(isServiceMenuOpen ? "active" : "")">
@@ -286,11 +305,12 @@
                                 </ul>
                             </li>
 
+                            <li class="nav-header">ACTIVITY</li>
                             <li class="nav-item">
                                 <a asp-controller="Booking" asp-action="ProviderBookings"
                                    class="nav-link @(currentController == "Booking" && currentAction == "ProviderBookings" ? "active" : "")">
                                     <i class="nav-icon fas fa-calendar-check"></i>
-                                    <p>My Bookings</p>
+                                    <p>Bookings</p>
                                 </a>
                             </li>
 
@@ -314,13 +334,16 @@
                         @* =============== REGULAR USER MENU =============== *@
                         @if (User.IsInRole(RoleNames.User))
                         {
+                            <li class="nav-header">MAIN</li>
                             <li class="nav-item">
                                 <a asp-controller="User" asp-action="Dashboard"
                                    class="nav-link @(currentController == "User" && currentAction == "Dashboard" ? "active" : "")">
                                     <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>My Dashboard</p>
+                                    <p>Dashboard</p>
                                 </a>
                             </li>
+                            
+                            <li class="nav-header">MY ACTIVITY</li>
 
                             <li class="nav-item">
                                 <a asp-controller="Booking" asp-action="MyBookings"
@@ -345,17 +368,37 @@
                                     <p>Payment History</p>
                                 </a>
                             </li>
-
-                            <li class="nav-item">
-                                <a asp-controller="Home" asp-action="Index"
-                                   class="nav-link">
-                                    <i class="nav-icon fas fa-home"></i>
-                                    <p>Browse Services</p>
-                                </a>
-                            </li>
                         }
                     </ul>
                 </nav>
+                
+                @* =============== SIDEBAR FOOTER =============== *@
+                <div class="sidebar-footer">
+                    <a asp-controller="Home" asp-action="Index" class="sidebar-footer-btn" title="Home">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    @if (User.IsInRole(RoleNames.Admin))
+                    {
+                        <a asp-controller="Admin" asp-action="Reports" class="sidebar-footer-btn" title="Reports">
+                            <i class="fas fa-chart-bar"></i>
+                        </a>
+                    }
+                    else if (User.IsInRole(RoleNames.ServiceProvider))
+                    {
+                        <a asp-controller="Provider" asp-action="Reports" class="sidebar-footer-btn" title="Reports">
+                            <i class="fas fa-chart-bar"></i>
+                        </a>
+                    }
+                    else if (User.IsInRole(RoleNames.User))
+                    {
+                        <a asp-controller="User" asp-action="Reports" class="sidebar-footer-btn" title="Reports">
+                            <i class="fas fa-chart-bar"></i>
+                        </a>
+                    }
+                    <a asp-area="Identity" asp-page="/Account/Manage/Index" class="sidebar-footer-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                </div>
             </div>
         </aside>
 
@@ -373,10 +416,7 @@
         </footer>
     </div>
 
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <partial name="_NotificationModals" />
-    }
+    @* Notification modals removed - now using dropdown approach *@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>

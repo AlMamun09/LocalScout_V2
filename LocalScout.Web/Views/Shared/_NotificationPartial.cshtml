@@ -1,8 +1,31 @@
-<!-- Notification Icon -->
-<li class="nav-item">
-    <a class="nav-link position-relative" href="#" data-toggle="modal" data-target="#notificationListModal" role="button">
-        <i class="far fa-bell"></i>
-        <span id="notificationBadge" class="badge badge-danger navbar-badge" style="display: none;">0</span>
+<!-- Notification Dropdown -->
+<li class="nav-item dropdown notification-dropdown">
+    <a class="nav-link" href="#" id="notificationDropdownToggle" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="far fa-bell notification-bell"></i>
+        <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
     </a>
+    
+    <div class="dropdown-menu dropdown-menu-right notification-panel" aria-labelledby="notificationDropdownToggle">
+        <!-- Header -->
+        <div class="notification-header">
+            <h6 class="mb-0"><i class="fas fa-bell mr-2"></i>Notifications</h6>
+            <button type="button" class="btn btn-link btn-sm p-0" id="markAllReadBtn" title="Mark all as read">
+                <i class="fas fa-check-double"></i>
+            </button>
+        </div>
+        
+        <!-- Notification List -->
+        <div class="notification-list" id="notificationListContainer">
+            <div class="notification-loading">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="notification-footer">
+            <a href="#" id="viewAllNotificationsBtn" class="btn btn-link btn-sm">View All Notifications</a>
+        </div>
+    </div>
 </li>
-

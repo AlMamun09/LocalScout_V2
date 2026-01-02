@@ -1,300 +1,455 @@
 ﻿"use strict";
 
 (function () {
-    let notifications = [];
-    const POLLING_INTERVAL = 30000; // 30 seconds
+  let notifications = [];
+  let showingAll = false;
+  const PREVIEW_COUNT = 5; // Show only 5 in dropdown initially
+  const POLLING_INTERVAL = 30000; // 30 seconds
 
-    // Initialize on page load
-    $(document).ready(function () {
-        loadUnreadCount();
+  // Context-aware action URL mapping based on notification title/type
+  // Note: blocked/unblocked removed since users/providers don't have access to admin pages
+  const ACTION_URL_MAP = {
+    "verification request": "/Admin/VerificationRequests",
+    "category request": "/CategoryRequest/PendingRequests",
+    "new booking": "/Booking/ProviderBookings",
+    "booking request": "/Booking/ProviderBookings",
+    "booking confirmed": "/Booking/MyBookings",
+    "booking cancelled": "/Booking/MyBookings",
+    "booking completed": "/Booking/MyBookings",
+    "booking accepted": "/Booking/MyBookings",
+    "booking rejected": "/Booking/MyBookings",
+    "payment received": "/Payment/History",
+    payment: "/Payment/History",
+    "new review": "/Review/ProviderReviews",
+    review: "/Review/ProviderReviews",
+    "provider approved": "/Provider/Index",
+    "provider verified": "/Provider/Index",
+    "account approved": "/Provider/Index",
+  };
 
-        // Start polling
-        setInterval(loadUnreadCount, POLLING_INTERVAL);
+  // Initialize on page load
+  $(document).ready(function () {
+    loadUnreadCount();
+    setInterval(loadUnreadCount, POLLING_INTERVAL);
+    bindEvents();
+  });
 
-        // Bind events
-        bindEvents();
+  function bindEvents() {
+    // Dropdown shown - load notifications
+    $("#notificationDropdownToggle")
+      .parent()
+      .on("show.bs.dropdown", function () {
+        showingAll = false;
+        loadNotifications();
+      });
+
+    // Mark All Read button
+    $("#markAllReadBtn").on("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      markAllAsRead();
     });
 
-    function bindEvents() {
-        // Bell icon click - handled by Bootstrap Modal data-toggle, 
-        // but we want to load notifications when it opens.
-        $('#notificationListModal').on('show.bs.modal', function () {
-            loadNotifications();
-        });
+    // View All button - expands to show all notifications
+    $("#viewAllNotificationsBtn").on("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      showingAll = true;
+      renderNotifications(notifications);
+      $(this).text("Showing all notifications").prop("disabled", true);
+    });
+  }
 
-        // Mark All Read button
-        $('#markAllReadBtn').on('click', function (e) {
-            e.preventDefault();
-            markAllAsRead();
-        });
-        
-        // When detail modal is hidden, show list modal again
-        $('#notificationDetailModal').on('hidden.bs.modal', function () {
-            // Only re-show list modal if user came from list modal
-            if ($('#notificationListModal').data('from-list')) {
-                $('#notificationListModal').removeData('from-list');
-                $('#notificationListModal').modal('show');
-            }
-        });
-    }
+  // Load unread count for the badge
+  function loadUnreadCount() {
+    $.ajax({
+      url: "/api/Notification/count",
+      type: "GET",
+      success: function (response) {
+        updateBadge(response.count);
+      },
+      error: function () {
+        console.error("Failed to load notification count");
+      },
+    });
+  }
 
-    // Load unread count for the badge
-    function loadUnreadCount() {
-        $.ajax({
-            url: '/api/Notification/count',
-            type: 'GET',
-            success: function (response) {
-                updateBadge(response.count);
-            },
-            error: function () {
-                console.error('Failed to load notification count');
-            }
-        });
-    }
-
-    // Load full notification list
-    function loadNotifications() {
-        const listContainer = $('#notificationListContainer');
-        listContainer.html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
+  // Load notification list
+  function loadNotifications() {
+    const listContainer = $("#notificationListContainer");
+    listContainer.html(`
+            <div class="notification-loading">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
                     <span class="sr-only">Loading...</span>
                 </div>
             </div>
         `);
 
-        $.ajax({
-            url: '/api/Notification/list',
-            type: 'GET',
-            data: { take: 50 },
-            success: function (data) {
-                notifications = data;
-                renderNotifications(data);
-            },
-            error: function () {
-                listContainer.html(`
-                    <div class="text-center text-danger py-5">
-                        <p>Failed to load notifications.</p>
-                        <button class="btn btn-sm btn-outline-primary" onclick="window.notificationPanel.reload()">Retry</button>
+    $.ajax({
+      url: "/api/Notification/list",
+      type: "GET",
+      data: { take: 50 },
+      success: function (data) {
+        notifications = data;
+        renderNotifications(data);
+      },
+      error: function () {
+        listContainer.html(`
+                    <div class="notification-empty">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        <p class="mb-0 text-muted">Failed to load</p>
                     </div>
                 `);
-            }
-        });
+      },
+    });
+  }
+
+  // Update the bell badge
+  function updateBadge(count) {
+    const badge = $("#notificationBadge");
+    const bell = $(".notification-bell");
+
+    if (count > 0) {
+      badge.text(count > 99 ? "99+" : count);
+      badge.show();
+      bell.addClass("has-notifications");
+    } else {
+      badge.hide();
+      bell.removeClass("has-notifications");
+    }
+  }
+
+  // Get icon and color for notification type
+  function getNotificationStyle(title) {
+    const t = (title || "").toLowerCase();
+
+    if (t.includes("booking") && (t.includes("new") || t.includes("request"))) {
+      return {
+        icon: "fas fa-calendar-plus",
+        color: "primary",
+        type: "booking",
+      };
+    }
+    if (t.includes("booking")) {
+      return { icon: "fas fa-calendar-check", color: "info", type: "booking" };
+    }
+    if (t.includes("payment") || t.includes("paid")) {
+      return { icon: "fas fa-credit-card", color: "success", type: "payment" };
+    }
+    if (t.includes("approved") || t.includes("verified")) {
+      return {
+        icon: "fas fa-check-circle",
+        color: "success",
+        type: "approval",
+      };
+    }
+    if (t.includes("rejected") || t.includes("declined")) {
+      return {
+        icon: "fas fa-times-circle",
+        color: "danger",
+        type: "rejection",
+      };
+    }
+    if (t.includes("blocked")) {
+      return { icon: "fas fa-ban", color: "danger", type: "blocked" };
+    }
+    if (t.includes("unblocked")) {
+      return { icon: "fas fa-unlock", color: "success", type: "unblocked" };
+    }
+    if (t.includes("review")) {
+      return { icon: "fas fa-star", color: "warning", type: "review" };
+    }
+    if (t.includes("verification")) {
+      return { icon: "fas fa-user-check", color: "info", type: "verification" };
+    }
+    if (t.includes("category")) {
+      return { icon: "fas fa-folder-plus", color: "info", type: "category" };
     }
 
-    // Update the bell badge
-    function updateBadge(count) {
-        const badge = $('#notificationBadge');
+    return { icon: "fas fa-bell", color: "secondary", type: "general" };
+  }
 
-        if (count > 0) {
-            badge.text(count > 99 ? '99+' : count);
-            badge.show();
-        } else {
-            badge.hide();
-        }
+  // Get action URL based on notification title - returns null for blocked/unblocked (user can't access)
+  function getActionUrl(title) {
+    const t = (title || "").toLowerCase();
+
+    // Skip action URLs for blocked/unblocked - users don't have access to admin pages
+    if (t.includes("blocked") || t.includes("unblocked")) {
+      return null;
     }
 
-    // Render the list inside the modal
-    function renderNotifications(items) {
-        const listContainer = $('#notificationListContainer');
+    for (const [keyword, url] of Object.entries(ACTION_URL_MAP)) {
+      if (t.includes(keyword)) {
+        return url;
+      }
+    }
+    return null;
+  }
 
-        if (!items || items.length === 0) {
-            listContainer.html(`
-                <div class="text-center text-muted py-5">
-                    <i class="far fa-bell-slash fa-3x mb-3"></i>
-                    <p class="mb-0">No notifications</p>
+  // Render the list inside the dropdown
+  function renderNotifications(items) {
+    const listContainer = $("#notificationListContainer");
+    const viewAllBtn = $("#viewAllNotificationsBtn");
+
+    if (!items || items.length === 0) {
+      listContainer.html(`
+                <div class="notification-empty">
+                    <i class="far fa-bell-slash fa-2x text-muted mb-2"></i>
+                    <p class="mb-0 text-muted">No notifications</p>
                 </div>
             `);
-            return;
-        }
+      viewAllBtn.hide();
+      return;
+    }
 
-        let html = '<div class="list-group list-group-flush">';
-        items.forEach(function (notification) {
-            const notificationId = getNotificationId(notification);
-            const unreadClass = !notification.isRead ? 'bg-light font-weight-bold' : '';
-            const iconClass = getIconForNotification(notification);
+    // Determine how many to show
+    const displayItems = showingAll ? items : items.slice(0, PREVIEW_COUNT);
+    const hasMore = items.length > PREVIEW_COUNT;
 
-            html += `
-                <a href="#" class="list-group-item list-group-item-action ${unreadClass} notification-item" data-id="${notificationId}">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1 text-primary">
-                            ${iconClass} ${escapeHtml(notification.title)}
-                        </h6>
-                        <small class="text-muted">${notification.timeAgo}</small>
+    let html = "";
+    displayItems.forEach(function (notification) {
+      const notificationId = getNotificationId(notification);
+      const unreadClass = !notification.isRead ? "unread" : "";
+      const style = getNotificationStyle(notification.title);
+      const actionUrl = getActionUrl(notification.title);
+
+      html += `
+                <div class="notification-item ${unreadClass}" data-id="${notificationId}">
+                    <div class="notification-icon bg-${style.color}">
+                        <i class="${style.icon}"></i>
                     </div>
-                    <p class="mb-1 text-dark small">${escapeHtml(notification.message)}</p>
-                </a>
+                    <div class="notification-content">
+                        <div class="notification-title">${escapeHtml(
+                          notification.title
+                        )}</div>
+                        <div class="notification-message">${escapeHtml(
+                          notification.message
+                        )}</div>
+                        <div class="notification-meta">
+                            <span class="notification-time"><i class="far fa-clock mr-1"></i>${
+                              notification.timeAgo
+                            }</span>
+                            ${
+                              actionUrl
+                                ? `<a href="${actionUrl}" class="notification-action" onclick="event.stopPropagation();">View <i class="fas fa-arrow-right ml-1"></i></a>`
+                                : ""
+                            }
+                        </div>
+                    </div>
+                    <button type="button" class="notification-delete" data-id="${notificationId}" title="Delete">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             `;
-        });
-        html += '</div>';
+    });
 
-        listContainer.html(html);
+    listContainer.html(html);
 
-        // Attach click handlers to items
-        $('.notification-item').on('click', function (e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-            showNotificationDetail(id);
-        });
+    // Show/hide View All button
+    if (hasMore && !showingAll) {
+      viewAllBtn
+        .text(`View All (${items.length})`)
+        .prop("disabled", false)
+        .show();
+    } else {
+      viewAllBtn.hide();
     }
 
-    function getIconForNotification(n) {
-        // Simple heuristic for icons based on title/content
-        const title = (n.title || '').toLowerCase();
-        if (title.includes('approved') || title.includes('unblocked')) return '<i class="fas fa-check-circle text-success mr-2"></i>';
-        if (title.includes('rejected') || title.includes('blocked')) return '<i class="fas fa-ban text-danger mr-2"></i>';
-        if (title.includes('request')) return '<i class="fas fa-user-plus text-info mr-2"></i>';
-        return '<i class="fas fa-info-circle text-primary mr-2"></i>';
+    // Attach click handlers to items - show details
+    $(".notification-item").on("click", function (e) {
+      if (
+        !$(e.target).closest(".notification-delete, .notification-action")
+          .length
+      ) {
+        const id = $(this).data("id");
+        showNotificationDetails(id);
+      }
+    });
+
+    // Delete button handlers
+    $(".notification-delete").on("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = $(this).data("id");
+      deleteNotification(id);
+    });
+  }
+
+  // Show notification details in a SweetAlert modal
+  function showNotificationDetails(id) {
+    const notification = notifications.find((n) => getNotificationId(n) === id);
+    if (!notification) return;
+
+    // Mark as read
+    if (!notification.isRead) {
+      markAsRead(id);
+      $(`.notification-item[data-id="${id}"]`).removeClass("unread");
     }
 
-    // Format metaJson into user-friendly text
-    function formatMetaInfo(metaJson) {
-        if (!metaJson) return '';
+    const style = getNotificationStyle(notification.title);
+    const actionUrl = getActionUrl(notification.title);
 
-        try {
-            const meta = JSON.parse(metaJson);
-            let html = '<div class="mt-3">';
+    // Build meta info if available
+    let metaHtml = "";
+    if (notification.metaJson) {
+      try {
+        const meta = JSON.parse(notification.metaJson);
+        if (meta.reason) {
+          metaHtml = `<div class="alert alert-warning mt-3 text-left"><strong>Reason:</strong><br>${escapeHtml(
+            meta.reason
+          )}</div>`;
+        }
+      } catch (e) {
+        // Ignore JSON parse errors
+      }
+    }
 
-            // Handle common meta fields
-            if (meta.reason) {
-                html += `
-                    <div class="alert alert-warning mb-0">
-                        <strong><i class="fas fa-exclamation-triangle mr-1"></i> Reason:</strong>
-                        <p class="mb-0 mt-1">${escapeHtml(meta.reason)}</p>
+    // SweetAlert for details
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        title: `<i class="${style.icon} text-${
+          style.color
+        } mr-2"></i> ${escapeHtml(notification.title)}`,
+        html: `
+                    <div class="text-left">
+                        <p class="mb-2">${escapeHtml(notification.message)}</p>
+                        <small class="text-muted"><i class="far fa-clock mr-1"></i>${
+                          notification.timeAgo
+                        }</small>
+                        ${metaHtml}
                     </div>
-                `;
-            }
-
-            // Handle other meta fields generically
-            const handledKeys = ['reason'];
-            const otherKeys = Object.keys(meta).filter(k => !handledKeys.includes(k));
-
-            if (otherKeys.length > 0) {
-                html += '<div class="mt-2">';
-                otherKeys.forEach(key => {
-                    const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-                    html += `<p class="mb-1"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(meta[key]))}</p>`;
-                });
-                html += '</div>';
-            }
-
-            html += '</div>';
-            return html;
-        } catch (e) {
-            // If JSON parsing fails, return as plain text
-            return `<div class="mt-3"><p class="text-muted mb-0">${escapeHtml(metaJson)}</p></div>`;
+                `,
+        showCancelButton: !!actionUrl,
+        confirmButtonText: actionUrl ? "Go to Page" : "Close",
+        cancelButtonText: "Close",
+        confirmButtonColor: "#3f72af",
+        cancelButtonColor: "#6c757d",
+        customClass: {
+          popup: "notification-detail-popup",
+        },
+      }).then((result) => {
+        if (result.isConfirmed && actionUrl) {
+          window.location.href = actionUrl;
         }
+      });
     }
+  }
 
-    // Show detail modal
-    function showNotificationDetail(id) {
-        const notification = notifications.find(n => getNotificationId(n) === id);
-        if (!notification) return;
+  function markAsRead(id) {
+    $.ajax({
+      url: `/api/Notification/${id}/mark-read`,
+      type: "POST",
+      success: function (response) {
+        const n = notifications.find((x) => getNotificationId(x) === id);
+        if (n) n.isRead = true;
+        updateBadge(response.unreadCount);
+      },
+    });
+  }
 
-        const listModal = $('#notificationListModal');
-        const detailModal = $('#notificationDetailModal');
-        
-        // Populate detail modal content
-        const modalBody = $('#notificationModalBody');
-        modalBody.html(`
-            <div class="mb-4">
-                <h5 class="text-primary mb-1">${escapeHtml(notification.title)}</h5>
-                <small class="text-muted">
-                    <i class="far fa-clock"></i> ${notification.timeAgo}
-                </small>
-            </div>
-            <div class="p-3 bg-light rounded mb-3">
-                <p class="mb-0 text-dark">${escapeHtml(notification.message)}</p>
-            </div>
-            ${formatMetaInfo(notification.metaJson)}
-        `);
+  function markAllAsRead() {
+    $.ajax({
+      url: "/api/Notification/mark-all-read",
+      type: "POST",
+      success: function (response) {
+        updateBadge(0);
+        $(".notification-item").removeClass("unread");
 
-        // Check if list modal is currently shown
-        if (listModal.hasClass('show')) {
-            // Mark that we're coming from list modal
-            listModal.data('from-list', true);
-            
-            // Hide the list modal and wait for it to be completely hidden
-            listModal.one('hidden.bs.modal', function () {
-                // Show detail modal after list modal is completely hidden
-                detailModal.modal('show');
-            });
-            
-            listModal.modal('hide');
-        } else {
-            // If list modal is not shown, just show detail modal
-            detailModal.modal('show');
+        if (typeof Swal !== "undefined") {
+          Swal.fire({
+            icon: "success",
+            title: "All marked as read",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+          });
         }
+      },
+    });
+  }
 
-        // Mark as read if needed
-        if (!notification.isRead) {
-            markAsRead(id);
-        }
-    }
+  function deleteNotification(id) {
+    $.ajax({
+      url: `/api/Notification/${id}`,
+      type: "DELETE",
+      success: function (response) {
+        // Remove from local array
+        notifications = notifications.filter(
+          (n) => getNotificationId(n) !== id
+        );
 
-    function markAsRead(id) {
-        $.ajax({
-            url: `/api/Notification/${id}/mark-read`,
-            type: 'POST',
-            success: function (response) {
-                // Update local state
-                const n = notifications.find(x => getNotificationId(x) === id);
-                if (n) n.isRead = true;
+        // Remove from DOM
+        $(`.notification-item[data-id="${id}"]`).fadeOut(200, function () {
+          $(this).remove();
 
-                // Update badge
-                updateBadge(response.unreadCount);
-            }
+          // Check if list is now empty or needs update
+          if (notifications.length === 0) {
+            $("#notificationListContainer").html(`
+                            <div class="notification-empty">
+                                <i class="far fa-bell-slash fa-2x text-muted mb-2"></i>
+                                <p class="mb-0 text-muted">No notifications</p>
+                            </div>
+                        `);
+            $("#viewAllNotificationsBtn").hide();
+          } else if (!showingAll && notifications.length > PREVIEW_COUNT) {
+            // Re-render to show next item
+            renderNotifications(notifications);
+          }
         });
-    }
 
-    function markAllAsRead() {
-        $.ajax({
-            url: '/api/Notification/mark-all-read',
-            type: 'POST',
-            success: function (response) {
-                updateBadge(0);
-                loadNotifications(); // Reload list to remove bold styling
+        // Update badge
+        updateBadge(response.unreadCount);
 
-                // Toast
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'All notifications marked as read',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2000
-                    });
-                }
-            }
-        });
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
-    }
-
-    function getNotificationId(notification) {
-        return notification.notificationId || notification.id || '';
-    }
-
-    // Expose global
-    window.notificationPanel = {
-        reload: function () {
-            loadUnreadCount();
-            // If modal is open, reload list
-            if ($('#notificationListModal').hasClass('show')) {
-                loadNotifications();
-            }
+        if (typeof Swal !== "undefined") {
+          Swal.fire({
+            icon: "success",
+            title: "Notification deleted",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 1500,
+          });
         }
+      },
+      error: function () {
+        if (typeof Swal !== "undefined") {
+          Swal.fire({
+            icon: "error",
+            title: "Failed to delete",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+          });
+        }
+      },
+    });
+  }
+
+  function escapeHtml(text) {
+    if (!text) return "";
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
     };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  }
 
+  function getNotificationId(notification) {
+    return notification.notificationId || notification.id || "";
+  }
+
+  // Expose global
+  window.notificationPanel = {
+    reload: function () {
+      loadUnreadCount();
+      if ($("#notificationDropdownToggle").parent().hasClass("show")) {
+        loadNotifications();
+      }
+    },
+  };
 })();
