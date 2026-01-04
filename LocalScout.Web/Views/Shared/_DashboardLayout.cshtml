@@ -263,6 +263,24 @@
                                     </li>
                                 </ul>
                             </li>
+
+                            <li class="nav-header">REPORTS & LOGS</li>
+                            
+                            <li class="nav-item">
+                                <a asp-controller="Report" asp-action="AdminReports"
+                                   class="nav-link @(currentController == "Report" && currentAction == "AdminReports" ? "active" : "")">
+                                    <i class="nav-icon fas fa-chart-pie"></i>
+                                    <p>Platform Analytics</p>
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item">
+                                <a asp-controller="Admin" asp-action="AuditLog"
+                                   class="nav-link @(currentController == "Admin" && currentAction == "AuditLog" ? "active" : "")">
+                                    <i class="nav-icon fas fa-clipboard-list"></i>
+                                    <p>Audit Log</p>
+                                </a>
+                            </li>
                         }
 
                         @* =============== SERVICE PROVIDER MENU =============== *@
@@ -329,6 +347,15 @@
                                     <p>My Reviews</p>
                                 </a>
                             </li>
+                            
+                            <li class="nav-header">REPORTS</li>
+                            <li class="nav-item">
+                                <a asp-controller="Report" asp-action="ProviderReports"
+                                   class="nav-link @(currentController == "Report" && currentAction == "ProviderReports" ? "active" : "")">
+                                    <i class="nav-icon fas fa-chart-line"></i>
+                                    <p>Earnings Report</p>
+                                </a>
+                            </li>
                         }
 
                         @* =============== REGULAR USER MENU =============== *@
@@ -368,6 +395,15 @@
                                     <p>Payment History</p>
                                 </a>
                             </li>
+                            
+                            <li class="nav-header">REPORTS</li>
+                            <li class="nav-item">
+                                <a asp-controller="Report" asp-action="UserReports"
+                                   class="nav-link @(currentController == "Report" && currentAction == "UserReports" ? "active" : "")">
+                                    <i class="nav-icon fas fa-chart-bar"></i>
+                                    <p>Activity Report</p>
+                                </a>
+                            </li>
                         }
                     </ul>
                 </nav>
@@ -377,27 +413,16 @@
                     <a asp-controller="Home" asp-action="Index" class="sidebar-footer-btn" title="Home">
                         <i class="fas fa-home"></i>
                     </a>
-                    @if (User.IsInRole(RoleNames.Admin))
-                    {
-                        <a asp-controller="Report" asp-action="AdminReports" class="sidebar-footer-btn" title="Reports">
-                            <i class="fas fa-chart-bar"></i>
-                        </a>
-                    }
-                    else if (User.IsInRole(RoleNames.ServiceProvider))
-                    {
-                        <a asp-controller="Report" asp-action="ProviderReports" class="sidebar-footer-btn" title="Reports">
-                            <i class="fas fa-chart-bar"></i>
-                        </a>
-                    }
-                    else if (User.IsInRole(RoleNames.User))
-                    {
-                        <a asp-controller="Report" asp-action="UserReports" class="sidebar-footer-btn" title="Reports">
-                            <i class="fas fa-chart-bar"></i>
-                        </a>
-                    }
                     <a asp-area="Identity" asp-page="/Account/Manage/Index" class="sidebar-footer-btn" title="Settings">
                         <i class="fas fa-cog"></i>
                     </a>
+                    <form asp-area="Identity" asp-page="/Account/Logout" 
+                          asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" 
+                          method="post" class="d-inline">
+                        <button type="submit" class="sidebar-footer-btn" title="Logout" style="border: none; background: transparent; cursor: pointer;">
+                            <i class="fas fa-sign-out-alt text-danger"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </aside>
