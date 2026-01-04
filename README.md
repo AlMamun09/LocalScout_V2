@@ -18,6 +18,7 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 ## ✨ Features
 
 ### 👥 User Management
+
 - **Dual Registration System** - Separate registration flows for Users and Service Providers
 - Multi-step registration wizard with progress indicators
 - Email confirmation and account verification
@@ -25,6 +26,7 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 - Location-based user profiles with address autocomplete
 
 ### 🏢 Service Provider Features
+
 - **Business Profile Management** - Business name, description, and service details
 - **Verification System** - Document upload and admin verification workflow
 - Provider dashboard with statistics
@@ -32,29 +34,52 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 - Verification status tracking (Pending, Approved, Rejected)
 
 ### 📍 Location Services
+
 - **Geolocation Integration** - Automatic location detection using browser geolocation
 - **Address Autocomplete** - Powered by LocationIQ API
 - Reverse geocoding for coordinate-to-address conversion
 - Latitude/Longitude storage for proximity-based searches
 
 ### 🔐 Authentication & Authorization
+
 - ASP.NET Core Identity integration
 - Role-based access control (Admin, ServiceProvider, User)
 - Email confirmation workflow
 - Secure password policies
 
 ### 👨‍💼 Admin Dashboard
+
 - User and provider management
 - Provider verification workflow
 - Service category approval
 - Platform statistics and analytics
 
 ### 🔔 Notification System
+
 - In-app notifications
 - Read/unread status tracking
 - Notification metadata support
 
+### 💳 Payments & Booking
+
+- **Secure Payments** - Integrated SSLCommerz payment gateway
+- **Booking Management** - End-to-end booking flow with negotiation
+- **Digital Receipts** - Automated PDF receipt generation
+- **Transaction History** - Comprehensive payment logs for users and providers
+
+### 🤖 AI-Powered Features
+
+- **Smart Descriptions** - AI-generated professional descriptions for services and profiles (Powered by Hugging Face)
+- **Context-Aware Generation** - Uses provider data to create tailored content
+
+### 🛡️ Enhanced Security
+
+- **HttpOnly Cookies** - Secure token storage preventing XSS attacks
+- **Two-Factor Authentication (2FA)** - Authenticator app support for account security
+- **Audit Logging** - Complete system activity tracking for compliance
+
 ### 📂 Service Categories
+
 - Dynamic category management
 - Category icons and descriptions
 - Active/Inactive status
@@ -62,16 +87,18 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 
 ## 🛠 Technology Stack
 
-| Category | Technology |
-|----------|------------|
-| **Backend** | ASP. NET Core 8.0, C# |
-| **Frontend** | JavaScript, HTML, CSS |
-| **CSS Framework** | Tailwind CSS, Bootstrap 4 |
-| **Admin Template** | AdminLTE 3 |
-| **Database** | Entity Framework Core, SQL Server |
-| **Authentication** | ASP. NET Core Identity |
-| **Location API** | LocationIQ |
-| **JavaScript Libraries** | jQuery, DataTables, Font Awesome |
+| Category                 | Technology                                   |
+| ------------------------ | -------------------------------------------- |
+| **Backend**              | ASP. NET Core 8.0, C#                        |
+| **Frontend**             | JavaScript, HTML, CSS                        |
+| **CSS Framework**        | Tailwind CSS, Bootstrap 4                    |
+| **Admin Template**       | AdminLTE 3                                   |
+| **Database**             | Entity Framework Core, SQL Server            |
+| **Authentication**       | ASP.NET Core Identity, HttpOnly Cookies |
+| **Payment Gateway**      | SSLCommerz                                   |
+| **AI Services**          | Hugging Face Inference API                   |
+| **Location API**         | LocationIQ                                   |
+| **JavaScript Libraries** | jQuery, DataTables, Font Awesome             |
 
 ## 🏗 Architecture
 
@@ -143,12 +170,16 @@ LocalScout_V2/
 
 ### Domain Entities
 
-| Entity | Description |
-|--------|-------------|
-| **ApplicationUser** | Extended Identity user with profile, location, and business fields |
-| **ServiceCategory** | Service categories with approval workflow |
-| **VerificationRequest** | Provider verification documents and status |
-| **Notification** | User notifications with read status |
+| Entity                  | Description                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| **ApplicationUser**     | Extended Identity user with profile, location, and business fields |
+| **ServiceCategory**     | Service categories with approval workflow                          |
+| **VerificationRequest** | Provider verification documents and status                         |
+| **Booking**             | Service booking with negotiation and payment status                |
+| **Review**              | User ratings and reviews for services                              |
+| **AuditLog**            | System-wide administrative and security action logs                |
+| **CategoryRequest**     | Provider submitted category proposals                              |
+| **Notification**        | User notifications with read status                                |
 
 ## 📋 Prerequisites
 
@@ -160,19 +191,22 @@ LocalScout_V2/
 ## 🚀 Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/AlMamun09/LocalScout_V2.git
    cd LocalScout_V2
    ```
 
 2. **Restore NuGet packages**
+
    ```bash
    dotnet restore
    ```
 
 3. **Update the database connection string**
-   
+
    Edit `appsettings.json` in the `LocalScout.Web` project:
+
    ```json
    {
      "ConnectionStrings": {
@@ -185,27 +219,32 @@ LocalScout_V2/
    ```
 
 4. **Apply database migrations**
+
    ```bash
    cd LocalScout.Web
    dotnet ef database update --project ../LocalScout.Infrastructure
    ```
 
 5. **Run the application**
+
    ```bash
    dotnet run
    ```
 
 6. **Access the application**
-   
+
    Open your browser and navigate to `https://localhost:5001` or `http://localhost:5000`
 
 ## ⚙ Configuration
 
 ### Database Configuration
-The application uses Entity Framework Core with SQL Server.  Migrations are stored in the `LocalScout.Infrastructure` project.
+
+The application uses Entity Framework Core with SQL Server. Migrations are stored in the `LocalScout.Infrastructure` project.
 
 ### LocationIQ API
-The location service uses LocationIQ for geocoding.  Configure your API key in `appsettings. json`:
+
+The location service uses LocationIQ for geocoding. Configure your API key in `appsettings. json`:
+
 ```json
 {
   "LocationIQ": {
@@ -215,10 +254,29 @@ The location service uses LocationIQ for geocoding.  Configure your API key in `
 ```
 
 ### Identity Configuration
+
 Password requirements are configured in `Program.cs`:
+
 - Minimum length: 3 characters
 - No special character requirements (configurable)
 - Email confirmation required
+
+### External Services
+
+Add the following to your `appsettings.json` for full functionality:
+
+```json
+{
+  "SSLCommerz": {
+    "StoreId": "your-store-id",
+    "StorePassword": "your-store-password",
+    "IsSandbox": true
+  },
+  "HuggingFace": {
+    "ApiKey": "your-hugging-face-token"
+  }
+}
+```
 
 ## 📖 Usage
 
@@ -232,35 +290,35 @@ Password requirements are configured in `Program.cs`:
 ### For Service Providers
 
 1.  **Register as Provider** - Choose "Provider" during registration
-2. **Complete Business Profile** - Add business name and description
-3. **Submit Verification** - Upload required documents for verification
-4. **Wait for Approval** - Admin will review and approve your account
-5. **Start Offering Services** - Once verified, create service listings
+2.  **Complete Business Profile** - Add business name and description
+3.  **Submit Verification** - Upload required documents for verification
+4.  **Wait for Approval** - Admin will review and approve your account
+5.  **Start Offering Services** - Once verified, create service listings
 
 ### For Administrators
 
 1. **Access Admin Dashboard** - Login with admin credentials
-2.  **Manage Users** - View and manage user accounts
-3.  **Verify Providers** - Review and approve/reject provider applications
+2. **Manage Users** - View and manage user accounts
+3. **Verify Providers** - Review and approve/reject provider applications
 4. **Manage Categories** - Create and manage service categories
 
 ## 🔑 Default Roles
 
-| Role | Description |
-|------|-------------|
-| **Admin** | Full platform access, user management, provider verification |
+| Role                | Description                                                     |
+| ------------------- | --------------------------------------------------------------- |
+| **Admin**           | Full platform access, user management, provider verification    |
 | **ServiceProvider** | Provider dashboard, service management, verification submission |
-| **User** | Browse services, make bookings, manage profile |
+| **User**            | Browse services, make bookings, manage profile                  |
 
 ## 📁 Key Files
 
-| File | Purpose |
-|------|---------|
-| `Program.cs` | Application configuration and dependency injection |
+| File                      | Purpose                                             |
+| ------------------------- | --------------------------------------------------- |
+| `Program.cs`              | Application configuration and dependency injection  |
 | `ApplicationDbContext.cs` | EF Core database context with entity configurations |
-| `DbSeeder.cs` | Database seeding for roles and initial data |
-| `LocationService.cs` | LocationIQ API integration for geocoding |
-| `location-service.js` | Frontend location autocomplete and geolocation |
+| `DbSeeder.cs`             | Database seeding for roles and initial data         |
+| `LocationService.cs`      | LocationIQ API integration for geocoding            |
+| `location-service.js`     | Frontend location autocomplete and geolocation      |
 
 ## 🎨 UI Features
 
@@ -275,21 +333,21 @@ Password requirements are configured in `Program.cs`:
 Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
-2.  Create a feature branch (`git checkout -b feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the branch (`git push origin feature/AmazingFeature`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ## 📄 License
 
-This project is open source.  Please check the repository for license information.
+This project is open source. Please check the repository for license information.
 
 ---
 
 ## 👨‍💻 Author
 
-**AlMamun09** - [GitHub Profile](https://github. com/AlMamun09)
+**AlMamun09** - [GitHub Profile](https://github.com/AlMamun09)
 
 ---
 
-⭐ If you find this project useful, please consider giving it a star on GitHub! 
+⭐ If you find this project useful, please consider giving it a star on GitHub!

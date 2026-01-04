@@ -19,6 +19,7 @@ namespace LocalScout.Web.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IServiceProviderRepository _providerRepository;
         private readonly IReportPdfService _reportPdfService;
+        private readonly IAuditService _auditService;
 
         public ReportController(
             UserManager<ApplicationUser> userManager,
@@ -27,7 +28,8 @@ namespace LocalScout.Web.Controllers
             IServiceRepository serviceRepository,
             IUserRepository userRepository,
             IServiceProviderRepository providerRepository,
-            IReportPdfService reportPdfService)
+            IReportPdfService reportPdfService,
+            IAuditService auditService)
         {
             _userManager = userManager;
             _bookingRepository = bookingRepository;
@@ -36,6 +38,7 @@ namespace LocalScout.Web.Controllers
             _userRepository = userRepository;
             _providerRepository = providerRepository;
             _reportPdfService = reportPdfService;
+            _auditService = auditService;
         }
 
         #region User Reports
@@ -107,6 +110,19 @@ namespace LocalScout.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             var report = await GetUserReportDataAsync(dateRange, startDate, endDate, month, year);
+            
+            // Audit Log: User Report Exported
+            await _auditService.LogAsync(
+                user?.Id ?? "",
+                user?.FullName,
+                user?.Email,
+                "ReportExported",
+                "Report",
+                "UserReport",
+                null,
+                $"User activity report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Bookings: {report.TotalBookings}, Total Spent: {report.TotalSpent:C}"
+            );
+            
             var pdfBytes = _reportPdfService.GenerateUserReport(report, user?.FullName ?? "User");
             var fileName = $"ActivityReport_{DateTime.Now:yyyyMMdd}.pdf";
             return File(pdfBytes, "application/pdf", fileName);
@@ -189,6 +205,19 @@ namespace LocalScout.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             var report = await GetProviderReportDataAsync(dateRange, startDate, endDate, month, year);
+            
+            // Audit Log: Provider Report Exported
+            await _auditService.LogAsync(
+                user?.Id ?? "",
+                user?.FullName,
+                user?.Email,
+                "ReportExported",
+                "Report",
+                "ProviderReport",
+                null,
+                $"Provider earnings report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Bookings: {report.TotalBookings}, Total Earnings: {report.TotalEarnings:C}"
+            );
+            
             var pdfBytes = _reportPdfService.GenerateProviderReport(report, user?.FullName ?? user?.BusinessName ?? "Provider");
             var fileName = $"EarningsReport_{DateTime.Now:yyyyMMdd}.pdf";
             return File(pdfBytes, "application/pdf", fileName);
@@ -264,7 +293,21 @@ namespace LocalScout.Web.Controllers
         [Authorize(Roles = RoleNames.Admin)]
         public async Task<IActionResult> ExportAdminReportPdf(string dateRange = "last30", DateTime? startDate = null, DateTime? endDate = null, int? month = null, int? year = null)
         {
+            var user = await _userManager.GetUserAsync(User);
             var report = await GetAdminReportDataAsync(dateRange, startDate, endDate, month, year);
+            
+            // Audit Log: Admin Report Exported
+            await _auditService.LogAsync(
+                user?.Id ?? "",
+                user?.FullName,
+                user?.Email,
+                "ReportExported",
+                "Report",
+                "AdminReport",
+                null,
+                $"Admin system report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Revenue: {report.TotalRevenue:C}, Total Bookings: {report.TotalBookings}"
+            );
+            
             var pdfBytes = _reportPdfService.GenerateAdminReport(report);
             var fileName = $"SystemReport_{DateTime.Now:yyyyMMdd}.pdf";
             return File(pdfBytes, "application/pdf", fileName);

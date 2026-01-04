@@ -21,6 +21,7 @@ namespace LocalScout.Web.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<BookingController> _logger;
+        private readonly IAuditService _auditService;
 
         private const long MaxImageSizeBytes = 5 * 1024 * 1024; // 5MB
         private const int MaxImagesPerBooking = 5;
@@ -32,7 +33,8 @@ namespace LocalScout.Web.Controllers
             IReviewRepository reviewRepository,
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment,
-            ILogger<BookingController> logger)
+            ILogger<BookingController> logger,
+            IAuditService auditService)
         {
             _bookingRepository = bookingRepository;
             _serviceRepository = serviceRepository;
@@ -41,6 +43,7 @@ namespace LocalScout.Web.Controllers
             _userManager = userManager;
             _environment = environment;
             _logger = logger;
+            _auditService = auditService;
         }
 
         #region User Actions
@@ -230,6 +233,18 @@ namespace LocalScout.Web.Controllers
                     null
                 );
 
+                // Audit Log: Booking Created
+                await _auditService.LogAsync(
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    "BookingCreated",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"User created booking request for service '{service.ServiceName}' (Provider: {provider.FullName})"
+                );
+
                 return Json(new { success = true, message = "Booking request sent successfully! The provider will review and respond soon.", bookingId = booking.BookingId });
             }
             catch (Exception ex)
@@ -280,6 +295,18 @@ namespace LocalScout.Web.Controllers
                     "Booking Cancelled",
                     $"{user?.FullName ?? "A user"} has cancelled their booking request. Check your bookings for details.",
                     null
+                );
+
+                // Audit Log: Booking Cancelled by User
+                await _auditService.LogAsync(
+                    userId,
+                    user?.FullName,
+                    user?.Email,
+                    "BookingCancelled",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"User cancelled booking. Reason: {dto.Reason ?? "None provided"}"
                 );
 
                 return Json(new { success = true, message = "Booking cancelled successfully." });
@@ -335,6 +362,18 @@ namespace LocalScout.Web.Controllers
                     null
                 );
 
+                // Audit Log: Payment Confirmed
+                await _auditService.LogAsync(
+                    userId,
+                    user?.FullName,
+                    user?.Email,
+                    "PaymentConfirmed",
+                    "Payment",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"User confirmed payment for booking."
+                );
+
                 return Json(new { success = true, message = "Payment successful! The provider will now proceed with your service." });
             }
             catch (Exception ex)
@@ -378,6 +417,9 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Failed to confirm completion." });
                 }
 
+                var user = await _userManager.FindByIdAsync(userId);
+                var service = await _serviceRepository.GetServiceByIdAsync(booking.ServiceId);
+
                 // Create review if rating provided
                 if (rating.HasValue && rating.Value >= 1 && rating.Value <= 5)
                 {
@@ -391,17 +433,43 @@ namespace LocalScout.Web.Controllers
                         Comment = comment?.Trim()
                     };
 
-                    await _reviewRepository.CreateReviewAsync(review);
+                    var reviewCreated = await _reviewRepository.CreateReviewAsync(review);
+                    
+                    if (reviewCreated)
+                    {
+                        // Audit Log: Review Created
+                        await _auditService.LogAsync(
+                            userId,
+                            user?.FullName,
+                            user?.Email,
+                            "ReviewCreated",
+                            "Review",
+                            "Review",
+                            review.ReviewId.ToString(),
+                            $"User submitted {rating.Value}-star review for service '{service?.ServiceName ?? "Service"}'. Comment: {(string.IsNullOrEmpty(comment) ? "None" : comment.Substring(0, Math.Min(100, comment.Length)))}"
+                        );
+                    }
                 }
 
                 // Notify provider
-                var user = await _userManager.FindByIdAsync(userId);
                 var reviewText = rating.HasValue ? $" with a {rating}-star rating" : "";
                 await _notificationRepository.CreateNotificationAsync(
                     booking.ProviderId,
                     "Job Completed",
                     $"{user?.FullName ?? "User"} has confirmed the job completion{reviewText}. Thank you for your service!",
                     null
+                );
+
+                // Audit Log: Completion Confirmed
+                await _auditService.LogAsync(
+                    userId,
+                    user?.FullName,
+                    user?.Email,
+                    "CompletionConfirmed",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"User confirmed job completion for service '{service?.ServiceName ?? "Service"}'{reviewText}."
                 );
 
                 return Json(new { success = true, message = "Job completion confirmed! Thank you for using our service." });
@@ -537,6 +605,18 @@ namespace LocalScout.Web.Controllers
                     null
                 );
 
+                // Audit Log: Booking Accepted
+                await _auditService.LogAsync(
+                    providerId,
+                    provider?.FullName,
+                    provider?.Email,
+                    "BookingAccepted",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider accepted booking with negotiated price: {dto.NegotiatedPrice}"
+                );
+
                 return Json(new { success = true, message = "Booking accepted! The user has been notified and can now proceed with payment." });
             }
             catch (Exception ex)
@@ -590,6 +670,18 @@ namespace LocalScout.Web.Controllers
                     null
                 );
 
+                // Audit Log: Booking Declined/Cancelled by Provider
+                await _auditService.LogAsync(
+                    providerId,
+                    provider?.FullName,
+                    provider?.Email,
+                    "BookingDeclined",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider declined booking. Reason: {dto.Reason ?? "None provided"}"
+                );
+
                 return Json(new { success = true, message = "Booking declined successfully." });
             }
             catch (Exception ex)
@@ -640,6 +732,18 @@ namespace LocalScout.Web.Controllers
                     "Job Completed by Provider",
                     $"{provider?.FullName ?? "The provider"} has marked the job as completed. Please confirm if you are satisfied with the service. Check your bookings to confirm.",
                     null
+                );
+
+                // Audit Log: Job Marked Done
+                await _auditService.LogAsync(
+                    providerId,
+                    provider?.FullName,
+                    provider?.Email,
+                    "JobMarkedDone",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    "Provider marked job as completed, awaiting user confirmation."
                 );
 
                 return Json(new { success = true, message = "Job marked as done! Waiting for user confirmation." });

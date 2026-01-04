@@ -1,6 +1,7 @@
 @model LocalScout.Application.DTOs.ReportDTOs.AdminReportDto
 @{
     ViewData["Title"] = "Platform Analytics";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
     var startDateStr = Model.StartDate.ToString("yyyyMMdd");
     var endDateStr = Model.EndDate.ToString("yyyyMMdd");
 }

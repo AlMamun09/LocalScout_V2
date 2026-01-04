@@ -20,6 +20,7 @@ namespace LocalScout.Web.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ServiceController> _logger;
+        private readonly IAuditService _auditService;
 
         // Constants
         private const int MaxImagesPerService = 10;
@@ -31,7 +32,8 @@ namespace LocalScout.Web.Controllers
             IReviewRepository reviewRepository,
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment,
-            ILogger<ServiceController> logger)
+            ILogger<ServiceController> logger,
+            IAuditService auditService)
         {
             _serviceRepository = serviceRepository;
             _categoryRepository = categoryRepository;
@@ -39,6 +41,7 @@ namespace LocalScout.Web.Controllers
             _userManager = userManager;
             _environment = environment;
             _logger = logger;
+            _auditService = auditService;
         }
 
         // GET: Service/MyServices - Redirects to ActiveServices
@@ -437,6 +440,19 @@ namespace LocalScout.Web.Controllers
                     };
 
                     await _serviceRepository.AddServiceAsync(service);
+
+                    // Audit Log: Service Created
+                    await _auditService.LogAsync(
+                        userId,
+                        user.FullName,
+                        user.Email,
+                        "ServiceCreated",
+                        "Service",
+                        "Service",
+                        service.ServiceId.ToString(),
+                        $"Provider created new service: {service.ServiceName}"
+                    );
+
                     return Json(new { success = true, message = "Service created successfully!" });
                 }
                 else
@@ -463,6 +479,19 @@ namespace LocalScout.Web.Controllers
                     service.IsActive = dto.IsActive;
 
                     await _serviceRepository.UpdateServiceAsync(service);
+
+                    // Audit Log: Service Updated
+                    await _auditService.LogAsync(
+                        userId,
+                        user.FullName,
+                        user.Email,
+                        "ServiceUpdated",
+                        "Service",
+                        "Service",
+                        service.ServiceId.ToString(),
+                        $"Provider updated service: {service.ServiceName}"
+                    );
+
                     return Json(new { success = true, message = "Service updated successfully!" });
                 }
             }
@@ -494,6 +523,19 @@ namespace LocalScout.Web.Controllers
                 }
 
                 await _serviceRepository.SoftDeleteServiceAsync(id);
+
+                // Audit Log: Service Deleted
+                var user = await _userManager.FindByIdAsync(userId);
+                await _auditService.LogAsync(
+                    userId,
+                    user?.FullName,
+                    user?.Email,
+                    "ServiceDeleted",
+                    "Service",
+                    "Service",
+                    id.ToString(),
+                    $"Provider deleted service: {service.ServiceName}"
+                );
 
                 return Ok(new { success = true, message = "Service deleted successfully." });
             }
@@ -528,6 +570,20 @@ namespace LocalScout.Web.Controllers
                 await _serviceRepository.UpdateServiceAsync(service);
 
                 var status = service.IsActive ? "activated" : "deactivated";
+
+                // Audit Log: Service Status Changed
+                var user = await _userManager.FindByIdAsync(userId);
+                await _auditService.LogAsync(
+                    userId,
+                    user?.FullName,
+                    user?.Email,
+                    "ServiceStatusChanged",
+                    "Service",
+                    "Service",
+                    id.ToString(),
+                    $"Provider {status} service: {service.ServiceName}"
+                );
+
                 return Ok(new { success = true, message = $"Service {status} successfully.", isActive = service.IsActive });
             }
             catch (Exception ex)

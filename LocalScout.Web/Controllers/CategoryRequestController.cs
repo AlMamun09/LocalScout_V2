@@ -18,6 +18,7 @@ namespace LocalScout.Web.Controllers
         private readonly INotificationRepository _notificationRepo;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<CategoryRequestController> _logger;
+        private readonly IAuditService _auditService;
 
         public CategoryRequestController(
             ICategoryRequestRepository categoryRequestRepo,
@@ -25,7 +26,8 @@ namespace LocalScout.Web.Controllers
             IServiceProviderRepository providerRepo,
             INotificationRepository notificationRepo,
             UserManager<ApplicationUser> userManager,
-            ILogger<CategoryRequestController> logger)
+            ILogger<CategoryRequestController> logger,
+            IAuditService auditService)
         {
             _categoryRequestRepo = categoryRequestRepo;
             _categoryRepo = categoryRepo;
@@ -33,6 +35,7 @@ namespace LocalScout.Web.Controllers
             _notificationRepo = notificationRepo;
             _userManager = userManager;
             _logger = logger;
+            _auditService = auditService;
         }
 
         // ===== PROVIDER ACTIONS =====
@@ -74,6 +77,18 @@ namespace LocalScout.Web.Controllers
                     $"{user.FullName ?? user.Email} requested a new service category."
                 );
             }
+
+            // Audit Log: Category Request Submitted
+            await _auditService.LogAsync(
+                userId!,
+                user.FullName ?? user.Email!,
+                user.Email!,
+                "CategoryRequestSubmitted",
+                "ProviderManagement",
+                "CategoryRequest",
+                dto.RequestedCategoryName, // Using name as ID proxy or we'd need the ID from CreateRequestAsync if it returns it
+                $"Provider requested new category: {dto.RequestedCategoryName}"
+            );
 
             return Ok(new { success = true, message = "Category request submitted successfully!" });
         }
@@ -160,6 +175,20 @@ namespace LocalScout.Web.Controllers
                 $"Your request for category \"{request.RequestedCategoryName}\" has been approved."
             );
 
+            // Audit Log: Category Approved
+            var adminId = _userManager.GetUserId(User);
+            var admin = await _userManager.FindByIdAsync(adminId);
+            await _auditService.LogAsync(
+                adminId,
+                admin?.FullName,
+                admin?.Email,
+                "CategoryRequestApproved",
+                "ProviderManagement",
+                "CategoryRequest",
+                id.ToString(),
+                $"Admin approved category request: {request.RequestedCategoryName}"
+            );
+
             return Ok(new { success = true, message = "Category approved and created successfully!" });
         }
 
@@ -242,6 +271,20 @@ namespace LocalScout.Web.Controllers
                 $"Your request for category \"{request.RequestedCategoryName}\" has been approved."
             );
 
+            // Audit Log: Category Approved (Custom)
+            var adminId = _userManager.GetUserId(User);
+            var admin = await _userManager.FindByIdAsync(adminId);
+            await _auditService.LogAsync(
+                adminId,
+                admin?.FullName,
+                admin?.Email,
+                "CategoryRequestApproved",
+                "ProviderManagement",
+                "CategoryRequest",
+                categoryRequestId.ToString(),
+                $"Admin approved category request with custom details: {model.CategoryName}"
+            );
+
             return Json(new { success = true, message = "Category approved and created successfully!" });
         }
 
@@ -266,6 +309,20 @@ namespace LocalScout.Web.Controllers
                 "Category Request Rejected",
                 $"Your request for category \"{request.RequestedCategoryName}\" was rejected. Reason: {reason}",
                 $"{{\"reason\": \"{reason}\"}}"
+            );
+
+            // Audit Log: Category Rejected
+            var adminId = _userManager.GetUserId(User);
+            var admin = await _userManager.FindByIdAsync(adminId);
+            await _auditService.LogAsync(
+                adminId,
+                admin?.FullName,
+                admin?.Email,
+                "CategoryRequestRejected",
+                "ProviderManagement",
+                "CategoryRequest",
+                id.ToString(),
+                $"Admin rejected category request: {request.RequestedCategoryName}. Reason: {reason}"
             );
 
             return Ok(new { success = true, message = "Category request rejected." });

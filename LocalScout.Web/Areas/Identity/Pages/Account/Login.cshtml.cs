@@ -3,6 +3,7 @@
 #nullable disable
 
 using System.ComponentModel.DataAnnotations;
+using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Constants;
 using Microsoft.AspNetCore.Authentication;
@@ -16,11 +17,16 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly IAuditService _auditService;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(
+            SignInManager<ApplicationUser> signInManager, 
+            ILogger<LoginModel> logger,
+            IAuditService auditService)
         {
             _signInManager = signInManager;
             _logger = logger;
+            _auditService = auditService;
         }
 
         /// <summary>
@@ -119,12 +125,22 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
-
-                    // --- NEW REDIRECT LOGIC ---
+                    
+                    // Audit Log: Login Success
                     var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
-
                     if (user != null)
                     {
+                        await _auditService.LogAsync(
+                            user.Id,
+                            user.FullName ?? user.UserName ?? "Unknown",
+                            user.Email,
+                            "Login",
+                            "Authentication",
+                            "User",
+                            user.Id,
+                            "User logged in successfully"
+                        );
+
                         if (await _signInManager.UserManager.IsInRoleAsync(user, RoleNames.Admin))
                         {
                             return RedirectToAction("Index", "Admin", new { area = "" });
@@ -143,11 +159,23 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                 if (result.IsLockedOut)
                 {
                     _logger.LogWarning("User account locked out.");
+                    await _auditService.LogAsync(
+                        "LoginLockedOut",
+                        "Authentication",
+                        details: $"User account locked out for email: {Input.Email}",
+                        isSuccess: false
+                    );
                     return RedirectToPage("./Lockout");
                 }
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    await _auditService.LogAsync(
+                        "LoginFailed",
+                        "Authentication",
+                        details: $"Invalid login attempt for email: {Input.Email}",
+                        isSuccess: false
+                    );
                     return Page();
                 }
             }

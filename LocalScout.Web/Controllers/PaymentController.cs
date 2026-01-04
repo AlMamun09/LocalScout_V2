@@ -19,6 +19,7 @@ namespace LocalScout.Web.Controllers
         private readonly INotificationRepository _notificationRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<PaymentController> _logger;
+        private readonly IAuditService _auditService;
 
         public PaymentController(
             ISSLCommerzService sslCommerzService,
@@ -26,7 +27,8 @@ namespace LocalScout.Web.Controllers
             IServiceRepository serviceRepository,
             INotificationRepository notificationRepository,
             UserManager<ApplicationUser> userManager,
-            ILogger<PaymentController> logger)
+            ILogger<PaymentController> logger,
+            IAuditService auditService)
         {
             _sslCommerzService = sslCommerzService;
             _bookingRepository = bookingRepository;
@@ -34,6 +36,7 @@ namespace LocalScout.Web.Controllers
             _notificationRepository = notificationRepository;
             _userManager = userManager;
             _logger = logger;
+            _auditService = auditService;
         }
 
         /// <summary>
@@ -109,11 +112,38 @@ namespace LocalScout.Web.Controllers
                 if (response.Success && !string.IsNullOrEmpty(response.GatewayPageUrl))
                 {
                     _logger.LogInformation("SSLCommerz session created for booking {BookingId}, redirecting to gateway", bookingId);
+                    
+                    // Audit Log: Payment Initiated
+                    await _auditService.LogAsync(
+                        user.Id,
+                        user.FullName,
+                        user.Email,
+                        "PaymentInitiated",
+                        "Payment",
+                        "Booking",
+                        bookingId.ToString(),
+                        $"Payment initiated via SSLCommerz. Amount: {booking.NegotiatedPrice.Value:C}, TransactionId: {transactionId}"
+                    );
+                    
                     return Redirect(response.GatewayPageUrl);
                 }
                 else
                 {
                     _logger.LogError("SSLCommerz session failed: {Reason}", response.FailedReason);
+                    
+                    // Audit Log: Payment Initiation Failed
+                    await _auditService.LogAsync(
+                        user.Id,
+                        user.FullName,
+                        user.Email,
+                        "PaymentInitiationFailed",
+                        "Payment",
+                        "Booking",
+                        bookingId.ToString(),
+                        $"Payment initiation failed. Reason: {response.FailedReason}",
+                        false
+                    );
+                    
                     TempData["Error"] = $"Payment initialization failed: {response.FailedReason}";
                     return RedirectToAction("MyBookings", "Booking");
                 }
@@ -160,6 +190,9 @@ namespace LocalScout.Web.Controllers
                     return await HandlePaymentResult(callback.tran_id, false, "Booking not found");
                 }
 
+                // Get user for audit log
+                var user = await _userManager.FindByIdAsync(booking.UserId);
+
                 // Verify amount matches
                 if (decimal.TryParse(validationResult.amount, out var paidAmount))
                 {
@@ -182,13 +215,27 @@ namespace LocalScout.Web.Controllers
                 if (result)
                 {
                     // Notify provider
-                    var user = await _userManager.FindByIdAsync(booking.UserId);
                     await _notificationRepository.CreateNotificationAsync(
                         booking.ProviderId,
                         "Payment Received",
                         $"{user?.FullName ?? "User"} has completed payment via {callback.card_type ?? "online payment"}. You can now proceed with the job.",
                         null
                     );
+
+                    // Audit Log: Payment Successful
+                    if (user != null)
+                    {
+                        await _auditService.LogAsync(
+                            user.Id,
+                            user.FullName,
+                            user.Email,
+                            "PaymentSuccessful",
+                            "Payment",
+                            "Booking",
+                            booking.BookingId.ToString(),
+                            $"Payment completed successfully. Amount: {booking.NegotiatedPrice:C}, Method: {callback.card_type ?? "Online"}, TransactionId: {callback.tran_id}, BankTranId: {callback.bank_tran_id}"
+                        );
+                    }
 
                     return await HandlePaymentResult(callback.tran_id, true, "Payment successful!", booking.BookingId);
                 }
@@ -214,6 +261,27 @@ namespace LocalScout.Web.Controllers
             _logger.LogWarning("SSLCommerz Fail callback received. TranId: {TranId}, Error: {Error}", 
                 callback.tran_id, callback.error);
 
+            // Try to get booking and user for audit log
+            var booking = await _bookingRepository.GetByTransactionIdAsync(callback.tran_id ?? "");
+            if (booking != null)
+            {
+                var user = await _userManager.FindByIdAsync(booking.UserId);
+                if (user != null)
+                {
+                    await _auditService.LogAsync(
+                        user.Id,
+                        user.FullName,
+                        user.Email,
+                        "PaymentFailed",
+                        "Payment",
+                        "Booking",
+                        booking.BookingId.ToString(),
+                        $"Payment failed. Error: {callback.error ?? "Unknown error"}, TransactionId: {callback.tran_id}",
+                        false
+                    );
+                }
+            }
+
             return await HandlePaymentResult(callback.tran_id, false, callback.error ?? "Payment failed");
         }
 
@@ -225,6 +293,27 @@ namespace LocalScout.Web.Controllers
         public async Task<IActionResult> Cancel([FromForm] SSLCommerzCallbackDto callback)
         {
             _logger.LogInformation("SSLCommerz Cancel callback received. TranId: {TranId}", callback.tran_id);
+
+            // Try to get booking and user for audit log
+            var booking = await _bookingRepository.GetByTransactionIdAsync(callback.tran_id ?? "");
+            if (booking != null)
+            {
+                var user = await _userManager.FindByIdAsync(booking.UserId);
+                if (user != null)
+                {
+                    await _auditService.LogAsync(
+                        user.Id,
+                        user.FullName,
+                        user.Email,
+                        "PaymentCancelled",
+                        "Payment",
+                        "Booking",
+                        booking.BookingId.ToString(),
+                        $"Payment was cancelled by user. TransactionId: {callback.tran_id}",
+                        false
+                    );
+                }
+            }
 
             return await HandlePaymentResult(callback.tran_id, false, "Payment was cancelled", isCancelled: true);
         }
@@ -275,6 +364,22 @@ namespace LocalScout.Web.Controllers
                     callback.card_type ?? "Unknown",
                     callback.bank_tran_id
                 );
+
+                // Audit Log for IPN processing
+                var user = await _userManager.FindByIdAsync(booking.UserId);
+                if (user != null)
+                {
+                    await _auditService.LogAsync(
+                        user.Id,
+                        user.FullName,
+                        user.Email,
+                        "PaymentConfirmedViaIPN",
+                        "Payment",
+                        "Booking",
+                        booking.BookingId.ToString(),
+                        $"Payment confirmed via IPN. TransactionId: {callback.tran_id}"
+                    );
+                }
 
                 _logger.LogInformation("IPN processed successfully for TranId: {TranId}", callback.tran_id);
             }
@@ -404,6 +509,18 @@ namespace LocalScout.Web.Controllers
                     CustomerPhone = user.PhoneNumber
                 };
 
+                // Audit Log: Receipt Downloaded
+                await _auditService.LogAsync(
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    "ReceiptDownloaded",
+                    "Payment",
+                    "Booking",
+                    bookingId.ToString(),
+                    $"Payment receipt downloaded. Receipt#: {receiptDto.ReceiptNumber}"
+                );
+
                 var pdfService = new LocalScout.Infrastructure.Services.ReceiptPdfService();
                 var pdfBytes = pdfService.GenerateReceipt(receiptDto);
 
@@ -417,6 +534,7 @@ namespace LocalScout.Web.Controllers
                 return RedirectToAction("MyBookings", "Booking");
             }
         }
+
         /// <summary>
         /// Provider's Payment History
         /// </summary>

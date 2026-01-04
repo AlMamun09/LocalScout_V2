@@ -21,6 +21,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+// Add HttpContextAccessor for AuditService
+builder.Services.AddHttpContextAccessor();
+
 // Configure Identity with ApplicationUser
 builder
     .Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -51,6 +54,8 @@ builder.Services.AddScoped<LocalScout.Application.Interfaces.IReviewRepository,
     LocalScout.Infrastructure.Repositories.ReviewRepository>();
 builder.Services.AddScoped<LocalScout.Application.Interfaces.IReportPdfService,
     LocalScout.Infrastructure.Services.ReportPdfService>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddHttpClient<IAIService, AIService>();
 
 // SSLCommerz Payment Gateway

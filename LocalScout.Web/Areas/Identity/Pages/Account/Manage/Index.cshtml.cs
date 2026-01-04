@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using LocalScout.Application.Interfaces;
 
 namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 {
@@ -12,15 +13,18 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IWebHostEnvironment _environment;
+        private readonly IAuditService _auditService;
 
         public IndexModel(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IAuditService auditService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _environment = environment;
+            _auditService = auditService;
         }
 
         public string Username { get; set; } = string.Empty;
@@ -225,6 +229,19 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 
             await _signInManager.RefreshSignInAsync(user);
             StatusMessage = "Your profile has been updated";
+
+            // Audit Log: Profile Updated
+            await _auditService.LogAsync(
+                user.Id,
+                user.FullName ?? user.UserName,
+                user.Email,
+                "ProfileUpdated",
+                IsProvider ? "ProviderManagement" : "UserManagement",
+                "User",
+                user.Id,
+                "User updated their profile information"
+            );
+
             return RedirectToPage();
         }
     }

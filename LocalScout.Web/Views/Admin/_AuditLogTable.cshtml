@@ -1,0 +1,205 @@
+@model LocalScout.Application.DTOs.AuditDTOs.AuditLogPagedResultDto
+
+@{
+    var filter = Model?.AppliedFilters;
+}
+
+<div class="card-header">
+    <h3 class="card-title">
+        <i class="fas fa-list mr-2"></i>
+        @(Model?.TotalCount ?? 0) Events Found
+    </h3>
+    <div class="card-tools">
+        <span class="badge badge-info">
+            Page @(Model?.Page ?? 1) of @(Model?.TotalPages ?? 0)
+        </span>
+    </div>
+</div>
+<div class="card-body table-responsive p-0">
+    @if (Model?.Items != null && Model.Items.Any())
+    {
+        <table class="table table-hover table-striped audit-table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var log in Model.Items)
+                {
+                    var categoryBadge = log.Category switch
+                    {
+                        "Authentication" => "badge-primary",
+                        "UserManagement" => "badge-info",
+                        "ProviderManagement" => "badge-success",
+                        "Booking" => "badge-warning",
+                        "Payment" => "badge-danger",
+                        "Service" => "badge-secondary",
+                        "Review" => "badge-info",
+                        "Report" => "badge-dark",
+                        _ => "badge-light"
+                    };
+
+                    <tr>
+                        <td class="text-nowrap">
+                            <small>
+                                @log.Timestamp.ToLocalTime().ToString("MMM dd, yyyy")<br/>
+                                <span class="text-muted">@log.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                            </small>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(log.UserName))
+                            {
+                                <span class="font-weight-bold">@log.UserName</span>
+                                <br/><small class="text-muted">@log.UserEmail</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">System</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @categoryBadge badge-category">@log.Category</span>
+                        </td>
+                        <td>
+                            <strong>@log.Action</strong>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(log.EntityType))
+                            {
+                                <span class="badge badge-light">@log.EntityType</span>
+                                @if (!string.IsNullOrEmpty(log.EntityId))
+                                {
+                                    <br/><small class="text-muted" title="@log.EntityId">
+                                        @(log.EntityId.Length > 12 ? log.EntityId.Substring(0, 12) + "..." : log.EntityId)
+                                    </small>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                        <td class="audit-details" title="Click to view full details">
+                            @(string.IsNullOrEmpty(log.Details) ? "-" : (log.Details.Length > 50 ? log.Details.Substring(0, 50) + "..." : log.Details))
+                        </td>
+                        <td>
+                            <small class="text-muted">@(log.IpAddress ?? "-")</small>
+                        </td>
+                        <td>
+                            @if (log.IsSuccess)
+                            {
+                                <span class="badge badge-success"><i class="fas fa-check"></i></span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger"><i class="fas fa-times"></i></span>
+                            }
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-xs btn-info view-log-details"
+                                    data-log-id="@log.AuditLogId"
+                                    data-timestamp="@log.Timestamp.ToLocalTime().ToString("MMM dd, yyyy HH:mm:ss")"
+                                    data-user-name="@log.UserName"
+                                    data-user-email="@log.UserEmail"
+                                    data-category="@log.Category"
+                                    data-action="@log.Action"
+                                    data-entity-type="@log.EntityType"
+                                    data-entity-id="@log.EntityId"
+                                    data-details="@log.Details"
+                                    data-ip="@log.IpAddress"
+                                    data-success="@log.IsSuccess.ToString().ToLower()"
+                                    title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center p-5 text-muted">
+            <i class="fas fa-clipboard fa-4x mb-3"></i>
+            <p>No audit log entries found.</p>
+            <p class="small">Audit events will appear here once actions are logged.</p>
+        </div>
+    }
+</div>
+
+@if (Model != null && Model.TotalPages > 1)
+{
+    <div class="card-footer clearfix">
+        <ul class="pagination pagination-sm m-0 float-right">
+            @* First Page *@
+            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                <a class="page-link" href="#" data-page="1" title="First">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+            
+            @* Previous Page *@
+            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link" href="#" data-page="@(Model.Page - 1)" title="Previous">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+
+            @* Page Numbers *@
+            @{
+                var startPage = Math.Max(1, Model.Page - 2);
+                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+                
+                // Ensure we show at least 5 pages when possible
+                if (endPage - startPage < 4)
+                {
+                    if (startPage == 1)
+                    {
+                        endPage = Math.Min(Model.TotalPages, startPage + 4);
+                    }
+                    else if (endPage == Model.TotalPages)
+                    {
+                        startPage = Math.Max(1, endPage - 4);
+                    }
+                }
+            }
+
+            @for (int i = startPage; i <= endPage; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" href="#" data-page="@i">@i</a>
+                </li>
+            }
+
+            @* Next Page *@
+            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                <a class="page-link" href="#" data-page="@(Model.Page + 1)" title="Next">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            
+            @* Last Page *@
+            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" href="#" data-page="@Model.TotalPages" title="Last">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="float-left">
+            <span class="text-muted small">
+                Showing @((Model.Page - 1) * Model.PageSize + 1) - @Math.Min(Model.Page * Model.PageSize, Model.TotalCount) 
+                of @Model.TotalCount entries
+            </span>
+        </div>
+    </div>
+}

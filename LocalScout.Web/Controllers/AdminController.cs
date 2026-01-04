@@ -1,11 +1,14 @@
 ﻿using LocalScout.Application.DTOs;
+using LocalScout.Application.DTOs.AuditDTOs;
 using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Domain.Enums;
 using LocalScout.Infrastructure.Constants;
+using LocalScout.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace LocalScout.Web.Controllers
@@ -21,6 +24,8 @@ namespace LocalScout.Web.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationRepository _notificationRepository;
         private readonly ILogger<AdminController> _logger;
+        private readonly IAuditLogRepository _auditLogRepository;
+        private readonly ApplicationDbContext _context;
 
         public AdminController(
             IUserRepository userRepository,
@@ -28,7 +33,9 @@ namespace LocalScout.Web.Controllers
             IVerificationRepository verificationRepo,
             UserManager<ApplicationUser> userManager,
             INotificationRepository notificationRepository,
-            ILogger<AdminController> logger
+            ILogger<AdminController> logger,
+            IAuditLogRepository auditLogRepository,
+            ApplicationDbContext context
         )
         {
             _userRepository = userRepository;
@@ -37,6 +44,8 @@ namespace LocalScout.Web.Controllers
             _userManager = userManager;
             _notificationRepository = notificationRepository;
             _logger = logger;
+            _auditLogRepository = auditLogRepository;
+            _context = context;
         }
 
         public IActionResult Index()
@@ -384,6 +393,71 @@ namespace LocalScout.Web.Controllers
             }
 
             return Ok(new { success = true, message = "Provider verification rejected." });
+        }
+
+        // --- Audit Log ---
+        public async Task<IActionResult> AuditLog(
+            string? search = null,
+            string? category = null,
+            string? actionFilter = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            int page = 1)
+        {
+            ViewData["Title"] = "Audit Log";
+
+            if (endDate.HasValue)
+            {
+                endDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            }
+
+            var filter = new AuditLogFilterDto
+            {
+                SearchQuery = search,
+                Category = category,
+                Action = actionFilter,
+                StartDate = startDate,
+                EndDate = endDate,
+                Page = page,
+                PageSize = 25
+            };
+
+            var result = await _auditLogRepository.GetLogsAsync(filter);
+            
+            // Get distinct values for filters
+            ViewBag.Categories = await _auditLogRepository.GetDistinctCategoriesAsync();
+            ViewBag.Actions = await _auditLogRepository.GetDistinctActionsAsync();
+            
+            return View(result);
+        }
+
+        public async Task<IActionResult> GetAuditLogsTable(
+            string? search = null,
+            string? category = null,
+            string? actionFilter = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            int page = 1)
+        {
+            if (endDate.HasValue)
+            {
+                endDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            }
+
+            var filter = new AuditLogFilterDto
+            {
+                SearchQuery = search,
+                Category = category,
+                Action = actionFilter,
+                StartDate = startDate,
+                EndDate = endDate,
+                Page = page,
+                PageSize = 25
+            };
+
+            var result = await _auditLogRepository.GetLogsAsync(filter);
+            
+            return PartialView("_AuditLogTable", result);
         }
     }
 }

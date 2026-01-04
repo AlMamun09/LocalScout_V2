@@ -1,0 +1,306 @@
+@model LocalScout.Application.DTOs.AuditDTOs.AuditLogPagedResultDto
+
+@{
+    ViewData["Title"] = "Audit Log";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    
+    var categories = ViewBag.Categories as List<string> ?? new List<string>();
+    var actions = ViewBag.Actions as List<string> ?? new List<string>();
+    var filter = Model?.AppliedFilters;
+}
+
+<style>
+    .audit-table th {
+        white-space: nowrap;
+        font-size: 0.85rem;
+    }
+    .audit-table td {
+        font-size: 0.85rem;
+        vertical-align: middle;
+    }
+    .audit-details {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+    .badge-category {
+        font-size: 0.75rem;
+    }
+    .audit-details:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-clipboard-list mr-2"></i>Audit Log
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Audit Log</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- Filters Card -->
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-filter mr-2"></i>Filters</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="audit-filter-form">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <label class="small font-weight-bold">Search</label>
+                            <input type="text" name="search" id="search-input" class="form-control form-control-sm" 
+                                   placeholder="Search user, action, details..."
+                                   value="@filter?.SearchQuery" />
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="small font-weight-bold">Category</label>
+                            <select name="category" id="category-select" class="form-control form-control-sm">
+                                <option value="">All Categories</option>
+                                @foreach (var cat in categories)
+                                {
+                                    <option value="@cat" selected="@(filter?.Category == cat)">@cat</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="small font-weight-bold">Action</label>
+                            <select name="actionFilter" id="action-select" class="form-control form-control-sm">
+                                <option value="">All Actions</option>
+                                @foreach (var act in actions)
+                                {
+                                    <option value="@act" selected="@(filter?.Action == act)">@act</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="small font-weight-bold">Start Date</label>
+                            <input type="date" name="startDate" id="start-date" class="form-control form-control-sm" 
+                                   value="@filter?.StartDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="small font-weight-bold">End Date</label>
+                            <input type="date" name="endDate" id="end-date" class="form-control form-control-sm"
+                                   value="@filter?.EndDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-1 mb-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary btn-sm btn-block">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <button type="button" id="clear-filters" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times mr-1"></i>Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div class="card" id="audit-log-card">
+            <partial name="_AuditLogTable" model="Model" />
+        </div>
+    </div>
+</section>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" role="dialog" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="logDetailsModalLabel">
+                    <i class="fas fa-info-circle mr-2"></i>Audit Log Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="logDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var searchTimer = null;
+
+            // Function to load table via AJAX
+            function loadTable(page) {
+                var data = {
+                    search: $('#search-input').val(),
+                    category: $('#category-select').val(),
+                    actionFilter: $('#action-select').val(),
+                    startDate: $('#start-date').val(),
+                    endDate: $('#end-date').val(),
+                    page: page || 1
+                };
+
+                $('#audit-log-card').css('opacity', '0.6');
+
+                $.ajax({
+                    url: '@Url.Action("GetAuditLogsTable", "Admin")',
+                    type: 'GET',
+                    data: data,
+                    success: function (result) {
+                        $('#audit-log-card').html(result);
+                        $('#audit-log-card').css('opacity', '1');
+                    },
+                    error: function () {
+                        toastr.error('Error loading audit logs.');
+                        $('#audit-log-card').css('opacity', '1');
+                    }
+                });
+            }
+
+            // Form submit (filter button click)
+            $('#audit-filter-form').on('submit', function (e) {
+                e.preventDefault();
+                loadTable(1);
+            });
+
+            // Clear filters
+            $('#clear-filters').on('click', function () {
+                $('#search-input').val('');
+                $('#category-select').val('');
+                $('#action-select').val('');
+                $('#start-date').val('');
+                $('#end-date').val('');
+                loadTable(1);
+            });
+
+            // Auto-filter on select change
+            $('#category-select, #action-select').on('change', function () {
+                loadTable(1);
+            });
+
+            // Debounced search on input
+            $('#search-input').on('input', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(function () {
+                    loadTable(1);
+                }, 500);
+            });
+
+            // Date change
+            $('#start-date, #end-date').on('change', function () {
+                loadTable(1);
+            });
+
+            // Pagination clicks (delegated for dynamic content)
+            $(document).on('click', '#audit-log-card .pagination a.page-link', function (e) {
+                e.preventDefault();
+                var page = $(this).data('page');
+                if (page) {
+                    loadTable(page);
+                }
+            });
+
+            // View details click (delegated for dynamic content)
+            $(document).on('click', '.view-log-details', function () {
+                var logId = $(this).data('log-id');
+                var timestamp = $(this).data('timestamp');
+                var userName = $(this).data('user-name') || 'System';
+                var userEmail = $(this).data('user-email') || '-';
+                var category = $(this).data('category');
+                var action = $(this).data('action');
+                var entityType = $(this).data('entity-type') || '-';
+                var entityId = $(this).data('entity-id') || '-';
+                var details = $(this).data('details') || 'No additional details';
+                var ipAddress = $(this).data('ip') || '-';
+                var isSuccess = $(this).data('success') === true || $(this).data('success') === 'true';
+
+                var statusBadge = isSuccess 
+                    ? '<span class="badge badge-success"><i class="fas fa-check mr-1"></i>Success</span>'
+                    : '<span class="badge badge-danger"><i class="fas fa-times mr-1"></i>Failed</span>';
+
+                var content = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-box bg-light mb-3">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-clock"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Timestamp</span>
+                                    <span class="info-box-number">${timestamp}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box bg-light mb-3">
+                                <span class="info-box-icon bg-info"><i class="fas fa-user"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">User</span>
+                                    <span class="info-box-number">${userName}</span>
+                                    <small class="text-muted">${userEmail}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th style="width: 150px;">Status</th>
+                            <td>${statusBadge}</td>
+                        </tr>
+                        <tr>
+                            <th>Category</th>
+                            <td><span class="badge badge-secondary">${category}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Action</th>
+                            <td><strong>${action}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Entity Type</th>
+                            <td>${entityType}</td>
+                        </tr>
+                        <tr>
+                            <th>Entity ID</th>
+                            <td><code>${entityId}</code></td>
+                        </tr>
+                        <tr>
+                            <th>IP Address</th>
+                            <td>${ipAddress}</td>
+                        </tr>
+                        <tr>
+                            <th>Details</th>
+                            <td><pre style="white-space: pre-wrap; word-wrap: break-word; max-height: 200px; overflow-y: auto;">${details}</pre></td>
+                        </tr>
+                    </table>
+                `;
+
+                $('#logDetailsContent').html(content);
+                $('#logDetailsModal').modal('show');
+            });
+        });
+    </script>
+}
