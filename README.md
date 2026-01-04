@@ -208,7 +208,7 @@ LocalScout_V2/
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=LocalScoutDb;Trusted_Connection=True;MultipleActiveResultSets=true"
+       "DefaultConnection": "Server=Your_Server_Name;Database=LocalScoutDb;Trusted_Connection=True;MultipleActiveResultSets=true"
      },
      "LocationIQ": {
        "ApiKey": "your-locationiq-api-key"
