@@ -74,8 +74,6 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 
 ### 🛡️ Enhanced Security
 
-- **HttpOnly Cookies** - Secure token storage preventing XSS attacks
-- **Two-Factor Authentication (2FA)** - Authenticator app support for account security
 - **Audit Logging** - Complete system activity tracking for compliance
 
 ### 📂 Service Categories
