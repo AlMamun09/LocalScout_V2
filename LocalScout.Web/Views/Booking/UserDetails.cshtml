@@ -202,9 +202,13 @@
                         <div class="col-md-6 text-right">
                             @if (Model.CanPay)
                             {
-                                <button type="button" class="btn btn-success btn-lg btn-pay" data-booking-id="@Model.BookingId" data-price="@Model.NegotiatedPrice">
-                                    <i class="fas fa-credit-card mr-2"></i>Pay Now
-                                </button>
+                                <form asp-controller="Payment" asp-action="Initiate" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="bookingId" value="@Model.BookingId" />
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-credit-card mr-2"></i>Pay Now with SSLCommerz
+                                    </button>
+                                </form>
                             }
                             else if (Model.PaymentReceivedAt.HasValue)
                             {
@@ -328,9 +332,13 @@
             <div class="card-body">
                 @if (Model.CanPay)
                 {
-                    <button type="button" class="btn btn-success btn-block btn-pay mb-2" data-booking-id="@Model.BookingId" data-price="@Model.NegotiatedPrice">
-                        <i class="fas fa-credit-card mr-2"></i>Pay Tk @Model.NegotiatedPrice?.ToString("N0")
-                    </button>
+                    <form asp-controller="Payment" asp-action="Initiate" method="post" class="mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="bookingId" value="@Model.BookingId" />
+                        <button type="submit" class="btn btn-success btn-block">
+                            <i class="fas fa-credit-card mr-2"></i>Pay Tk @Model.NegotiatedPrice?.ToString("N0")
+                        </button>
+                    </form>
                 }
                 
                 @if (Model.CanConfirmCompletion)
@@ -388,40 +396,6 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Pay button
-            $('.btn-pay').on('click', function() {
-                var bookingId = $(this).data('booking-id');
-                var price = $(this).data('price');
-                
-                Swal.fire({
-                    title: 'Confirm Payment',
-                    html: `<p>You are about to pay <strong>Tk ${price.toLocaleString()}</strong> for this service.</p>`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    confirmButtonText: '<i class="fas fa-credit-card mr-1"></i> Pay Now'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: '@Url.Action("ConfirmPayment", "Booking")',
-                            type: 'POST',
-                            data: { bookingId: bookingId },
-                            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                            success: function(response) {
-                                if (response.success) {
-                                    Swal.fire('Success!', response.message, 'success').then(() => location.reload());
-                                } else {
-                                    Swal.fire('Error', response.message, 'error');
-                                }
-                            },
-                            error: function(xhr) {
-                                Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
-                            }
-                        });
-                    }
-                });
-            });
-
             // Confirm completion
             $('.btn-confirm-completion').on('click', function() {
                 var bookingId = $(this).data('booking-id');
