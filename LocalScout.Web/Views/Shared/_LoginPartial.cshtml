@@ -66,6 +66,11 @@
         width: 1.2rem;
         text-align: center;
     }
+    
+    /* Force left-align dropdown headers */
+    .dropdown-header {
+        text-align: left !important;
+    }
 </style>
 
 @if (SignInManager.IsSignedIn(User))
@@ -116,43 +121,82 @@
 
             <div class="dropdown-divider m-0"></div>
 
+            @* ===== ADMIN NAVIGATION ===== *@
             @if (User.IsInRole(RoleNames.Admin))
             {
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Administration</div>
                 <a asp-area="" asp-controller="Admin" asp-action="Index" class="dropdown-item py-2">
-                    <i class="fas fa-gauge fa-fw mr-2 text-secondary"></i> Admin Dashboard
+                    <i class="fas fa-gauge fa-fw mr-2 text-primary"></i> Admin Dashboard
+                </a>
+                <a asp-area="" asp-controller="Admin" asp-action="ActiveUsers" class="dropdown-item py-2">
+                    <i class="fas fa-users fa-fw mr-2 text-info"></i> Manage Users
+                </a>
+                <a asp-area="" asp-controller="Admin" asp-action="ActiveProviders" class="dropdown-item py-2">
+                    <i class="fas fa-user-tie fa-fw mr-2 text-success"></i> Manage Providers
+                </a>
+                <a asp-area="" asp-controller="ServiceCategory" asp-action="ActiveCategories" class="dropdown-item py-2">
+                    <i class="fas fa-folder fa-fw mr-2 text-warning"></i> Manage Categories
+                </a>
+                
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Reports & Analytics</div>
+                <a asp-area="" asp-controller="Report" asp-action="AdminReports" class="dropdown-item py-2">
+                    <i class="fas fa-chart-pie fa-fw mr-2 text-purple" style="color: #6f42c1;"></i> Platform Analytics
+                </a>
+                <a asp-area="" asp-controller="Admin" asp-action="AuditLog" class="dropdown-item py-2">
+                    <i class="fas fa-clipboard-list fa-fw mr-2 text-secondary"></i> Audit Log
                 </a>
             }
 
+            @* ===== SERVICE PROVIDER NAVIGATION ===== *@
             @if (User.IsInRole(RoleNames.ServiceProvider))
             {
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Dashboard</div>
                 <a asp-area="" asp-controller="Provider" asp-action="Index" class="dropdown-item py-2">
-                    <i class="fas fa-tachometer-alt fa-fw mr-2 text-secondary"></i> My Dashboard
+                    <i class="fas fa-tachometer-alt fa-fw mr-2 text-primary"></i> My Dashboard
                 </a>
+                
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Bookings & Payments</div>
                 <a asp-area="" asp-controller="Booking" asp-action="ProviderBookings" class="dropdown-item py-2">
-                    <i class="fas fa-calendar-check fa-fw mr-2 text-secondary"></i> My Bookings
+                    <i class="fas fa-calendar-check fa-fw mr-2 text-success"></i> My Bookings
                 </a>
                 <a asp-area="" asp-controller="Payment" asp-action="History" class="dropdown-item py-2">
-                    <i class="fas fa-history fa-fw mr-2 text-secondary"></i> Payment History
+                    <i class="fas fa-credit-card fa-fw mr-2 text-info"></i> Payment History
+                </a>
+                
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Reports</div>
+                <a asp-area="" asp-controller="Report" asp-action="ProviderReports" class="dropdown-item py-2">
+                    <i class="fas fa-chart-line fa-fw mr-2 text-warning"></i> Earnings Report
                 </a>
             }
+            
+            @* ===== USER NAVIGATION ===== *@
             else if (User.IsInRole(RoleNames.User))
             {
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Dashboard</div>
                 <a asp-area="" asp-controller="User" asp-action="Dashboard" class="dropdown-item py-2">
-                    <i class="fas fa-tachometer-alt fa-fw mr-2 text-secondary"></i> My Dashboard
+                    <i class="fas fa-home fa-fw mr-2 text-primary"></i> My Dashboard
                 </a>
+                
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Activity</div>
                 <a asp-area="" asp-controller="Booking" asp-action="MyBookings" class="dropdown-item py-2">
-                    <i class="fas fa-calendar-alt fa-fw mr-2 text-secondary"></i> My Bookings
+                    <i class="fas fa-calendar-alt fa-fw mr-2 text-success"></i> My Bookings
                 </a>
                 <a asp-area="" asp-controller="Review" asp-action="MyReviews" class="dropdown-item py-2">
-                    <i class="fas fa-star fa-fw mr-2 text-secondary"></i> My Reviews
+                    <i class="fas fa-star fa-fw mr-2 text-warning"></i> My Reviews
                 </a>
                 <a asp-area="" asp-controller="Payment" asp-action="UserHistory" class="dropdown-item py-2">
-                    <i class="fas fa-history fa-fw mr-2 text-secondary"></i> Payment History
+                    <i class="fas fa-credit-card fa-fw mr-2 text-info"></i> Payment History
+                </a>
+                
+                <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-2">Reports</div>
+                <a asp-area="" asp-controller="Report" asp-action="UserReports" class="dropdown-item py-2">
+                    <i class="fas fa-chart-bar fa-fw mr-2 text-purple" style="color: #6f42c1;"></i> Activity Report
                 </a>
             }
 
             <div class="dropdown-divider my-1"></div>
-
+            
+            <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3 pt-1">Account</div>
             <a asp-area="Identity" asp-page="/Account/Manage/Index" class="dropdown-item py-2">
                 <i class="fas fa-user-cog fa-fw mr-2 text-secondary"></i> Manage Profile
             </a>
@@ -168,21 +212,24 @@
 }
 else
 {
+    @* ===== GUEST NAVIGATION (NOT LOGGED IN) ===== *@
     <li class="nav-item dropdown">
         <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" id="accountDropdown" role="button"
            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fas fa-user-circle mr-1"></i> Account
         </a>
         <div class="dropdown-menu dropdown-menu-right border-0 shadow" aria-labelledby="accountDropdown">
+            <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3">Get Started</div>
             <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Login">
-                <i class="fas fa-sign-in-alt fa-fw mr-2 text-secondary"></i> Login
+                <i class="fas fa-sign-in-alt fa-fw mr-2 text-primary"></i> Login
             </a>
             <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Register">
-                <i class="fas fa-user-plus fa-fw mr-2 text-secondary"></i> Register
+                <i class="fas fa-user-plus fa-fw mr-2 text-success"></i> Register
             </a>
             <div class="dropdown-divider"></div>
+            <div class="dropdown-header text-uppercase small font-weight-bold text-muted px-3">For Professionals</div>
             <a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/RegisterProvider">
-                <i class="fas fa-user-tie fa-fw mr-2 text-secondary"></i> Become a Provider
+                <i class="fas fa-briefcase fa-fw mr-2 text-warning"></i> Become a Provider
             </a>
         </div>
     </li>
