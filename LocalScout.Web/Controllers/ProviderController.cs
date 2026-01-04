@@ -75,10 +75,20 @@ namespace LocalScout.Web.Controllers
                 });
             }
 
+            // Get provider info
+            var provider = await _userManager.FindByIdAsync(userId);
+            
+            // Get active services count
+            var activeServicesCount = await _serviceRepository.GetProviderActiveServiceCountAsync(userId);
+
             // Get provider dashboard data
             var dashboardData = new ProviderDashboardDto
             {
                 ProviderId = userId,
+                ProviderName = provider?.FullName ?? "Provider",
+                BusinessName = provider?.BusinessName,
+                ProfilePictureUrl = provider?.ProfilePictureUrl,
+                ActiveServicesCount = activeServicesCount,
                 TotalEarnings = totalEarnings,
                 TotalBookings = totalBookings,
                 PendingRequestsCount = pendingRequests,

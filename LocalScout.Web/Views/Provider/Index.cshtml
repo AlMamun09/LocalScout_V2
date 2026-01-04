@@ -175,33 +175,40 @@
                 <!-- Add the bg color to the header using any of the bg-* classes -->
                 <div class="widget-user-header bg-primary">
                     <div class="widget-user-image">
-                        <!-- Fallback profile image logic is handled in layout usually, but good to have here too -->
-                        <img class="img-circle elevation-2" src="~/adminlte/dist/img/user2-160x160.jpg" alt="User Avatar" style="object-fit: cover;">
+                        @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                        {
+                            <img class="img-circle elevation-2" src="@Model.ProfilePictureUrl" alt="User Avatar" style="object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="img-circle elevation-2 d-flex align-items-center justify-content-center bg-light text-primary" style="width: 65px; height: 65px; font-size: 1.5rem; font-weight: bold;">
+                                @(Model.ProviderName.Length > 0 ? Model.ProviderName[0].ToString().ToUpper() : "P")
+                            </div>
+                        }
                     </div>
-                    <!-- Use generic greetings or fetch User Name if available in DTO/ViewBag -->
-                    <h3 class="widget-user-username">My Profile</h3>
-                    <h5 class="widget-user-desc">Service Provider</h5>
+                    <h3 class="widget-user-username">@Model.ProviderName</h3>
+                    <h5 class="widget-user-desc">@(Model.BusinessName ?? "Service Provider")</h5>
                 </div>
                 <div class="card-footer p-0">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                Active Services <span class="float-right badge bg-primary">3</span>
+                            <a asp-controller="Service" asp-action="ProviderServices" class="nav-link">
+                                Active Services <span class="float-right badge bg-primary">@Model.ActiveServicesCount</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                Tasks Completed <span class="float-right badge bg-success">@Model.TotalBookings</span>
+                            <a asp-controller="Booking" asp-action="ProviderBookings" class="nav-link">
+                                Completed Jobs <span class="float-right badge bg-success">@Model.TotalBookings</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                Pending Payments <span class="float-right badge bg-danger">৳0</span>
+                            <a asp-controller="Booking" asp-action="ProviderBookings" class="nav-link">
+                                Pending Requests <span class="float-right badge bg-warning">@Model.PendingRequestsCount</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                Profile Views <span class="float-right badge bg-info">128</span>
+                            <a asp-controller="Payment" asp-action="History" class="nav-link">
+                                Total Earnings <span class="float-right badge bg-success">৳@Model.TotalEarnings.ToString("N0")</span>
                             </a>
                         </li>
                     </ul>

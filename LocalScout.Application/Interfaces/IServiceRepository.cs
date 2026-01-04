@@ -16,5 +16,6 @@ namespace LocalScout.Application.Interfaces
         Task SoftDeleteServiceAsync(Guid id);
         Task<IEnumerable<Service>> GetOtherServicesByProviderAsync(string providerId, Guid excludeServiceId, int maxResults = 4);
         Task<IEnumerable<Service>> GetRelatedServicesAsync(Guid categoryId, string excludeProviderId, int maxResults = 6);
+        Task<int> GetProviderActiveServiceCountAsync(string providerId);
     }
 }

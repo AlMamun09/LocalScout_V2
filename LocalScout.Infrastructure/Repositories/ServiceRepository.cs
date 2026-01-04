@@ -158,5 +158,11 @@ namespace LocalScout.Infrastructure.Repositories
                 .Take(maxResults)
                 .ToListAsync();
         }
+
+        public async Task<int> GetProviderActiveServiceCountAsync(string providerId)
+        {
+            return await _context.Services
+                .CountAsync(s => s.Id == providerId && s.IsActive && !s.IsDeleted);
+        }
     }
 }

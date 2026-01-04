@@ -89,7 +89,9 @@ namespace LocalScout.Infrastructure.Repositories
         {
             return await _context.Bookings
                 .Where(b => b.UserId == userId && 
-                            b.Status == BookingStatus.Completed && 
+                            (b.Status == BookingStatus.PaymentReceived ||
+                             b.Status == BookingStatus.JobDone ||
+                             b.Status == BookingStatus.Completed) && 
                             b.NegotiatedPrice.HasValue)
                 .SumAsync(b => b.NegotiatedPrice!.Value);
         }
@@ -137,7 +139,9 @@ namespace LocalScout.Infrastructure.Repositories
         {
             return await _context.Bookings
                 .Where(b => b.ProviderId == providerId && 
-                            b.Status == BookingStatus.Completed && 
+                            (b.Status == BookingStatus.PaymentReceived ||
+                             b.Status == BookingStatus.JobDone ||
+                             b.Status == BookingStatus.Completed) && 
                             b.NegotiatedPrice.HasValue)
                 .SumAsync(b => b.NegotiatedPrice!.Value);
         }
