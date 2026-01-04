@@ -18,6 +18,7 @@ namespace LocalScout.Web.Controllers
         private readonly IServiceRepository _serviceRepository;
         private readonly IUserRepository _userRepository;
         private readonly IServiceProviderRepository _providerRepository;
+        private readonly IReportPdfService _reportPdfService;
 
         public ReportController(
             UserManager<ApplicationUser> userManager,
@@ -25,7 +26,8 @@ namespace LocalScout.Web.Controllers
             IReviewRepository reviewRepository,
             IServiceRepository serviceRepository,
             IUserRepository userRepository,
-            IServiceProviderRepository providerRepository)
+            IServiceProviderRepository providerRepository,
+            IReportPdfService reportPdfService)
         {
             _userManager = userManager;
             _bookingRepository = bookingRepository;
@@ -33,6 +35,7 @@ namespace LocalScout.Web.Controllers
             _serviceRepository = serviceRepository;
             _userRepository = userRepository;
             _providerRepository = providerRepository;
+            _reportPdfService = reportPdfService;
         }
 
         #region User Reports
@@ -90,10 +93,23 @@ namespace LocalScout.Web.Controllers
                 CompletedBookings = filteredBookings.Count(b => b.Status == BookingStatus.Completed),
                 CancelledBookings = filteredBookings.Count(b => b.Status == BookingStatus.Cancelled),
                 TotalSpent = filteredBookings
-                    .Where(b => b.Status == BookingStatus.Completed && b.NegotiatedPrice.HasValue)
+                    .Where(b => (b.Status == BookingStatus.PaymentReceived || 
+                                 b.Status == BookingStatus.JobDone || 
+                                 b.Status == BookingStatus.Completed) && 
+                                 b.NegotiatedPrice.HasValue)
                     .Sum(b => b.NegotiatedPrice!.Value),
                 Bookings = bookingDetails
             };
+        }
+
+        [Authorize(Roles = RoleNames.User)]
+        public async Task<IActionResult> ExportUserReportPdf(string dateRange = "last30", DateTime? startDate = null, DateTime? endDate = null, int? month = null, int? year = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var report = await GetUserReportDataAsync(dateRange, startDate, endDate, month, year);
+            var pdfBytes = _reportPdfService.GenerateUserReport(report, user?.FullName ?? "User");
+            var fileName = $"ActivityReport_{DateTime.Now:yyyyMMdd}.pdf";
+            return File(pdfBytes, "application/pdf", fileName);
         }
 
         #endregion
@@ -157,12 +173,25 @@ namespace LocalScout.Web.Controllers
                 CancelledBookings = filteredBookings.Count(b => b.Status == BookingStatus.Cancelled),
                 PendingBookings = filteredBookings.Count(b => b.Status == BookingStatus.PendingProviderReview),
                 TotalEarnings = filteredBookings
-                    .Where(b => b.Status == BookingStatus.Completed && b.NegotiatedPrice.HasValue)
+                    .Where(b => (b.Status == BookingStatus.PaymentReceived || 
+                                 b.Status == BookingStatus.JobDone || 
+                                 b.Status == BookingStatus.Completed) && 
+                                 b.NegotiatedPrice.HasValue)
                     .Sum(b => b.NegotiatedPrice!.Value),
                 AverageRating = avgRating,
                 TotalReviews = reviewCount,
                 Bookings = bookingDetails
             };
+        }
+
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        public async Task<IActionResult> ExportProviderReportPdf(string dateRange = "last30", DateTime? startDate = null, DateTime? endDate = null, int? month = null, int? year = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var report = await GetProviderReportDataAsync(dateRange, startDate, endDate, month, year);
+            var pdfBytes = _reportPdfService.GenerateProviderReport(report, user?.FullName ?? user?.BusinessName ?? "Provider");
+            var fileName = $"EarningsReport_{DateTime.Now:yyyyMMdd}.pdf";
+            return File(pdfBytes, "application/pdf", fileName);
         }
 
         #endregion
@@ -194,6 +223,27 @@ namespace LocalScout.Web.Controllers
             var newUsers = allUsers.Where(u => u.CreatedAt >= start && u.CreatedAt <= end).ToList();
             var newProviders = allProviders.Where(p => p.CreatedAt >= start && p.CreatedAt <= end).ToList();
 
+            // Get all bookings for revenue calculation
+            var allBookings = await _bookingRepository.GetAllBookingsAsync();
+            var periodBookings = allBookings
+                .Where(b => b.CreatedAt >= start && b.CreatedAt <= end)
+                .ToList();
+            
+            // Get bookings with payment received (for revenue calculation)
+            var paidBookings = periodBookings
+                .Where(b => b.Status == BookingStatus.PaymentReceived || 
+                           b.Status == BookingStatus.JobDone || 
+                           b.Status == BookingStatus.Completed)
+                .ToList();
+
+            var totalRevenue = paidBookings
+                .Where(b => b.NegotiatedPrice.HasValue)
+                .Sum(b => b.NegotiatedPrice!.Value);
+            
+            var completedBookings = periodBookings
+                .Where(b => b.Status == BookingStatus.Completed)
+                .ToList();
+
             return new AdminReportDto
             {
                 DateRange = dateRange,
@@ -204,8 +254,20 @@ namespace LocalScout.Web.Controllers
                 ActiveUsers = allUsers.Count(u => u.IsActive),
                 ActiveProviders = allProviders.Count(p => p.IsActive && p.IsVerified),
                 NewUsersInPeriod = newUsers.Count,
-                NewProvidersInPeriod = newProviders.Count
+                NewProvidersInPeriod = newProviders.Count,
+                TotalRevenue = totalRevenue,
+                TotalBookings = periodBookings.Count,
+                CompletedBookings = completedBookings.Count
             };
+        }
+
+        [Authorize(Roles = RoleNames.Admin)]
+        public async Task<IActionResult> ExportAdminReportPdf(string dateRange = "last30", DateTime? startDate = null, DateTime? endDate = null, int? month = null, int? year = null)
+        {
+            var report = await GetAdminReportDataAsync(dateRange, startDate, endDate, month, year);
+            var pdfBytes = _reportPdfService.GenerateAdminReport(report);
+            var fileName = $"SystemReport_{DateTime.Now:yyyyMMdd}.pdf";
+            return File(pdfBytes, "application/pdf", fileName);
         }
 
         #endregion

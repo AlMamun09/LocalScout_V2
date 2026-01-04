@@ -10,9 +10,9 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center flex-wrap pt-3">
                 <h4 class="mb-0"><i class="fas fa-chart-line mr-2 text-primary"></i>Earnings & Performance Report</h4>
-                <button type="button" class="btn btn-success" onclick="exportToCsv()">
-                    <i class="fas fa-file-csv mr-1"></i> Export CSV
-                </button>
+                <a id="exportPdfLink" href="@Url.Action("ExportProviderReportPdf", "Report", new { dateRange = Model.DateRange })" class="btn btn-danger">
+                    <i class="fas fa-file-pdf mr-1"></i> Export PDF
+                </a>
             </div>
         </div>
     </div>
@@ -78,8 +78,6 @@
 
 @section Scripts {
     <script>
-        var reportFilename = 'provider_report_@(startDateStr)_to_@(endDateStr).csv';
-        
         function handleDateRangeChange() {
             toggleDateFields();
             var range = document.getElementById('dateRangeSelect').value;
@@ -133,28 +131,5 @@
         }
         
         document.addEventListener('DOMContentLoaded', toggleDateFields);
-        
-        function exportToCsv() {
-            var table = document.getElementById('bookingsTable');
-            if (!table) {
-                Swal.fire('No Data', 'No data to export', 'warning');
-                return;
-            }
-            var csv = [];
-            var rows = table.querySelectorAll('tr');
-            for (var row of rows) {
-                var cols = row.querySelectorAll('th, td');
-                var rowData = [];
-                for (var col of cols) {
-                    rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
-                }
-                csv.push(rowData.join(','));
-            }
-            var blob = new Blob([csv.join('\n')], { type: 'text/csv' });
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = reportFilename;
-            a.click();
-        }
     </script>
 }

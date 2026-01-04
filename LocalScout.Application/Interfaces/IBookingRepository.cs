@@ -11,6 +11,9 @@ namespace LocalScout.Application.Interfaces
         Task<Booking> CreateAsync(Booking booking);
         Task<Booking> UpdateAsync(Booking booking);
         
+        // All bookings (for admin)
+        Task<List<Booking>> GetAllBookingsAsync();
+        
         // User queries
         Task<List<Booking>> GetUserBookingsAsync(string userId, BookingStatus? status = null);
         Task<int> GetUserBookingCountAsync(string userId, BookingStatus? status = null);

@@ -40,6 +40,11 @@ namespace LocalScout.Infrastructure.Repositories
             return booking;
         }
 
+        public async Task<List<Booking>> GetAllBookingsAsync()
+        {
+            return await _context.Bookings.ToListAsync();
+        }
+
         // User queries
         public async Task<List<Booking>> GetUserBookingsAsync(string userId, BookingStatus? status = null)
         {
