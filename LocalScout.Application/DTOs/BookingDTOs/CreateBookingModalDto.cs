@@ -9,8 +9,11 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public string ServiceName { get; set; } = string.Empty;
         public decimal ServiceMinPrice { get; set; }
         public string? ServicePricingUnit { get; set; }
+        public string ProviderId { get; set; } = string.Empty;
         public string ProviderName { get; set; } = string.Empty;
         public string? ProviderBusinessName { get; set; }
         public string? UserAddress { get; set; }
+        public string? ProviderWorkingHours { get; set; }
     }
 }
+

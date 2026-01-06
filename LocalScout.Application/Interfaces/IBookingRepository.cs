@@ -30,6 +30,13 @@ namespace LocalScout.Application.Interfaces
         
         // Status updates
         Task<bool> AcceptBookingAsync(Guid bookingId, decimal negotiatedPrice, string? providerNotes);
+        
+        /// <summary>
+        /// Accept booking with confirmed time slot
+        /// </summary>
+        Task<bool> AcceptBookingAsync(Guid bookingId, decimal negotiatedPrice, string? providerNotes, 
+            DateTime confirmedStartDateTime, DateTime confirmedEndDateTime);
+        
         Task<bool> UpdateStatusAsync(Guid bookingId, BookingStatus newStatus);
         Task<bool> CancelBookingAsync(Guid bookingId, string cancelledBy, string? reason);
         Task<bool> MarkPaymentReceivedAsync(Guid bookingId);
@@ -51,5 +58,27 @@ namespace LocalScout.Application.Interfaces
         // Payment History
         Task<List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>> GetPaymentHistoryForUserAsync(string userId);
         Task<List<LocalScout.Application.DTOs.PaymentDTOs.PaymentHistoryDto>> GetPaymentHistoryForProviderAsync(string providerId);
+        
+        // Scheduling-related methods
+        /// <summary>
+        /// Check if user has an active (pending/accepted) booking for a specific service
+        /// </summary>
+        Task<bool> HasActiveBookingForServiceAsync(string userId, Guid serviceId);
+        
+        /// <summary>
+        /// Get pending bookings that have exceeded the timeout period (3 hours)
+        /// </summary>
+        Task<List<Booking>> GetExpiredPendingBookingsAsync(TimeSpan timeout);
+        
+        /// <summary>
+        /// Get count of auto-cancelled bookings for a service (for blocking logic)
+        /// </summary>
+        Task<int> GetAutoCancelCountForServiceAsync(Guid serviceId, TimeSpan withinPeriod);
+        
+        /// <summary>
+        /// Update booking time (for provider adjustments)
+        /// </summary>
+        Task<bool> UpdateBookingTimeAsync(Guid bookingId, DateTime newStartDateTime, DateTime newEndDateTime);
     }
 }
+

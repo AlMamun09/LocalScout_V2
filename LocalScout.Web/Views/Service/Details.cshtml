@@ -3,7 +3,16 @@
 
 @{
     ViewData["Title"] = Model.ServiceName;
-    var priceDisplay = Model.GetPriceDisplay();
+    // Updated price format to match Index and Search pages
+    var pricingUnit = Model.PricingUnit switch
+    {
+        "Per Hour" => "Tk/Hour",
+        "Per Day" => "Tk/Day",
+        "Per Project" => "Tk/Project",
+        _ => "Tk"
+    };
+    var priceWithUnit = $"{Model.MinPrice:N0} {pricingUnit}";
+    
     var mainImage = Model.ImagePaths.FirstOrDefault() ?? "/images/placeholder-service.jpg";
     var isUser = User.IsInRole(RoleNames.User);
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
@@ -132,11 +141,11 @@
                 <span class="text-gray-500 text-xs">(@Model.ReviewCount reviews)</span>
             </div>
 
-            <!-- Price -->
+            <!-- Price (Updated to match Index/Search format) -->
             <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-lg">
-                <div class="text-xs text-gray-600 mb-0.5">@(Model.PricingUnit == "Per Hour" ? "Hourly Rate" : Model.PricingUnit == "Per Day" ? "Daily Rate" : Model.PricingUnit == "Per Project" ? "Project Rate" : "Price")</div>
+                <div class="text-xs text-gray-600 mb-0.5">Starts from</div>
                 <div class="text-2xl font-extrabold text-blue-700">
-                    @priceDisplay
+                    @priceWithUnit
                 </div>
             </div>
 

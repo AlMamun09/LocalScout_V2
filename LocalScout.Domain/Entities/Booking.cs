@@ -27,6 +27,14 @@ namespace LocalScout.Domain.Entities
         public DateTime? CancelledAt { get; set; }
         public bool HasReview { get; set; }
 
+        // Scheduling Properties
+        public DateTime? RequestedDate { get; set; }           // Date requested by user
+        public TimeSpan? RequestedStartTime { get; set; }      // Start time requested by user
+        public TimeSpan? RequestedEndTime { get; set; }        // End time requested by user
+        public DateTime? ConfirmedStartDateTime { get; set; }  // Final confirmed start (date+time)
+        public DateTime? ConfirmedEndDateTime { get; set; }    // Final confirmed end (date+time)
+        public int AutoCancelWarningCount { get; set; } = 0;   // Track auto-cancel count for service blocking
+
         //Payment Details
         public string? TransactionId { get; set; }
         public string? ValidationId { get; set; }

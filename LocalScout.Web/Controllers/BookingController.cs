@@ -22,6 +22,9 @@ namespace LocalScout.Web.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<BookingController> _logger;
         private readonly IAuditService _auditService;
+        private readonly ISchedulingService _schedulingService;
+        private readonly IProviderTimeSlotRepository _timeSlotRepository;
+        private readonly IServiceBlockRepository _serviceBlockRepository;
 
         private const long MaxImageSizeBytes = 5 * 1024 * 1024; // 5MB
         private const int MaxImagesPerBooking = 5;
@@ -34,7 +37,10 @@ namespace LocalScout.Web.Controllers
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment,
             ILogger<BookingController> logger,
-            IAuditService auditService)
+            IAuditService auditService,
+            ISchedulingService schedulingService,
+            IProviderTimeSlotRepository timeSlotRepository,
+            IServiceBlockRepository serviceBlockRepository)
         {
             _bookingRepository = bookingRepository;
             _serviceRepository = serviceRepository;
@@ -44,6 +50,9 @@ namespace LocalScout.Web.Controllers
             _environment = environment;
             _logger = logger;
             _auditService = auditService;
+            _schedulingService = schedulingService;
+            _timeSlotRepository = timeSlotRepository;
+            _serviceBlockRepository = serviceBlockRepository;
         }
 
         #region User Actions
@@ -155,18 +164,91 @@ namespace LocalScout.Web.Controllers
 
             var currentUser = await _userManager.GetUserAsync(User);
 
+            // Get provider duty hours for display
+            var dutyHours = await _schedulingService.GetProviderDutyHoursAsync(service.Id ?? "");
+
             var model = new CreateBookingModalDto
             {
                 ServiceId = service.ServiceId,
                 ServiceName = service.ServiceName ?? "Service",
                 ServiceMinPrice = service.MinPrice,
                 ServicePricingUnit = service.PricingUnit ?? "Fixed",
+                ProviderId = service.Id ?? "",
                 ProviderName = provider.FullName ?? "Provider",
                 ProviderBusinessName = provider.BusinessName,
-                UserAddress = currentUser?.Address
+                UserAddress = currentUser?.Address,
+                // Add duty hours info for display
+                ProviderWorkingHours = dutyHours.RawValue
             };
 
             return PartialView("_CreateBookingModal", model);
+        }
+
+        /// <summary>
+        /// AJAX endpoint to validate time slot before booking submission
+        /// </summary>
+        [Authorize(Roles = RoleNames.User)]
+        [HttpPost]
+        public async Task<IActionResult> ValidateTimeSlot([FromBody] TimeValidationRequestDto request)
+        {
+            try
+            {
+                var response = new TimeValidationResponseDto();
+
+                // Check minimum lead time (2 hours)
+                response.HasMinimumLeadTime = _schedulingService.ValidateMinimumLeadTime(
+                    request.RequestedDate, request.StartTime);
+                
+                if (!response.HasMinimumLeadTime)
+                {
+                    response.IsValid = false;
+                    response.ErrorMessage = "Bookings must be made at least 2 hours in advance.";
+                    return Json(response);
+                }
+
+                // Check duty hours
+                var dutyCheck = await _schedulingService.IsWithinProviderDutyHoursAsync(
+                    request.ProviderId, request.StartTime, request.EndTime);
+                
+                response.IsWithinDutyHours = dutyCheck.IsWithinHours;
+                if (!response.IsWithinDutyHours && dutyCheck.DutyStart.HasValue && dutyCheck.DutyEnd.HasValue)
+                {
+                    response.DutyHoursMessage = $"Provider works from {DateTime.Today.Add(dutyCheck.DutyStart.Value):h:mm tt} to {DateTime.Today.Add(dutyCheck.DutyEnd.Value):h:mm tt}.";
+                }
+
+                // Check provider availability
+                var startDateTime = _schedulingService.CombineDateAndTime(request.RequestedDate, request.StartTime);
+                var endDateTime = _schedulingService.CombineDateAndTime(request.RequestedDate, request.EndTime);
+                
+                var availabilityCheck = await _schedulingService.CheckProviderAvailabilityAsync(
+                    request.ProviderId, startDateTime, endDateTime);
+                
+                response.IsProviderAvailable = availabilityCheck.IsAvailable;
+
+                // Set overall validity
+                response.IsValid = response.HasMinimumLeadTime && 
+                                  response.IsWithinDutyHours && 
+                                  response.IsProviderAvailable;
+                
+                if (!response.IsValid && string.IsNullOrEmpty(response.ErrorMessage))
+                {
+                    if (!response.IsWithinDutyHours)
+                    {
+                        response.ErrorMessage = response.DutyHoursMessage ?? "Selected time is outside provider's working hours.";
+                    }
+                    else if (!response.IsProviderAvailable)
+                    {
+                        response.ErrorMessage = availabilityCheck.Message ?? "Provider is not available at the selected time.";
+                    }
+                }
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating time slot");
+                return Json(new TimeValidationResponseDto { IsValid = false, ErrorMessage = "Failed to validate time slot." });
+            }
         }
 
         /// <summary>
@@ -198,10 +280,36 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Service not available." });
                 }
 
+                // Check if service is blocked
+                var isBlocked = await _serviceBlockRepository.IsServiceBlockedAsync(dto.ServiceId);
+                if (isBlocked)
+                {
+                    return BadRequest(new { message = "This service is temporarily unavailable. Please try again later." });
+                }
+
                 var provider = await _userManager.FindByIdAsync(service.Id ?? "");
                 if (provider == null || !provider.IsActive || !provider.IsVerified)
                 {
                     return BadRequest(new { message = "Provider not available." });
+                }
+
+                // Check user restriction: cannot re-request same service while previous is pending/accepted
+                var hasActiveBooking = await _bookingRepository.HasActiveBookingForServiceAsync(userId, dto.ServiceId);
+                if (hasActiveBooking)
+                {
+                    return BadRequest(new { message = "You already have an active booking for this service. Please wait until it is completed or cancelled." });
+                }
+
+                // Validate time slot
+                var timeValidation = await _schedulingService.ValidateBookingTimeAsync(
+                    service.Id ?? "",
+                    dto.RequestedDate,
+                    dto.RequestedStartTime,
+                    dto.RequestedEndTime);
+
+                if (!timeValidation.IsValid)
+                {
+                    return BadRequest(new { message = timeValidation.ErrorMessage });
                 }
 
                 // Handle image uploads
@@ -211,7 +319,7 @@ namespace LocalScout.Web.Controllers
                     imagePaths = await SaveImagesAsync(images.Take(MaxImagesPerBooking).ToList(), "bookings");
                 }
 
-                // Create booking
+                // Create booking with time information
                 var booking = new Booking
                 {
                     ServiceId = dto.ServiceId,
@@ -220,16 +328,22 @@ namespace LocalScout.Web.Controllers
                     Description = dto.Description,
                     AddressArea = dto.AddressArea ?? user.Address,
                     ImagePaths = imagePaths.Any() ? JsonSerializer.Serialize(imagePaths) : null,
-                    Status = BookingStatus.PendingProviderReview
+                    Status = BookingStatus.PendingProviderReview,
+                    // Store requested time
+                    RequestedDate = dto.RequestedDate,
+                    RequestedStartTime = dto.RequestedStartTime,
+                    RequestedEndTime = dto.RequestedEndTime
                 };
 
                 await _bookingRepository.CreateAsync(booking);
 
-                // Notify provider - simplified notification without metadata
+                // Notify provider with time information
+                var startTimeStr = DateTime.Today.Add(dto.RequestedStartTime).ToString("h:mm tt");
+                var endTimeStr = DateTime.Today.Add(dto.RequestedEndTime).ToString("h:mm tt");
                 await _notificationRepository.CreateNotificationAsync(
                     provider.Id,
                     "New Booking Request",
-                    $"You have a new booking request from {user.FullName} for your service '{service.ServiceName}'. Check your bookings to review and respond.",
+                    $"You have a new booking request from {user.FullName} for '{service.ServiceName}' on {dto.RequestedDate:MMM dd, yyyy} from {startTimeStr} to {endTimeStr}. Check your bookings to review and respond.",
                     null
                 );
 
@@ -242,10 +356,10 @@ namespace LocalScout.Web.Controllers
                     "Booking",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"User created booking request for service '{service.ServiceName}' (Provider: {provider.FullName})"
+                    $"User created booking request for service '{service.ServiceName}' on {dto.RequestedDate:yyyy-MM-dd} {startTimeStr}-{endTimeStr}"
                 );
 
-                return Json(new { success = true, message = "Booking request sent successfully! The provider will review and respond soon.", bookingId = booking.BookingId });
+                return Json(new { success = true, message = "Booking request sent successfully! The provider will review and respond within 3 hours.", bookingId = booking.BookingId });
             }
             catch (Exception ex)
             {
@@ -253,6 +367,7 @@ namespace LocalScout.Web.Controllers
                 return StatusCode(500, new { message = "Failed to create booking." });
             }
         }
+
 
         /// <summary>
         /// User cancels booking (AJAX)
@@ -276,8 +391,10 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Booking not found." });
                 }
 
+                // Allow cancellation for pending, accepted, or need rescheduling bookings
                 if (booking.Status != BookingStatus.PendingProviderReview &&
-                    booking.Status != BookingStatus.AcceptedByProvider)
+                    booking.Status != BookingStatus.AcceptedByProvider &&
+                    booking.Status != BookingStatus.NeedRescheduling)
                 {
                     return BadRequest(new { message = "Cannot cancel this booking at current status." });
                 }
@@ -315,6 +432,90 @@ namespace LocalScout.Web.Controllers
             {
                 _logger.LogError(ex, "Error cancelling booking");
                 return StatusCode(500, new { message = "Failed to cancel booking." });
+            }
+        }
+
+        /// <summary>
+        /// User reschedules a booking by submitting a new requested time
+        /// </summary>
+        [Authorize(Roles = RoleNames.User)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserReschedule(RescheduleBookingDto dto)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(dto.BookingId);
+                if (booking == null || booking.UserId != userId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                // Only allow rescheduling for NeedRescheduling status
+                if (booking.Status != BookingStatus.NeedRescheduling)
+                {
+                    return BadRequest(new { message = "This booking cannot be rescheduled at current status." });
+                }
+
+                // Validate new time slot
+                var newStartDateTime = _schedulingService.CombineDateAndTime(dto.RequestedDate, dto.RequestedStartTime);
+                var newEndDateTime = _schedulingService.CombineDateAndTime(dto.RequestedDate, dto.RequestedEndTime);
+
+                if (newEndDateTime <= newStartDateTime)
+                {
+                    return BadRequest(new { message = "End time must be after start time." });
+                }
+
+                // Validate minimum lead time (2 hours)
+                var isLeadTimeValid = _schedulingService.ValidateMinimumLeadTime(dto.RequestedDate, dto.RequestedStartTime);
+                if (!isLeadTimeValid)
+                {
+                    return BadRequest(new { message = "Booking must be at least 2 hours in advance." });
+                }
+
+                // Update booking with new requested time and reset to pending
+                booking.RequestedDate = dto.RequestedDate;
+                booking.RequestedStartTime = dto.RequestedStartTime;
+                booking.RequestedEndTime = dto.RequestedEndTime;
+                booking.Status = BookingStatus.PendingProviderReview;
+                booking.UpdatedAt = DateTime.Now;
+
+                await _bookingRepository.UpdateAsync(booking);
+
+                // Notify provider about the new proposed time
+                var user = await _userManager.FindByIdAsync(userId);
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.ProviderId,
+                    "Booking Rescheduled",
+                    $"{user?.FullName ?? "A user"} has proposed a new time for their booking. Please review and accept the request.",
+                    null
+                );
+
+                // Audit Log
+                await _auditService.LogAsync(
+                    userId,
+                    user?.FullName,
+                    user?.Email,
+                    "BookingRescheduled",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"User rescheduled booking to {dto.RequestedDate:d} at {dto.RequestedStartTime} - {dto.RequestedEndTime}",
+                    true
+                );
+
+                return Ok(new { success = true, message = "Your booking has been rescheduled. Waiting for provider confirmation." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rescheduling booking");
+                return StatusCode(500, new { message = "Failed to reschedule booking." });
             }
         }
 
@@ -558,7 +759,7 @@ namespace LocalScout.Web.Controllers
         }
 
         /// <summary>
-        /// Provider accepts booking and sets price (AJAX)
+        /// Provider accepts booking and sets price with confirmed time (AJAX)
         /// </summary>
         [Authorize(Roles = RoleNames.ServiceProvider)]
         [HttpPost]
@@ -579,7 +780,9 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Booking not found." });
                 }
 
-                if (booking.Status != BookingStatus.PendingProviderReview)
+                // Allow accept for PendingProviderReview or rescheduling proposal for NeedRescheduling
+                if (booking.Status != BookingStatus.PendingProviderReview && 
+                    booking.Status != BookingStatus.NeedRescheduling)
                 {
                     return BadRequest(new { message = "This booking has already been processed." });
                 }
@@ -589,19 +792,72 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Please enter a valid price." });
                 }
 
-                var result = await _bookingRepository.AcceptBookingAsync(dto.BookingId, dto.NegotiatedPrice, dto.ProviderNotes);
+                // Combine confirmed date and time
+                var confirmedStartDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedDate, dto.ConfirmedStartTime);
+                var confirmedEndDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedDate, dto.ConfirmedEndTime);
+
+                // Validate confirmed time
+                if (confirmedEndDateTime <= confirmedStartDateTime)
+                {
+                    return BadRequest(new { message = "End time must be after start time." });
+                }
+
+                // Check for overlapping accepted bookings
+                var availabilityCheck = await _schedulingService.CheckProviderAvailabilityAsync(
+                    providerId, confirmedStartDateTime, confirmedEndDateTime, dto.BookingId);
+                
+                if (!availabilityCheck.IsAvailable)
+                {
+                    return BadRequest(new { message = availabilityCheck.Message });
+                }
+
+                // Validate duty hours
+                var dutyCheck = await _schedulingService.IsWithinProviderDutyHoursAsync(
+                    providerId, dto.ConfirmedStartTime, dto.ConfirmedEndTime);
+                
+                if (!dutyCheck.IsWithinHours)
+                {
+                    var dutyMsg = dutyCheck.DutyStart.HasValue && dutyCheck.DutyEnd.HasValue
+                        ? $"Time must be within your working hours ({DateTime.Today.Add(dutyCheck.DutyStart.Value):h:mm tt} - {DateTime.Today.Add(dutyCheck.DutyEnd.Value):h:mm tt})."
+                        : "Time is outside your working hours.";
+                    return BadRequest(new { message = dutyMsg });
+                }
+
+                // Accept booking with confirmed time
+                var result = await _bookingRepository.AcceptBookingAsync(
+                    dto.BookingId, dto.NegotiatedPrice, dto.ProviderNotes,
+                    confirmedStartDateTime, confirmedEndDateTime);
+                    
                 if (!result)
                 {
                     return BadRequest(new { message = "Failed to accept booking." });
                 }
 
-                // Notify user - simplified notification without price/id in metadata
+                // Create provider time slot to lock availability
+                var timeSlot = new ProviderTimeSlot
+                {
+                    ProviderId = providerId,
+                    BookingId = dto.BookingId,
+                    StartDateTime = confirmedStartDateTime,
+                    EndDateTime = confirmedEndDateTime,
+                    IsActive = true
+                };
+                await _timeSlotRepository.CreateAsync(timeSlot);
+
+                // Process overlapping pending requests (move them to NeedRescheduling)
+                var overlapsProcessed = await _schedulingService.ProcessOverlappingRequestsAsync(
+                    providerId, confirmedStartDateTime, confirmedEndDateTime, dto.BookingId);
+
+                // Notify user with time confirmation
                 var provider = await _userManager.FindByIdAsync(providerId);
                 var service = await _serviceRepository.GetServiceByIdAsync(booking.ServiceId);
+                var startTimeStr = confirmedStartDateTime.ToString("h:mm tt");
+                var endTimeStr = confirmedEndDateTime.ToString("h:mm tt");
+                
                 await _notificationRepository.CreateNotificationAsync(
                     booking.UserId,
                     "Booking Accepted!",
-                    $"{provider?.FullName ?? "Provider"} has accepted your booking for '{service?.ServiceName}'. You can now view their contact details and proceed to payment. Check your bookings for details.",
+                    $"{provider?.FullName ?? "Provider"} has accepted your booking for '{service?.ServiceName}' on {dto.ConfirmedDate:MMM dd, yyyy} from {startTimeStr} to {endTimeStr}. Price: Tk {dto.NegotiatedPrice:N0}. Proceed to payment.",
                     null
                 );
 
@@ -614,10 +870,16 @@ namespace LocalScout.Web.Controllers
                     "Booking",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"Provider accepted booking with negotiated price: {dto.NegotiatedPrice}"
+                    $"Provider accepted booking with price Tk {dto.NegotiatedPrice}, scheduled {dto.ConfirmedDate:yyyy-MM-dd} {startTimeStr}-{endTimeStr}. {overlapsProcessed} overlapping requests moved to NeedRescheduling."
                 );
 
-                return Json(new { success = true, message = "Booking accepted! The user has been notified and can now proceed with payment." });
+                var successMsg = "Booking accepted! The user has been notified and can now proceed with payment.";
+                if (overlapsProcessed > 0)
+                {
+                    successMsg += $" {overlapsProcessed} overlapping request(s) have been moved to 'Need Rescheduling'.";
+                }
+
+                return Json(new { success = true, message = successMsg });
             }
             catch (Exception ex)
             {
@@ -625,6 +887,7 @@ namespace LocalScout.Web.Controllers
                 return StatusCode(500, new { message = "Failed to accept booking." });
             }
         }
+
 
         /// <summary>
         /// Provider cancels/declines booking (AJAX)
@@ -648,8 +911,10 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Booking not found." });
                 }
 
+                // Allow cancellation for pending, accepted, or need rescheduling bookings
                 if (booking.Status != BookingStatus.PendingProviderReview &&
-                    booking.Status != BookingStatus.AcceptedByProvider)
+                    booking.Status != BookingStatus.AcceptedByProvider &&
+                    booking.Status != BookingStatus.NeedRescheduling)
                 {
                     return BadRequest(new { message = "Cannot cancel this booking at current status." });
                 }
@@ -688,6 +953,83 @@ namespace LocalScout.Web.Controllers
             {
                 _logger.LogError(ex, "Error declining booking");
                 return StatusCode(500, new { message = "Failed to decline booking." });
+            }
+        }
+
+        /// <summary>
+        /// Provider adjusts booking time (AJAX)
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustBookingTime(AdjustBookingTimeDto dto)
+        {
+            try
+            {
+                var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(providerId))
+                {
+                    return Unauthorized(new { message = "Provider not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(dto.BookingId);
+                if (booking == null || booking.ProviderId != providerId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                // Only allow adjustment for accepted or in-progress bookings
+                if (booking.Status != BookingStatus.AcceptedByProvider &&
+                    booking.Status != BookingStatus.AwaitingPayment &&
+                    booking.Status != BookingStatus.PaymentReceived &&
+                    booking.Status != BookingStatus.InProgress)
+                {
+                    return BadRequest(new { message = "Cannot adjust time for this booking status." });
+                }
+
+                // Validate new time
+                var newStartDateTime = _schedulingService.CombineDateAndTime(dto.NewDate, dto.NewStartTime);
+                var newEndDateTime = _schedulingService.CombineDateAndTime(dto.NewDate, dto.NewEndTime);
+
+                if (newEndDateTime <= newStartDateTime)
+                {
+                    return BadRequest(new { message = "End time must be after start time." });
+                }
+
+                // Check for overlapping bookings
+                var availabilityCheck = await _schedulingService.CheckProviderAvailabilityAsync(
+                    providerId, newStartDateTime, newEndDateTime, dto.BookingId);
+                    
+                if (!availabilityCheck.IsAvailable)
+                {
+                    return BadRequest(new { message = availabilityCheck.Message });
+                }
+
+                // Update booking time
+                var result = await _bookingRepository.UpdateBookingTimeAsync(
+                    dto.BookingId, newStartDateTime, newEndDateTime);
+                    
+                if (!result)
+                {
+                    return BadRequest(new { message = "Failed to update booking time." });
+                }
+
+                // Notify user about the time change
+                var provider = await _userManager.FindByIdAsync(providerId);
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.UserId,
+                    "Booking Time Adjusted",
+                    $"{provider?.FullName ?? "The provider"} has adjusted your booking time to {newStartDateTime:MMM dd, yyyy} at {dto.NewStartTime:hh\\:mm} - {dto.NewEndTime:hh\\:mm}." +
+                    (!string.IsNullOrEmpty(dto.Reason) ? $" Reason: {dto.Reason}" : ""),
+                    null
+                );
+
+                return Json(new { success = true, message = "Booking time updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adjusting booking time");
+                return StatusCode(500, new { message = "Failed to adjust booking time." });
             }
         }
 
@@ -886,6 +1228,13 @@ namespace LocalScout.Web.Controllers
                 NegotiatedPrice = booking.NegotiatedPrice,
                 ImagePaths = imagePaths,
 
+                // Time schedule fields
+                RequestedDate = booking.RequestedDate,
+                RequestedStartTime = booking.RequestedStartTime,
+                RequestedEndTime = booking.RequestedEndTime,
+                ConfirmedStartDateTime = booking.ConfirmedStartDateTime,
+                ConfirmedEndDateTime = booking.ConfirmedEndDateTime,
+
                 Status = booking.Status,
                 StatusDisplay = GetStatusDisplayText(booking.Status),
                 StatusBadgeClass = GetStatusBadgeClass(booking.Status),
@@ -895,7 +1244,7 @@ namespace LocalScout.Web.Controllers
                 AcceptedAt = booking.AcceptedAt,
                 AcceptedAtFormatted = booking.AcceptedAt?.ToString("MMM dd, yyyy"),
 
-                CanPay = booking.Status == BookingStatus.AcceptedByProvider || booking.Status == BookingStatus.AwaitingPayment,
+                CanPay = booking.Status == BookingStatus.JobDone,
                 CanCancel = booking.Status == BookingStatus.PendingProviderReview || booking.Status == BookingStatus.AcceptedByProvider,
                 CanConfirmCompletion = booking.Status == BookingStatus.JobDone
             };
@@ -994,6 +1343,13 @@ namespace LocalScout.Web.Controllers
                 NegotiatedPrice = booking.NegotiatedPrice,
                 ImagePaths = imagePaths,
 
+                // Time schedule fields
+                RequestedDate = booking.RequestedDate,
+                RequestedStartTime = booking.RequestedStartTime,
+                RequestedEndTime = booking.RequestedEndTime,
+                ConfirmedStartDateTime = booking.ConfirmedStartDateTime,
+                ConfirmedEndDateTime = booking.ConfirmedEndDateTime,
+
                 Status = booking.Status,
                 StatusDisplay = GetStatusDisplayText(booking.Status),
                 StatusBadgeClass = GetStatusBadgeClass(booking.Status),
@@ -1014,14 +1370,16 @@ namespace LocalScout.Web.Controllers
             return status switch
             {
                 BookingStatus.PendingProviderReview => "Pending Review",
-                BookingStatus.AcceptedByProvider => "Accepted - Awaiting Payment",
+                BookingStatus.AcceptedByProvider => "Accepted - Awaiting Service",
                 BookingStatus.AwaitingPayment => "Awaiting Payment",
                 BookingStatus.PaymentReceived => "Payment Received",
                 BookingStatus.InProgress => "In Progress",
-                BookingStatus.JobDone => "Job Done - Awaiting Confirmation",
+                BookingStatus.JobDone => "Job Done - Awaiting Payment & Confirmation",
                 BookingStatus.Completed => "Completed",
                 BookingStatus.Cancelled => "Cancelled",
                 BookingStatus.Disputed => "Disputed",
+                BookingStatus.NeedRescheduling => "Needs Rescheduling",
+                BookingStatus.AutoCancelled => "Auto-Cancelled",
                 _ => status.ToString()
             };
         }
@@ -1039,6 +1397,8 @@ namespace LocalScout.Web.Controllers
                 BookingStatus.Completed => "badge-success",
                 BookingStatus.Cancelled => "badge-danger",
                 BookingStatus.Disputed => "badge-danger",
+                BookingStatus.NeedRescheduling => "badge-warning",
+                BookingStatus.AutoCancelled => "badge-secondary",
                 _ => "badge-secondary"
             };
         }

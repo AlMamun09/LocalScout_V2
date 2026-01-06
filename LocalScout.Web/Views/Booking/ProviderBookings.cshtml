@@ -91,9 +91,9 @@
     </div>
 </div>
 
-<!-- Accept & Set Price Modal -->
+<!-- Accept & Set Price Modal with Time Confirmation -->
 <div class="modal fade" id="acceptModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title"><i class="fas fa-check-circle mr-2"></i>Accept Booking</h5>
@@ -106,13 +106,55 @@
                     <input type="hidden" id="acceptBookingId" name="BookingId" />
                     
                     <div class="alert alert-info">
-                        <strong>Service:</strong> <span id="acceptServiceName"></span><br>
-                        <strong>Customer:</strong> <span id="acceptCustomerName"></span><br>
-                        <strong>Base Price:</strong> Tk <span id="acceptBasePrice"></span>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Service:</strong> <span id="acceptServiceName"></span><br>
+                                <strong>Customer:</strong> <span id="acceptCustomerName"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Base Price:</strong> Tk <span id="acceptBasePrice"></span>
+                            </div>
+                        </div>
                     </div>
                     
-                    <p class="text-muted">Enter the final negotiated price after discussing with the customer. This will be the amount they need to pay.</p>
+                    <!-- Requested Schedule Display -->
+                    <div id="requestedScheduleBox" class="alert alert-warning mb-3" style="display: none;">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        <strong>Customer's Requested Schedule:</strong>
+                        <span id="displayRequestedSchedule"></span>
+                    </div>
                     
+                    <!-- Confirm/Adjust Time Section -->
+                    <div class="card card-outline card-success mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-clock mr-2"></i>Confirm Date & Time <span class="text-danger">*</span></h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">You can confirm the customer's requested time or adjust it if needed.</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="confirmedDate">Date</label>
+                                        <input type="date" class="form-control" id="confirmedDate" name="ConfirmedDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="confirmedStartTime">Start Time</label>
+                                        <input type="time" class="form-control" id="confirmedStartTime" name="ConfirmedStartTime" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="confirmedEndTime">End Time</label>
+                                        <input type="time" class="form-control" id="confirmedEndTime" name="ConfirmedEndTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Section -->
                     <div class="form-group">
                         <label for="negotiatedPrice">Final Price (Tk) <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -125,7 +167,7 @@
                     
                     <div class="form-group">
                         <label for="providerNotes">Notes for Customer (Optional)</label>
-                        <textarea class="form-control" id="providerNotes" name="ProviderNotes" rows="3" placeholder="Any details about the price, what's included, timeline, etc."></textarea>
+                        <textarea class="form-control" id="providerNotes" name="ProviderNotes" rows="2" placeholder="Any details about the price, what's included, etc."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -138,6 +180,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Decline Modal -->
 <div class="modal fade" id="declineModal" tabindex="-1" role="dialog">
@@ -212,12 +255,15 @@
             
             // Bind event handlers for dynamically loaded content
             function bindEventHandlers(container) {
-                // Accept button - show modal
+                // Accept button - show modal with time data
                 container.find('.btn-accept').off('click').on('click', function() {
                     var bookingId = $(this).data('booking-id');
                     var serviceName = $(this).data('service-name');
                     var customerName = $(this).data('customer-name');
                     var basePrice = $(this).data('base-price');
+                    var requestedDate = $(this).data('requested-date');
+                    var requestedStart = $(this).data('requested-start');
+                    var requestedEnd = $(this).data('requested-end');
                     
                     $('#acceptBookingId').val(bookingId);
                     $('#acceptServiceName').text(serviceName);
@@ -225,6 +271,29 @@
                     $('#acceptBasePrice').text(formatNumber(basePrice));
                     $('#negotiatedPrice').val(basePrice);
                     $('#providerNotes').val('');
+                    
+                    // Populate and show requested schedule
+                    if (requestedDate && requestedStart && requestedEnd) {
+                        var formattedDate = new Date(requestedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                        var formattedStart = formatTime12h(requestedStart);
+                        var formattedEnd = formatTime12h(requestedEnd);
+                        $('#displayRequestedSchedule').text(formattedDate + ' • ' + formattedStart + ' - ' + formattedEnd);
+                        $('#requestedScheduleBox').show();
+                        
+                        // Pre-fill confirmed time with requested time
+                        $('#confirmedDate').val(requestedDate);
+                        $('#confirmedStartTime').val(requestedStart);
+                        $('#confirmedEndTime').val(requestedEnd);
+                    } else {
+                        $('#requestedScheduleBox').hide();
+                        // Set default to tomorrow if no requested date
+                        var tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        $('#confirmedDate').val(tomorrow.toISOString().split('T')[0]);
+                        $('#confirmedStartTime').val('09:00');
+                        $('#confirmedEndTime').val('10:00');
+                    }
+                    
                     $('#acceptModal').modal('show');
                 });
 
@@ -285,6 +354,18 @@
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
             
+            // Format time to 12-hour format
+            function formatTime12h(time) {
+                if (!time) return '';
+                var parts = time.split(':');
+                var hours = parseInt(parts[0], 10);
+                var minutes = parts[1] || '00';
+                var ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                return hours + ':' + minutes + ' ' + ampm;
+            }
+            
             // Tab change event
             $('#providerBookingTabs a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
                 var tabId = $(e.target).attr('href').replace('#tab-', '');
@@ -306,10 +387,27 @@
                     return;
                 }
                 
+                var confirmedDate = $('#confirmedDate').val();
+                var confirmedStartTime = $('#confirmedStartTime').val();
+                var confirmedEndTime = $('#confirmedEndTime').val();
+                
+                if (!confirmedDate || !confirmedStartTime || !confirmedEndTime) {
+                    Swal.fire('Error', 'Please select date and time', 'error');
+                    return;
+                }
+                
+                if (confirmedEndTime <= confirmedStartTime) {
+                    Swal.fire('Error', 'End time must be after start time', 'error');
+                    return;
+                }
+                
                 var data = {
                     BookingId: $('#acceptBookingId').val(),
                     NegotiatedPrice: price,
-                    ProviderNotes: $('#providerNotes').val()
+                    ProviderNotes: $('#providerNotes').val(),
+                    ConfirmedDate: confirmedDate,
+                    ConfirmedStartTime: confirmedStartTime + ':00',
+                    ConfirmedEndTime: confirmedEndTime + ':00'
                 };
 
                 $.ajax({

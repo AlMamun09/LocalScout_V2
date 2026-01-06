@@ -35,6 +35,24 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public decimal ServiceMinPrice { get; set; }
         public List<string> ImagePaths { get; set; } = new();
 
+        // Time Schedule - Requested by user
+        public DateTime? RequestedDate { get; set; }
+        public TimeSpan? RequestedStartTime { get; set; }
+        public TimeSpan? RequestedEndTime { get; set; }
+        
+        // Time Schedule - Confirmed by provider
+        public DateTime? ConfirmedStartDateTime { get; set; }
+        public DateTime? ConfirmedEndDateTime { get; set; }
+        
+        // Formatted time display helpers
+        public string? RequestedScheduleFormatted => RequestedDate.HasValue && RequestedStartTime.HasValue && RequestedEndTime.HasValue
+            ? $"{RequestedDate.Value:MMM dd, yyyy} • {DateTime.Today.Add(RequestedStartTime.Value):h:mm tt} - {DateTime.Today.Add(RequestedEndTime.Value):h:mm tt}"
+            : null;
+            
+        public string? ConfirmedScheduleFormatted => ConfirmedStartDateTime.HasValue && ConfirmedEndDateTime.HasValue
+            ? $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:h:mm tt}"
+            : null;
+
         // Status
         public BookingStatus Status { get; set; }
         public string StatusDisplay { get; set; } = string.Empty;
@@ -54,3 +72,4 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public bool CanConfirmCompletion { get; set; }
     }
 }
+

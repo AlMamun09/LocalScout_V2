@@ -9,6 +9,7 @@
 <form id="createBookingForm" enctype="multipart/form-data">
     <div class="modal-body">
         <input type="hidden" name="ServiceId" value="@Model.ServiceId" />
+        <input type="hidden" id="providerId" value="@Model.ProviderId" />
         
         <!-- Service Info -->
         <div class="alert alert-info">
@@ -22,6 +23,13 @@
                             <span>(@Model.ProviderBusinessName)</span>
                         }
                     </p>
+                    @if (!string.IsNullOrEmpty(Model.ProviderWorkingHours))
+                    {
+                        <p class="mb-0 mt-1">
+                            <i class="fas fa-clock mr-1 text-info"></i>
+                            <small>Working Hours: <strong>@Model.ProviderWorkingHours</strong></small>
+                        </p>
+                    }
                 </div>
                 <div class="col-md-4 text-right">
                     <h5 class="mb-0">From Tk @Model.ServiceMinPrice.ToString("N0")</h5>
@@ -38,21 +46,48 @@
             <ul class="mb-0 pl-3 list-unstyled">
                 <li class="mb-1">
                     <i class="fas fa-arrow-right mr-2 text-info"></i>
-                    <small>Describe your requirements and upload any relevant images</small>
+                    <small>Select your preferred date and time for the service</small>
                 </li>
                 <li class="mb-1">
                     <i class="fas fa-arrow-right mr-2 text-info"></i>
-                    <small>The provider reviews your request and may contact you for clarification</small>
+                    <small>Provider will review and confirm within <strong>3 hours</strong></small>
                 </li>
                 <li class="mb-1">
                     <i class="fas fa-arrow-right mr-2 text-info"></i>
-                    <small>Once confirmed, you’ll receive the final price</small>
-                </li>
-                <li>
-                    <i class="fas fa-arrow-right mr-2 text-info"></i>
-                    <small>Approve the price, complete payment, and the work begins</small>
+                    <small>Once approved, you'll receive the final price and can proceed to payment</small>
                 </li>
             </ul>
+        </div>
+
+        <!-- Date & Time Selection -->
+        <div class="card card-outline card-primary mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Select Date & Time <span class="text-danger">*</span></h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-0">
+                            <label for="requestedDate">Date</label>
+                            <input type="date" class="form-control" id="requestedDate" name="RequestedDate" 
+                                   min="@DateTime.Now.ToString("yyyy-MM-dd")" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-0">
+                            <label for="requestedStartTime">Start Time</label>
+                            <input type="time" class="form-control" id="requestedStartTime" name="RequestedStartTime" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-0">
+                            <label for="requestedEndTime">End Time</label>
+                            <input type="time" class="form-control" id="requestedEndTime" name="RequestedEndTime" required>
+                        </div>
+                    </div>
+                </div>
+                <div id="timeValidationMessage" class="mt-2" style="display: none;"></div>
+            </div>
         </div>
 
         <div class="form-group">
@@ -64,8 +99,8 @@
 
         <div class="form-group">
             <label for="description">Describe Your Requirements</label>
-            <textarea class="form-control" id="description" name="Description" rows="4" 
-                      placeholder="Please describe what you need, any specific requirements, preferred timing, etc."></textarea>
+            <textarea class="form-control" id="description" name="Description" rows="3" 
+                      placeholder="Please describe what you need, any specific requirements, etc."></textarea>
             <small class="form-text text-muted">The more details you provide, the better the provider can understand your needs</small>
         </div>
 
@@ -82,7 +117,7 @@
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="submitBookingBtn">
+        <button type="submit" class="btn btn-primary" id="submitBookingBtn" disabled>
             <i class="fas fa-paper-plane mr-1"></i> Send Booking Request
         </button>
     </div>
@@ -91,6 +126,100 @@
 <script>
     $(function() {
         bsCustomFileInput.init();
+        
+        var providerId = '@Model.ProviderId';
+        var timeValid = false;
+        
+        // Set minimum date to today
+        var today = new Date().toISOString().split('T')[0];
+        $('#requestedDate').attr('min', today);
+        
+        // Calculate minimum time (2 hours from now) when date is today
+        function updateMinTime() {
+            var selectedDate = $('#requestedDate').val();
+            var startTimeInput = $('#requestedStartTime');
+            
+            if (selectedDate === today) {
+                var now = new Date();
+                now.setHours(now.getHours() + 2);
+                var minTime = now.toTimeString().slice(0, 5);
+                startTimeInput.attr('min', minTime);
+            } else {
+                startTimeInput.removeAttr('min');
+            }
+        }
+        
+        // Validate time slot via AJAX
+        function validateTimeSlot() {
+            var date = $('#requestedDate').val();
+            var startTime = $('#requestedStartTime').val();
+            var endTime = $('#requestedEndTime').val();
+            
+            if (!date || !startTime || !endTime) {
+                $('#submitBookingBtn').prop('disabled', true);
+                return;
+            }
+            
+            // Basic client-side validation
+            if (endTime <= startTime) {
+                showTimeError('End time must be after start time.');
+                return;
+            }
+            
+            // AJAX validation
+            $.ajax({
+                url: '@Url.Action("ValidateTimeSlot", "Booking")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    ProviderId: providerId,
+                    ServiceId: '@Model.ServiceId',
+                    RequestedDate: date,
+                    StartTime: startTime + ':00',
+                    EndTime: endTime + ':00'
+                }),
+                success: function(response) {
+                    if (response.isValid) {
+                        showTimeSuccess('Time slot is available!');
+                        timeValid = true;
+                        $('#submitBookingBtn').prop('disabled', false);
+                    } else {
+                        showTimeError(response.errorMessage || 'Selected time is not available.');
+                        timeValid = false;
+                        $('#submitBookingBtn').prop('disabled', true);
+                    }
+                },
+                error: function() {
+                    showTimeError('Failed to validate time slot.');
+                    timeValid = false;
+                    $('#submitBookingBtn').prop('disabled', true);
+                }
+            });
+        }
+        
+        function showTimeError(msg) {
+            $('#timeValidationMessage')
+                .removeClass('alert-success')
+                .addClass('alert alert-danger')
+                .html('<i class="fas fa-exclamation-circle mr-1"></i>' + msg)
+                .show();
+        }
+        
+        function showTimeSuccess(msg) {
+            $('#timeValidationMessage')
+                .removeClass('alert-danger')
+                .addClass('alert alert-success')
+                .html('<i class="fas fa-check-circle mr-1"></i>' + msg)
+                .show();
+        }
+        
+        // Event listeners for time validation
+        $('#requestedDate').on('change', function() {
+            updateMinTime();
+            validateTimeSlot();
+        });
+        
+        $('#requestedStartTime, #requestedEndTime').on('change', validateTimeSlot);
         
         // Image preview
         $('#bookingImages').on('change', function() {
@@ -118,6 +247,11 @@
         // Form submit
         $('#createBookingForm').on('submit', function(e) {
             e.preventDefault();
+            
+            if (!timeValid) {
+                Swal.fire('Error', 'Please select a valid time slot first.', 'error');
+                return;
+            }
             
             var submitBtn = $('#submitBookingBtn');
             submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');

@@ -21,7 +21,10 @@
                         </h5>
                         <small class="text-muted">Requested: @booking.CreatedAtFormatted</small>
                     </div>
-                    <span class="badge @booking.StatusBadgeClass" style="font-size: 0.9em;">@booking.StatusDisplay</span>
+                    <div class="text-right">
+                        <span class="badge @booking.StatusBadgeClass" style="font-size: 0.9em;">@booking.StatusDisplay</span>
+                        @await Html.PartialAsync("_CountdownClock", booking)
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -81,6 +84,22 @@
                             </p>
                         }
                         
+                        @* Time Schedule Display - Prominent for Provider *@
+                        @if (!string.IsNullOrEmpty(booking.RequestedScheduleFormatted))
+                        {
+                            <div class="alert alert-info py-2 px-3 mb-2">
+                                <i class="fas fa-calendar-alt mr-2"></i>
+                                <strong>Requested Schedule:</strong> @booking.RequestedScheduleFormatted
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(booking.ConfirmedScheduleFormatted))
+                        {
+                            <div class="alert alert-success py-2 px-3 mb-2">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <strong>Confirmed:</strong> @booking.ConfirmedScheduleFormatted
+                            </div>
+                        }
+                        
                         @if (!string.IsNullOrEmpty(booking.Description))
                         {
                             <p class="mb-1">
@@ -133,17 +152,43 @@
                                     data-booking-id="@booking.BookingId" 
                                     data-service-name="@booking.ServiceName"
                                     data-customer-name="@booking.UserName"
-                                    data-base-price="@booking.ServiceMinPrice">
+                                    data-base-price="@booking.ServiceMinPrice"
+                                    data-requested-date="@booking.RequestedDate?.ToString("yyyy-MM-dd")"
+                                    data-requested-start="@booking.RequestedStartTime?.ToString(@"hh\:mm")"
+                                    data-requested-end="@booking.RequestedEndTime?.ToString(@"hh\:mm")">
                                 <i class="fas fa-check mr-1"></i> Accept & Set Price
                             </button>
                             <button type="button" class="btn btn-outline-danger btn-decline" data-booking-id="@booking.BookingId">
                                 <i class="fas fa-times mr-1"></i> Decline
                             </button>
                         }
+                        else if (booking.Status == BookingStatus.NeedRescheduling)
+                        {
+                            @* Provider can propose a new time for rescheduling *@
+                            <button type="button" class="btn btn-warning btn-accept mb-2" 
+                                    data-booking-id="@booking.BookingId" 
+                                    data-service-name="@booking.ServiceName"
+                                    data-customer-name="@booking.UserName"
+                                    data-base-price="@booking.ServiceMinPrice"
+                                    data-requested-date="@booking.RequestedDate?.ToString("yyyy-MM-dd")"
+                                    data-requested-start="@booking.RequestedStartTime?.ToString(@"hh\:mm")"
+                                    data-requested-end="@booking.RequestedEndTime?.ToString(@"hh\:mm")">
+                                <i class="fas fa-calendar-alt mr-1"></i> Propose New Time
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-decline" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-times mr-1"></i> Cancel
+                            </button>
+                        }
                         else if (booking.CanMarkJobDone)
                         {
                             <button type="button" class="btn btn-primary btn-mark-done mb-2" data-booking-id="@booking.BookingId">
                                 <i class="fas fa-check-circle mr-1"></i> Mark Job Done
+                            </button>
+                        }
+                        else if (booking.CanCancel)
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-decline" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-times mr-1"></i> Cancel
                             </button>
                         }
                         

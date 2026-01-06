@@ -1,0 +1,114 @@
+@* Countdown Clock Component *@
+@* Shows time remaining until booking appointment or auto-cancellation *@
+
+@model LocalScout.Application.DTOs.BookingDTOs.BookingListItemDto
+@using LocalScout.Domain.Enums
+
+@{
+    var showCountdown = false;
+    var countdownType = "";
+    DateTime? targetTime = null;
+    var countdownLabel = "";
+    var countdownIcon = "";
+    var countdownClass = "";
+    
+    // For PendingProviderReview - show auto-cancel countdown (3 hours from creation)
+    if (Model.Status == BookingStatus.PendingProviderReview)
+    {
+        showCountdown = true;
+        countdownType = "auto-cancel";
+        targetTime = Model.CreatedAt.AddHours(3);
+        countdownLabel = "Auto-cancels in";
+        countdownIcon = "fas fa-exclamation-triangle";
+        countdownClass = "text-warning";
+    }
+    // For accepted/paid bookings - show countdown to appointment
+    else if (Model.ConfirmedStartDateTime.HasValue && 
+             (Model.Status == BookingStatus.AcceptedByProvider || 
+              Model.Status == BookingStatus.AwaitingPayment ||
+              Model.Status == BookingStatus.PaymentReceived ||
+              Model.Status == BookingStatus.InProgress))
+    {
+        showCountdown = true;
+        countdownType = "appointment";
+        targetTime = Model.ConfirmedStartDateTime.Value;
+        countdownLabel = "Appointment in";
+        countdownIcon = "fas fa-calendar-check";
+        countdownClass = "text-primary";
+    }
+}
+
+@if (showCountdown && targetTime.HasValue)
+{
+    var now = DateTime.Now;
+    var isPast = targetTime.Value < now;
+    
+    if (!isPast)
+    {
+        <div class="countdown-container @countdownClass" 
+             data-target-time="@targetTime.Value.ToString("o")"
+             data-countdown-type="@countdownType">
+            <small>
+                <i class="@countdownIcon mr-1"></i>
+                <span class="countdown-label">@countdownLabel</span>
+                <span class="countdown-timer font-weight-bold"></span>
+            </small>
+        </div>
+    }
+    else if (countdownType == "appointment")
+    {
+        <div class="text-success">
+            <small>
+                <i class="fas fa-clock mr-1"></i>
+                <span>Appointment started</span>
+            </small>
+        </div>
+    }
+}
+
+<script>
+    // Initialize countdown timers
+    (function() {
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-container').forEach(function(container) {
+                var targetTime = new Date(container.dataset.targetTime);
+                var now = new Date();
+                var diff = targetTime - now;
+                
+                if (diff <= 0) {
+                    container.querySelector('.countdown-timer').textContent = 'Expired';
+                    container.classList.remove('text-warning', 'text-primary');
+                    container.classList.add('text-danger');
+                    return;
+                }
+                
+                var hours = Math.floor(diff / (1000 * 60 * 60));
+                var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                var timeStr = '';
+                if (hours > 24) {
+                    var days = Math.floor(hours / 24);
+                    hours = hours % 24;
+                    timeStr = days + 'd ' + hours + 'h ' + minutes + 'm';
+                } else if (hours > 0) {
+                    timeStr = hours + 'h ' + minutes + 'm ' + seconds + 's';
+                } else {
+                    timeStr = minutes + 'm ' + seconds + 's';
+                }
+                
+                container.querySelector('.countdown-timer').textContent = timeStr;
+                
+                // Change color when time is running low
+                if (container.dataset.countdownType === 'auto-cancel' && diff < 30 * 60 * 1000) {
+                    container.classList.remove('text-warning');
+                    container.classList.add('text-danger');
+                }
+            });
+        }
+        
+        // Update every second
+        setInterval(updateCountdowns, 1000);
+        updateCountdowns(); // Initial update
+    })();
+</script>

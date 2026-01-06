@@ -124,6 +124,63 @@
     </div>
 </div>
 
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-calendar-alt mr-2"></i>Reschedule Booking</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="rescheduleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="rescheduleBookingId" name="BookingId" />
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Service:</strong> <span id="rescheduleServiceName"></span>
+                        <p class="mb-0 mt-2 small">Your original time was not available. Please select a new preferred time slot.</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="rescheduleDate">New Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="rescheduleDate" name="RequestedDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="rescheduleStartTime">Start Time <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="rescheduleStartTime" name="RequestedStartTime" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="rescheduleEndTime">End Time <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="rescheduleEndTime" name="RequestedEndTime" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted small">
+                        <i class="fas fa-clock mr-1"></i> Bookings must be made at least 2 hours in advance.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-calendar-check mr-1"></i> Submit New Time
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 @section Scripts {
     <script>
         $(document).ready(function() {
@@ -237,6 +294,25 @@
                     $('#cancelReason').val('');
                     $('#cancelModal').modal('show');
                 });
+                
+                // Reschedule button click - show modal
+                container.find('.btn-reschedule').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    var serviceName = $(this).data('service-name');
+                    
+                    $('#rescheduleBookingId').val(bookingId);
+                    $('#rescheduleServiceName').text(serviceName);
+                    
+                    // Set minimum date to tomorrow
+                    var tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    $('#rescheduleDate').attr('min', tomorrow.toISOString().split('T')[0]);
+                    $('#rescheduleDate').val(tomorrow.toISOString().split('T')[0]);
+                    $('#rescheduleStartTime').val('09:00');
+                    $('#rescheduleEndTime').val('10:00');
+                    
+                    $('#rescheduleModal').modal('show');
+                });
             }
             
             // Refresh current active tab
@@ -290,6 +366,47 @@
                     },
                     error: function(xhr) {
                         $('#cancelModal').modal('hide');
+                        Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                    }
+                });
+            });
+            
+            // Reschedule form submit
+            $('#rescheduleForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var endTime = $('#rescheduleEndTime').val();
+                var startTime = $('#rescheduleStartTime').val();
+                
+                if (endTime <= startTime) {
+                    Swal.fire('Error', 'End time must be after start time', 'error');
+                    return;
+                }
+                
+                var data = {
+                    BookingId: $('#rescheduleBookingId').val(),
+                    RequestedDate: $('#rescheduleDate').val(),
+                    RequestedStartTime: startTime + ':00',
+                    RequestedEndTime: endTime + ':00'
+                };
+
+                $.ajax({
+                    url: '@Url.Action("UserReschedule", "Booking")',
+                    type: 'POST',
+                    data: data,
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        $('#rescheduleModal').modal('hide');
+                        if (response.success) {
+                            Swal.fire('Rescheduled!', response.message, 'success').then(() => {
+                                refreshCurrentTab();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#rescheduleModal').modal('hide');
                         Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
                     }
                 });

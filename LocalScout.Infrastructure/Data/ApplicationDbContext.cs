@@ -17,6 +17,11 @@ namespace LocalScout.Infrastructure.Data
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        
+        // Scheduling-related entities
+        public DbSet<ProviderTimeSlot> ProviderTimeSlots { get; set; }
+        public DbSet<ServiceBlock> ServiceBlocks { get; set; }
+        public DbSet<RescheduleProposal> RescheduleProposals { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

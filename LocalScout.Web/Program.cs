@@ -64,6 +64,16 @@ builder.Services.Configure<LocalScout.Application.DTOs.PaymentDTOs.SSLCommerzSet
 builder.Services.AddHttpClient<LocalScout.Application.Interfaces.ISSLCommerzService, 
     LocalScout.Infrastructure.Services.SSLCommerzService>();
 
+// Scheduling Services (Enhanced Booking System)
+builder.Services.AddScoped<IProviderTimeSlotRepository, ProviderTimeSlotRepository>();
+builder.Services.AddScoped<IServiceBlockRepository, ServiceBlockRepository>();
+builder.Services.AddScoped<IRescheduleRepository, RescheduleRepository>();
+builder.Services.AddScoped<ISchedulingService, SchedulingService>();
+
+// Background Services for Auto-Cancel and Service Unblock
+builder.Services.AddHostedService<LocalScout.Infrastructure.Services.BookingAutoCancelService>();
+builder.Services.AddHostedService<LocalScout.Infrastructure.Services.ServiceUnblockService>();
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 

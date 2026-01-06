@@ -14,7 +14,10 @@
                         </h5>
                         <small class="text-muted">Requested: @booking.CreatedAtFormatted</small>
                     </div>
-                    <span class="badge @booking.StatusBadgeClass" style="font-size: 0.9em;">@booking.StatusDisplay</span>
+                    <div class="text-right">
+                        <span class="badge @booking.StatusBadgeClass" style="font-size: 0.9em;">@booking.StatusDisplay</span>
+                        @await Html.PartialAsync("_CountdownClock", booking)
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -59,6 +62,23 @@
                                 <strong>Location:</strong> @booking.AddressArea
                             </p>
                         }
+                        
+                        @* Time Schedule Display *@
+                        @if (!string.IsNullOrEmpty(booking.RequestedScheduleFormatted))
+                        {
+                            <p class="mb-1">
+                                <i class="fas fa-calendar-alt text-info mr-2"></i>
+                                <strong>Requested:</strong> @booking.RequestedScheduleFormatted
+                            </p>
+                        }
+                        @if (!string.IsNullOrEmpty(booking.ConfirmedScheduleFormatted))
+                        {
+                            <p class="mb-1">
+                                <i class="fas fa-check-circle text-success mr-2"></i>
+                                <strong>Confirmed:</strong> <span class="text-success">@booking.ConfirmedScheduleFormatted</span>
+                            </p>
+                        }
+                        
                         @if (!string.IsNullOrEmpty(booking.Description))
                         {
                             <p class="mb-1">
@@ -147,14 +167,31 @@
                             </button>
                         }
                         
-                        @if (booking.CanCancel)
+                        @* Reschedule Button for NeedRescheduling status *@
+                        @if (booking.Status == BookingStatus.NeedRescheduling)
+                        {
+                            <button type="button" class="btn btn-sm btn-warning btn-reschedule" 
+                                    data-booking-id="@booking.BookingId"
+                                    data-service-name="@booking.ServiceName">
+                                <i class="fas fa-calendar-alt mr-1"></i> Reschedule
+                            </button>
+                        }
+                        
+                        @* Cancel Button - show for pending, accepted, or need rescheduling *@
+                        @if (booking.Status == BookingStatus.PendingProviderReview || 
+                             booking.Status == BookingStatus.AcceptedByProvider ||
+                             booking.Status == BookingStatus.NeedRescheduling)
                         {
                             <button type="button" class="btn btn-sm btn-outline-danger btn-cancel" data-booking-id="@booking.BookingId">
                                 <i class="fas fa-times mr-1"></i> Cancel
                             </button>
                         }
                         
-                        @if (booking.Status >= BookingStatus.PaymentReceived)
+                        @* Receipt Button - only for statuses that have actually received payment *@
+                        @if (booking.Status == BookingStatus.PaymentReceived || 
+                             booking.Status == BookingStatus.InProgress ||
+                             booking.Status == BookingStatus.JobDone ||
+                             booking.Status == BookingStatus.Completed)
                         {
                             <a asp-controller="Payment" asp-action="DownloadReceipt" asp-route-bookingId="@booking.BookingId" 
                                class="btn btn-sm btn-outline-info" title="Download Payment Receipt">
