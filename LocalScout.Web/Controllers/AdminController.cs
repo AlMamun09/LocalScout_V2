@@ -25,6 +25,7 @@ namespace LocalScout.Web.Controllers
         private readonly INotificationRepository _notificationRepository;
         private readonly ILogger<AdminController> _logger;
         private readonly IAuditLogRepository _auditLogRepository;
+        private readonly IAuditService _auditService;
         private readonly ApplicationDbContext _context;
 
         public AdminController(
@@ -35,6 +36,7 @@ namespace LocalScout.Web.Controllers
             INotificationRepository notificationRepository,
             ILogger<AdminController> logger,
             IAuditLogRepository auditLogRepository,
+            IAuditService auditService,
             ApplicationDbContext context
         )
         {
@@ -45,6 +47,7 @@ namespace LocalScout.Web.Controllers
             _notificationRepository = notificationRepository;
             _logger = logger;
             _auditLogRepository = auditLogRepository;
+            _auditService = auditService;
             _context = context;
         }
 
@@ -137,7 +140,7 @@ namespace LocalScout.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleUserStatus(string id)
+        public async Task<IActionResult> ToggleUserStatus(string id, string? reason = null)
         {
             if (string.IsNullOrEmpty(id))
                 return BadRequest(new { message = "Invalid user ID." });
@@ -150,14 +153,14 @@ namespace LocalScout.Web.Controllers
             // Store the current status to determine the action
             var wasActive = user.IsActive;
 
-            // Toggle the status
-            var success = await _userRepository.ToggleUserStatusAsync(id);
+            // Toggle the status with block reason
+            var success = await _userRepository.ToggleUserStatusAsync(id, reason);
             if (success)
             {
                 // Determine the new status and message
                 var newStatus = wasActive ? "Blocked" : "Unblocked";
                 var message = wasActive
-                    ? "Your account has been blocked by the administrator. Please contact support for assistance."
+                    ? $"Your account has been blocked by the administrator. Reason: {reason ?? "No reason provided"}. Please contact support for assistance."
                     : "Your account has been unblocked. You can now access all features.";
 
                 // Create persistent notification
@@ -170,6 +173,23 @@ namespace LocalScout.Web.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"Failed to create notification for User ID: {id}");
+                }
+
+                // Audit Log
+                try
+                {
+                    await _auditService.LogAsync(
+                        wasActive ? "UserBlocked" : "UserUnblocked",
+                        "UserManagement",
+                        "User",
+                        id,
+                        wasActive ? $"User '{user.FullName}' blocked. Reason: {reason ?? "No reason provided"}" : $"User '{user.FullName}' unblocked.",
+                        true
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to create audit log for User ID: {id}");
                 }
 
                 return Ok(new
@@ -263,7 +283,7 @@ namespace LocalScout.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleProviderStatus(string id)
+        public async Task<IActionResult> ToggleProviderStatus(string id, string? reason = null)
         {
             if (string.IsNullOrEmpty(id))
                 return BadRequest(new { message = "Invalid provider ID." });
@@ -276,14 +296,14 @@ namespace LocalScout.Web.Controllers
             // Store the current status to determine the action
             var wasActive = provider.IsActive;
 
-            // Toggle the status
-            var success = await _providerRepository.ToggleProviderStatusAsync(id);
+            // Toggle the status with block reason
+            var success = await _providerRepository.ToggleProviderStatusAsync(id, reason);
             if (success)
             {
                 // Determine the new status and message
                 var newStatus = wasActive ? "Blocked" : "Unblocked";
                 var message = wasActive
-                    ? "Your provider account has been blocked by the administrator. You cannot accept new bookings. Please contact support for assistance."
+                    ? $"Your provider account has been blocked by the administrator. Reason: {reason ?? "No reason provided"}. You cannot accept new bookings or create services. Please contact support for assistance."
                     : "Your provider account has been unblocked. You can now accept bookings and provide services.";
 
                 // Create persistent notification
@@ -296,6 +316,23 @@ namespace LocalScout.Web.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"Failed to create notification for Provider ID: {id}");
+                }
+
+                // Audit Log
+                try
+                {
+                    await _auditService.LogAsync(
+                        wasActive ? "ProviderBlocked" : "ProviderUnblocked",
+                        "ProviderManagement",
+                        "Provider",
+                        id,
+                        wasActive ? $"Provider '{provider.FullName}' ({provider.BusinessName}) blocked. Reason: {reason ?? "No reason provided"}" : $"Provider '{provider.FullName}' ({provider.BusinessName}) unblocked.",
+                        true
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to create audit log for Provider ID: {id}");
                 }
 
                 return Ok(

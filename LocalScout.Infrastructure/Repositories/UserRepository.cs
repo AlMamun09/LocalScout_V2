@@ -47,7 +47,7 @@ namespace LocalScout.Infrastructure.Repositories
             return MapToDto(user, roles.FirstOrDefault() ?? RoleNames.User);
         }
 
-        public async Task<bool> ToggleUserStatusAsync(string userId)
+        public async Task<bool> ToggleUserStatusAsync(string userId, string? blockReason = null)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
@@ -56,6 +56,16 @@ namespace LocalScout.Infrastructure.Repositories
             // Toggle the boolean
             user.IsActive = !user.IsActive;
             user.UpdatedAt = DateTime.UtcNow;
+
+            // Set or clear BlockReason based on new status
+            if (!user.IsActive)
+            {
+                user.BlockReason = blockReason ?? "No reason provided";
+            }
+            else
+            {
+                user.BlockReason = null; // Clear reason when unblocking
+            }
 
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
@@ -78,6 +88,7 @@ namespace LocalScout.Infrastructure.Repositories
                 Gender = user.Gender ?? "N/A",
                 EmailConfirmed = user.EmailConfirmed,
                 Role = role,
+                BlockReason = user.BlockReason
             };
         }
     }

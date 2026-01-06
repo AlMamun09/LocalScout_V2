@@ -1,4 +1,6 @@
-﻿namespace LocalScout.Application.DTOs
+﻿using System.Globalization;
+
+namespace LocalScout.Application.DTOs
 {
     public class UserDto
     {
@@ -14,5 +16,6 @@
         public bool EmailConfirmed { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Role { get; set; }
+        public string? BlockReason { get; set; }
     }
 }

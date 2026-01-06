@@ -6,7 +6,7 @@ namespace LocalScout.Application.Interfaces
     {
         Task<IEnumerable<UserDto>> GetAllUsersAsync();
         Task<UserDto> GetUserByIdAsync(string userId);
-        Task<bool> ToggleUserStatusAsync(string userId);
+        Task<bool> ToggleUserStatusAsync(string userId, string? blockReason = null);
         Task<IEnumerable<UserDto>> GetUsersByStatusAsync(bool isActive);
     }
 }

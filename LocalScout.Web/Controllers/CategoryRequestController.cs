@@ -42,8 +42,22 @@ namespace LocalScout.Web.Controllers
 
         [Authorize(Roles = RoleNames.ServiceProvider)]
         [HttpGet]
-        public IActionResult RequestForm()
+        public async Task<IActionResult> RequestForm()
         {
+            // Check if provider is blocked
+            var userId = _userManager.GetUserId(User);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user != null && !user.IsActive)
+                {
+                    return BadRequest(new { 
+                        message = $"Your account has been blocked. Reason: {user.BlockReason ?? "No reason provided"}. You cannot request new categories.",
+                        isBlocked = true
+                    });
+                }
+            }
+
             return PartialView("~/Views/Provider/_RequestCategoryModal.cshtml", new CategoryRequestDto());
         }
 
@@ -57,6 +71,15 @@ namespace LocalScout.Web.Controllers
 
             if (user == null)
                 return Unauthorized();
+
+            // Check if provider is blocked
+            if (!user.IsActive)
+            {
+                return BadRequest(new { 
+                    message = $"Your account has been blocked. Reason: {user.BlockReason ?? "No reason provided"}. You cannot request new categories.",
+                    isBlocked = true
+                });
+            }
 
             // Check for duplicate pending request
             if (await _categoryRequestRepo.HasPendingRequestAsync(userId!, dto.RequestedCategoryName))

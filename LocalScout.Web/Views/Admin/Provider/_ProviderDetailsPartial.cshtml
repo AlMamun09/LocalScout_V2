@@ -63,6 +63,13 @@
             </div>
         </div>
 
+        @if (!Model.IsActive && !string.IsNullOrEmpty(Model.BlockReason))
+        {
+            <div class="alert alert-danger py-2 mb-3">
+                <strong><i class="fas fa-ban mr-1"></i>Block Reason:</strong> @Model.BlockReason
+            </div>
+        }
+
         <!-- 4. VERIFICATION DOCUMENT & ACTIONS -->
         @if (ViewBag.VerificationRequest != null)
         {

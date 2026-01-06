@@ -69,13 +69,13 @@
             <div class="form-group">
                 <label asp-for="PricingUnit">Pricing Unit</label>
                 <select asp-for="PricingUnit" id="pricingUnit" class="form-control">
-                    <option value="Fixed">Fixed</option>
                     <option value="Per Hour">Per Hour</option>
                     <option value="Per Day">Per Day</option>
+                    <option value="Per Month">Per Month</option>
                     <option value="Per Project">Per Project</option>
                 </select>
                 <small class="form-text text-muted">
-                    Select <strong>Fixed</strong> for one-time jobs, or choose rate-based pricing for flexible services.
+                    Select <strong>Per Project</strong> for one-time jobs, or choose rate-based pricing for flexible services.
                 </small>
             </div>
         </div>
@@ -186,11 +186,11 @@
 
         // Pricing Unit toggle for MaxPrice field
         function toggleMaxPrice() {
-            var isFixed = $('#pricingUnit').val() === 'Fixed';
+            var isFixed = $('#pricingUnit').val() === 'Per Project';
             $('#maxPriceGroup').toggle(!isFixed);
             $('#minPriceLabel').text(isFixed ? 'Price (Tk) *' : 'Min Price (Tk) *');
             
-            // Clear max price if switching to Fixed
+            // Clear max price if switching to Per Project
             if (isFixed) {
                 $('#maxPrice').val('');
                 $('#maxPriceError').hide();
@@ -418,8 +418,8 @@
             var categoryName = $('#categorySelect option:selected').text(); // Handles Select2 correctly
             if (categoryName === '-- Select Category --') categoryName = '';
 
-            var price = $('#Price').val() || '';
-            var pricingUnit = $('#PricingUnit').val() || '';
+            var price = $('#minPrice').val() || '';
+            var pricingUnit = $('#pricingUnit').val() || '';
 
             // Check if we have minimum data
             if (!serviceName && categoryName === '-- Select Category --') {
@@ -445,7 +445,7 @@
                 var context = {
                     'Service Name': serviceName,
                     'Category': categoryName,
-                    'Price': price ? '$' + price : '',
+                    'Price': price ? price + ' Taka' : '',
                     'Pricing Unit': pricingUnit
                 };
 

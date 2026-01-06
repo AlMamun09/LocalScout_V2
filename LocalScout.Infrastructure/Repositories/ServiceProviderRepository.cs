@@ -119,7 +119,7 @@ namespace LocalScout.Infrastructure.Repositories
             return MapToDto(provider);
         }
 
-        public async Task<bool> ToggleProviderStatusAsync(string providerId)
+        public async Task<bool> ToggleProviderStatusAsync(string providerId, string? blockReason = null)
         {
             var provider = await _userManager.FindByIdAsync(providerId);
             if (provider == null)
@@ -127,6 +127,16 @@ namespace LocalScout.Infrastructure.Repositories
 
             provider.IsActive = !provider.IsActive;
             provider.UpdatedAt = DateTime.UtcNow;
+
+            // Set or clear BlockReason based on new status
+            if (!provider.IsActive)
+            {
+                provider.BlockReason = blockReason ?? "No reason provided";
+            }
+            else
+            {
+                provider.BlockReason = null; // Clear reason when unblocking
+            }
 
             var result = await _userManager.UpdateAsync(provider);
             return result.Succeeded;
@@ -186,6 +196,7 @@ namespace LocalScout.Infrastructure.Repositories
                 TotalServices = 0, // Placeholder until Service Entity exists
                 TotalBookings = 0, // Placeholder until Booking Entity exists
                 AverageRating = 0.0, // Placeholder until Review Entity exists
+                BlockReason = provider.BlockReason
             };
         }
     }

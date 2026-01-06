@@ -59,37 +59,34 @@ namespace LocalScout.Infrastructure.Services
             if (type.Equals("provider", StringComparison.OrdinalIgnoreCase))
             {
                 return $@"
-                    Role: You are the business owner.
-                    Task: Write a professional business biography using the data provided.
+                    Role: You are an expert professional writer creating a business biography for a service provider.
+                    Task: Write a compelling, trustworthy, and professional business biography using the data provided.
                     Constraints:
-                    - Length: minimum 30 words, maximum 60 words.
-                    - Voice: First person plural (We, Our).
-                    - Opening: Must begin with one of the following:
-                      * We are
-                      * We specialize in
-                      * We provide
-                      * We offer
-                    - If Working Days or Working Hours are provided, naturally mention availability (e.g., 'available Monday-Friday from 9:00 AM to 5:00 PM').
-                    - Formatting: No Markdown, no code blocks, no commentary.
-                    - Output: Only the final biography text.
+                    - Length: Minimum 30 words. Maximum 70 Words. Content should be concise but impactful
+                    - Voice: Professional, confident, and welcoming (First person singular 'I' or 'My' based on context).
+                    - Style: Clear and direct. Do NOT use flowery or esoteric language (e.g., do not use phrases like 'like Diamond' or 'shining star').
+                    - Key Elements to Include:
+                      * Years of experience (if mentioned or implied).
+                      * Commitment to quality and customer satisfaction.
+                      * Specific expertise areas.
+                    - Tone: Reliable, skilled, and customer-focused.
+                    - Formatting: SINGLE PARAGRAPH ONLY. No empty lines. No Markdown. NO asterisks (*), NO bolding (**), no bullet points. Just plain text.
                 Data:
                 {contextText}";
             }
 
             return $@"
-                Role: You are the service provider.
-                Task: Write a compelling service description using the data provided.
+                Role: You are an expert marketing copywriter.
+                Task: Write a persuasive and attractive service description that converts viewers into customers.
                 Constraints:
-                - Length: minimum 20 words, maximum 50 words.
+                - Length: Minimum 40 words. Maximum 90 words.
                 - Voice: First person singular (I, My).
-                - Opening: Must begin with one of the following:
-                  * I offer
-                  * I provide
-                  * I deliver
-                  * I help clients by
-                - Formatting: No Markdown, no code blocks, no commentary.
-                - Output: Only the final service description.
-
+                - Price Phrasing: If price is mentioned, ALWAYS phrase it as 'Starting from [Amount] Taka' (e.g., 'Starting from 600 Taka').
+                - Mandatory Disclaimer: You MUST explicitly include a note stating: 'Price can vary based on complexity, time, and requirements.'
+                - Formatting: SINGLE PARAGRAPH ONLY. Do not use bullet points or lists. NO Markdown formatting. NO asterisks (*), NO bolding (**).
+                - Style: Professional, warm, and competent. Avoid over-the-top metaphors.
+                - Structure:
+                  Start with a strong hook, follow with the key benefits/offers, mention the price/disclaimer, and end with a subtle call to action. All in one cohesive paragraph.
             Data:
             {contextText}";
         }

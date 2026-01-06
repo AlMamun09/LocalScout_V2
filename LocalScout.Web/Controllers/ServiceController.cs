@@ -302,6 +302,20 @@ namespace LocalScout.Web.Controllers
         {
             try
             {
+                // Check if provider is blocked
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var currentUser = await _userManager.FindByIdAsync(userId);
+                    if (currentUser != null && !currentUser.IsActive)
+                    {
+                        return BadRequest(new { 
+                            message = $"Your account has been blocked. Reason: {currentUser.BlockReason ?? "No reason provided"}. You cannot create or edit services.",
+                            isBlocked = true
+                        });
+                    }
+                }
+
                 ViewBag.Categories = await _categoryRepository.GetActiveAndApprovedCategoryAsync();
 
                 if (id == null || id == Guid.Empty)
@@ -315,8 +329,7 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Service not found." });
                 }
 
-                // Verify ownership
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // Verify ownership (userId already defined at start of method)
                 if (service.Id != userId)
                 {
                     return Forbid();
@@ -358,6 +371,15 @@ namespace LocalScout.Web.Controllers
                     {
                         message = "You must be verified before creating services. Please submit verification documents first.",
                         requiresVerification = true
+                    });
+                }
+
+                // Check if provider is blocked
+                if (!user.IsActive)
+                {
+                    return BadRequest(new { 
+                        message = $"Your account has been blocked. Reason: {user.BlockReason ?? "No reason provided"}. You cannot create or edit services.",
+                        isBlocked = true
                     });
                 }
 

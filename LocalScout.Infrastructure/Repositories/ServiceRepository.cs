@@ -73,8 +73,14 @@ namespace LocalScout.Infrastructure.Repositories
 
         public async Task<IEnumerable<Service>> SearchServicesAsync(string? query, Guid? categoryId, int maxResults = 20)
         {
+            // Join with Users to filter out blocked providers
             var servicesQuery = _context.Services
-                .Where(s => s.IsActive && !s.IsDeleted);
+                .Join(_context.Users,
+                    service => service.Id,
+                    user => user.Id,
+                    (service, user) => new { service, user })
+                .Where(x => x.service.IsActive && !x.service.IsDeleted && x.user.IsActive) // Filter blocked providers
+                .Select(x => x.service);
 
             if (categoryId.HasValue && categoryId.Value != Guid.Empty)
             {

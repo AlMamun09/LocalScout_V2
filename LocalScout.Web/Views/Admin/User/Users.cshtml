@@ -86,6 +86,40 @@
     </div>
 </div>
 
+<!-- Modal for Block Reason -->
+<div class="modal fade" id="modal-block-reason" data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h4 class="modal-title text-white"><i class="fas fa-ban mr-2"></i>Block User</h4>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="block-user-id" />
+                <input type="hidden" id="block-user-btn" />
+                <div class="form-group">
+                    <label for="block-reason"><strong>Block Reason</strong> <span class="text-danger">*</span></label>
+                    <textarea id="block-reason" class="form-control" rows="4"
+                              placeholder="Enter the reason for blocking this user (required)."></textarea>
+                    <small class="text-muted">
+                        This reason will be shown to the user in their notification.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    <i class="fas fa-arrow-left mr-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmBlockUser()">
+                    <i class="fas fa-ban mr-1"></i> Confirm Block
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         var dataTable;
@@ -115,29 +149,63 @@
             var $btn = $(btn);
             var isActive = $btn.hasClass('btn-danger');
             var action = isActive ? "Block" : "Unblock";
-            var confirmColor = isActive ? '#d33' : '#28a745';
 
-            Swal.fire({
-                title: 'Are you sure?',
-                text: `You are about to ${action} this user. They will be removed from this list.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: confirmColor,
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: `Yes, ${action}!`,
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    performStatusUpdate(id, btn);
-                }
-            });
+            if (isActive) {
+                // Blocking - show reason modal
+                $('#block-user-id').val(id);
+                $('#block-reason').val('');
+                $('#modal-block-reason').modal('show');
+                // Store button reference for row removal
+                currentBlockBtn = btn;
+            } else {
+                // Unblocking - confirm directly
+                Swal.fire({
+                    title: 'Unblock User?',
+                    text: 'This user will regain access to all features.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Unblock!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performStatusUpdate(id, btn, null);
+                    }
+                });
+            }
         }
 
-        function performStatusUpdate(id, btn) {
+        var currentBlockBtn = null;
+
+        function confirmBlockUser() {
+            var userId = $('#block-user-id').val();
+            var reason = $('#block-reason').val().trim();
+
+            if (!reason) {
+                Swal.fire({
+                    title: 'Reason Required',
+                    text: 'Please enter a reason for blocking this user.',
+                    icon: 'warning',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
+
+            $('#modal-block-reason').modal('hide');
+            performStatusUpdate(userId, currentBlockBtn, reason);
+        }
+
+        function performStatusUpdate(id, btn, reason) {
             var $btn = $(btn);
             var $row = $btn.closest('tr');
 
-            AjaxClient.post('@Url.Action("ToggleUserStatus", "Admin")', { id: id },
+            var data = { id: id };
+            if (reason) {
+                data.reason = reason;
+            }
+
+            AjaxClient.post('@Url.Action("ToggleUserStatus", "Admin")', data,
                 function (response) {
                     Swal.fire({
                         title: 'Success!',

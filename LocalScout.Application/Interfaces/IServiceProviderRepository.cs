@@ -6,7 +6,7 @@ namespace LocalScout.Application.Interfaces
     {
         Task<IEnumerable<ServiceProviderDto>> GetAllProvidersAsync();
         Task<ServiceProviderDto?> GetProviderByIdAsync(string providerId);
-        Task<bool> ToggleProviderStatusAsync(string providerId);
+        Task<bool> ToggleProviderStatusAsync(string providerId, string? blockReason = null);
         Task<IEnumerable<ServiceProviderDto>> GetProvidersByStatusAsync(bool isActive);
         Task<IEnumerable<ServiceProviderDto>> GetVerificationRequestsAsync();
         Task<bool> ApproveProviderAsync(string providerId);

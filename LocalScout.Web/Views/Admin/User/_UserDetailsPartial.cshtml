@@ -28,6 +28,13 @@
                 <b>Address</b> <br>
                 <span class="text-muted">@Model.Address</span>
             </li>
+            @if (!Model.IsActive && !string.IsNullOrEmpty(Model.BlockReason))
+            {
+                <li class="list-group-item list-group-item-danger">
+                    <b><i class="fas fa-ban mr-1"></i>Block Reason</b> <br>
+                    <span>@Model.BlockReason</span>
+                </li>
+            }
         </ul>
 
         @if (Model.Role == "ServiceProvider")

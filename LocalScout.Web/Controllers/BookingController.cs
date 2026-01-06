@@ -139,6 +139,16 @@ namespace LocalScout.Web.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!string.IsNullOrEmpty(userId))
             {
+                // Check if user is blocked
+                var currentUser = await _userManager.FindByIdAsync(userId);
+                if (currentUser != null && !currentUser.IsActive)
+                {
+                    return BadRequest(new { 
+                        message = $"Your account has been blocked. Reason: {currentUser.BlockReason ?? "No reason provided"}. You cannot book services. Please contact support for assistance.",
+                        isBlocked = true
+                    });
+                }
+
                 // Check if user has pending completion
                 var hasPendingCompletion = await _bookingRepository.HasPendingCompletionAsync(userId);
                 if (hasPendingCompletion)
@@ -162,7 +172,7 @@ namespace LocalScout.Web.Controllers
                 return NotFound(new { message = "Provider not available." });
             }
 
-            var currentUser = await _userManager.GetUserAsync(User);
+            var userForAddress = await _userManager.GetUserAsync(User);
 
             // Get provider duty hours for display
             var dutyHours = await _schedulingService.GetProviderDutyHoursAsync(service.Id ?? "");
@@ -176,7 +186,7 @@ namespace LocalScout.Web.Controllers
                 ProviderId = service.Id ?? "",
                 ProviderName = provider.FullName ?? "Provider",
                 ProviderBusinessName = provider.BusinessName,
-                UserAddress = currentUser?.Address,
+                UserAddress = userForAddress?.Address,
                 // Add duty hours info for display
                 ProviderWorkingHours = dutyHours.RawValue
             };
@@ -271,6 +281,15 @@ namespace LocalScout.Web.Controllers
                 if (user == null)
                 {
                     return Unauthorized(new { message = "User not found." });
+                }
+
+                // Check if user is blocked
+                if (!user.IsActive)
+                {
+                    return BadRequest(new { 
+                        message = $"Your account has been blocked. Reason: {user.BlockReason ?? "No reason provided"}. You cannot book services.",
+                        isBlocked = true
+                    });
                 }
 
                 // Get service and provider
