@@ -1,0 +1,32 @@
+@using LocalScout.Application.Services
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@inject ITimeZoneService TimeZone
+
+@functions {
+    public static string ToBdTime(DateTime? utcDateTime, string format = "MMM dd, yyyy h:mm tt")
+    {
+        if (!utcDateTime.HasValue)
+            return "";
+            
+        var timeZoneService = new LocalScout.Infrastructure.Services.TimeZoneService();
+        return timeZoneService.FormatBdDateTime(utcDateTime.Value, format);
+    }
+    
+    public static string ToBdDate(DateTime? utcDateTime, string format = "MMM dd, yyyy")
+    {
+        if (!utcDateTime.HasValue)
+            return "";
+            
+        var timeZoneService = new LocalScout.Infrastructure.Services.TimeZoneService();
+        return timeZoneService.FormatBdDate(utcDateTime.Value, format);
+    }
+    
+    public static string ToBdTimeOnly(DateTime? utcDateTime, string format = "h:mm tt")
+    {
+        if (!utcDateTime.HasValue)
+            return "";
+            
+        var timeZoneService = new LocalScout.Infrastructure.Services.TimeZoneService();
+        return timeZoneService.FormatBdTime(utcDateTime.Value, format);
+    }
+}

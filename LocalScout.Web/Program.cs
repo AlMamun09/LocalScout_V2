@@ -24,6 +24,10 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // Add HttpContextAccessor for AuditService
 builder.Services.AddHttpContextAccessor();
 
+// Register TimeZone Service
+builder.Services.AddSingleton<LocalScout.Application.Services.ITimeZoneService, 
+    LocalScout.Infrastructure.Services.TimeZoneService>();
+
 // Configure Identity with ApplicationUser
 builder
     .Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

@@ -1,3 +1,5 @@
+using LocalScout.Application.Extensions;
+
 namespace LocalScout.Application.DTOs
 {
     public class NotificationDto
@@ -13,9 +15,12 @@ namespace LocalScout.Application.DTOs
         // UI Helper Properties
         public string TimeAgo => FormatTimeAgo(CreatedAt);
 
-        private static string FormatTimeAgo(DateTime createdAt)
+        private static string FormatTimeAgo(DateTime createdAtUtc)
         {
-            var timeSpan = DateTime.UtcNow - createdAt;
+            // Convert to BD time for calculation
+            var createdAtBd = createdAtUtc.ToBdTime();
+            var nowBd = DateTime.UtcNow.ToBdTime();
+            var timeSpan = nowBd - createdAtBd;
 
             if (timeSpan.TotalMinutes < 1)
                 return "Just now";
@@ -26,7 +31,7 @@ namespace LocalScout.Application.DTOs
             if (timeSpan.TotalDays < 7)
                 return $"{(int)timeSpan.TotalDays} day{((int)timeSpan.TotalDays == 1 ? "" : "s")} ago";
 
-            return createdAt.ToString("MMM dd, yyyy");
+            return createdAtBd.ToString("MMM dd, yyyy");
         }
     }
 }

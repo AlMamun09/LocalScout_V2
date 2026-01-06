@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace LocalScout.Infrastructure.Services
 {
     /// <summary>
-    /// Background service that automatically cancels pending bookings after 3 hours 
+    /// Background service that automatically cancels pending bookings after 12 hours 
     /// if the provider hasn't responded. Also handles service blocking after 3 consecutive
     /// auto-cancellations.
     /// </summary>
@@ -18,7 +18,7 @@ namespace LocalScout.Infrastructure.Services
         
         // Configuration
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5); // Check every 5 minutes
-        private static readonly TimeSpan AutoCancelTimeout = TimeSpan.FromHours(3); // 3 hours to respond
+        private static readonly TimeSpan AutoCancelTimeout = TimeSpan.FromHours(12); // 12 hours to respond
         private const int MaxAutoCancelWarnings = 3; // Block service after 3 auto-cancellations
         private static readonly TimeSpan ServiceBlockDuration = TimeSpan.FromDays(2); // Block for 2 days
 
@@ -32,8 +32,8 @@ namespace LocalScout.Infrastructure.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("BookingAutoCancelService started. Checking every {Interval} minutes.", 
-                CheckInterval.TotalMinutes);
+            _logger.LogInformation("BookingAutoCancelService started. Checking every {Interval} minutes. Auto-cancel timeout: {Timeout} hours.", 
+                CheckInterval.TotalMinutes, AutoCancelTimeout.TotalHours);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -82,14 +82,14 @@ namespace LocalScout.Infrastructure.Services
                     var autoCancelCount = await bookingRepository.GetAutoCancelCountForServiceAsync(booking.ServiceId, TimeSpan.FromDays(7)) + 1;
                     
                     _logger.LogWarning(
-                        "Auto-cancelled booking {BookingId} for service {ServiceId}. Provider {ProviderId} did not respond. Count: {Count}/{Max}",
-                        booking.BookingId, booking.ServiceId, booking.ProviderId, autoCancelCount, MaxAutoCancelWarnings);
+                        "Auto-cancelled booking {BookingId} for service {ServiceId}. Provider {ProviderId} did not respond within {Hours} hours. Count: {Count}/{Max}",
+                        booking.BookingId, booking.ServiceId, booking.ProviderId, AutoCancelTimeout.TotalHours, autoCancelCount, MaxAutoCancelWarnings);
 
                     // Notify the user that their booking was auto-cancelled
                     await notificationRepository.CreateNotificationAsync(
                         booking.UserId,
                         "Booking Auto-Cancelled",
-                        $"Your booking request was automatically cancelled because the provider did not respond within 3 hours. Please try booking another provider.",
+                        $"Your booking request was automatically cancelled because the provider did not respond within 12 hours. Please try booking another provider.",
                         null
                     );
 
@@ -97,7 +97,7 @@ namespace LocalScout.Infrastructure.Services
                     await notificationRepository.CreateNotificationAsync(
                         booking.ProviderId,
                         "Booking Auto-Cancelled - Action Required",
-                        $"A booking request was automatically cancelled because you did not respond within 3 hours. Warning {autoCancelCount}/{MaxAutoCancelWarnings}. " +
+                        $"A booking request was automatically cancelled because you did not respond within 12 hours. Warning {autoCancelCount}/{MaxAutoCancelWarnings}. " +
                         (autoCancelCount >= MaxAutoCancelWarnings 
                             ? "Your service has been temporarily blocked for 2 days." 
                             : "Please respond to booking requests promptly to avoid service blocking."),

@@ -66,7 +66,7 @@ namespace LocalScout.Application.Interfaces
         Task<bool> HasActiveBookingForServiceAsync(string userId, Guid serviceId);
         
         /// <summary>
-        /// Get pending bookings that have exceeded the timeout period (3 hours)
+        /// Get pending bookings that have exceeded the timeout period (12 hours)
         /// </summary>
         Task<List<Booking>> GetExpiredPendingBookingsAsync(TimeSpan timeout);
         

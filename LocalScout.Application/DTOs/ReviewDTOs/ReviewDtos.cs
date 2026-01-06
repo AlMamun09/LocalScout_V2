@@ -1,3 +1,5 @@
+using LocalScout.Application.Extensions;
+
 namespace LocalScout.Application.DTOs.ReviewDTOs
 {
     /// <summary>
@@ -25,7 +27,11 @@ namespace LocalScout.Application.DTOs.ReviewDTOs
 
         private string GetTimeAgo()
         {
-            var timeSpan = DateTime.UtcNow - CreatedAt;
+            // Convert to BD time for calculation
+            var createdAtBd = CreatedAt.ToBdTime();
+            var nowBd = DateTime.UtcNow.ToBdTime();
+            var timeSpan = nowBd - createdAtBd;
+            
             if (timeSpan.TotalDays >= 365)
                 return $"{(int)(timeSpan.TotalDays / 365)} year{((int)(timeSpan.TotalDays / 365) > 1 ? "s" : "")} ago";
             if (timeSpan.TotalDays >= 30)

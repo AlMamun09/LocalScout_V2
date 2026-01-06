@@ -1240,10 +1240,7 @@ namespace LocalScout.Web.Controllers
                 StatusBadgeClass = GetStatusBadgeClass(booking.Status),
 
                 CreatedAt = booking.CreatedAt,
-                CreatedAtFormatted = booking.CreatedAt.ToString("MMM dd, yyyy hh:mm tt"),
                 AcceptedAt = booking.AcceptedAt,
-                AcceptedAtFormatted = booking.AcceptedAt?.ToString("MMM dd, yyyy"),
-
                 CanPay = booking.Status == BookingStatus.JobDone,
                 CanCancel = booking.Status == BookingStatus.PendingProviderReview || booking.Status == BookingStatus.AcceptedByProvider,
                 CanConfirmCompletion = booking.Status == BookingStatus.JobDone
@@ -1355,9 +1352,7 @@ namespace LocalScout.Web.Controllers
                 StatusBadgeClass = GetStatusBadgeClass(booking.Status),
 
                 CreatedAt = booking.CreatedAt,
-                CreatedAtFormatted = booking.CreatedAt.ToString("MMM dd, yyyy hh:mm tt"),
                 AcceptedAt = booking.AcceptedAt,
-                AcceptedAtFormatted = booking.AcceptedAt?.ToString("MMM dd, yyyy"),
 
                 CanAcceptAndSetPrice = booking.Status == BookingStatus.PendingProviderReview,
                 CanMarkJobDone = booking.Status == BookingStatus.PaymentReceived || booking.Status == BookingStatus.InProgress,

@@ -1,4 +1,5 @@
 using LocalScout.Domain.Enums;
+using LocalScout.Application.Extensions;
 
 namespace LocalScout.Application.DTOs.BookingDTOs
 {
@@ -60,9 +61,9 @@ namespace LocalScout.Application.DTOs.BookingDTOs
 
         // Timestamps
         public DateTime CreatedAt { get; set; }
-        public string CreatedAtFormatted { get; set; } = string.Empty;
+        public string CreatedAtFormatted => CreatedAt.ToBdTimeString("MMM dd, yyyy h:mm tt");
         public DateTime? AcceptedAt { get; set; }
-        public string? AcceptedAtFormatted { get; set; }
+        public string? AcceptedAtFormatted => AcceptedAt.ToBdTimeString("MMM dd, yyyy h:mm tt");
 
         // Actions
         public bool CanAcceptAndSetPrice { get; set; }

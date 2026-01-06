@@ -453,7 +453,8 @@ namespace LocalScout.Infrastructure.Repositories
 
         public async Task<List<Booking>> GetExpiredPendingBookingsAsync(TimeSpan timeout)
         {
-            var cutoffTime = DateTime.Now.Subtract(timeout);
+            // Use UtcNow since CreatedAt is stored in UTC
+            var cutoffTime = DateTime.UtcNow.Subtract(timeout);
             
             return await _context.Bookings
                 .Where(b => b.Status == BookingStatus.PendingProviderReview &&
@@ -463,7 +464,8 @@ namespace LocalScout.Infrastructure.Repositories
 
         public async Task<int> GetAutoCancelCountForServiceAsync(Guid serviceId, TimeSpan withinPeriod)
         {
-            var cutoffTime = DateTime.Now.Subtract(withinPeriod);
+            // Use UtcNow since CancelledAt is stored in UTC
+            var cutoffTime = DateTime.UtcNow.Subtract(withinPeriod);
             
             return await _context.Bookings.CountAsync(b => 
                 b.ServiceId == serviceId &&
