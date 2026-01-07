@@ -49,7 +49,7 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 
 ### 👨‍💼 Admin Dashboard
 
-- User and provider management
+- User and provider management (incl. Block/Unblock functionality)
 - Provider verification workflow
 - Service category approval
 - Platform statistics and analytics
@@ -63,7 +63,8 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 ### 💳 Payments & Booking
 
 - **Secure Payments** - Integrated SSLCommerz payment gateway
-- **Booking Management** - End-to-end booking flow with negotiation
+- **Advanced Booking Lifecycle** - Complete flow: Request → Provider Review → Job Execution → Payment → Completion
+- **Rescheduling System** - Negotiation-based rescheduling where users propose new times and providers accept or reject
 - **Digital Receipts** - Automated PDF receipt generation
 - **Transaction History** - Comprehensive payment logs for users and providers
 
@@ -85,18 +86,18 @@ A modern, location-based service marketplace platform built with **ASP.NET Core 
 
 ## 🛠 Technology Stack
 
-| Category                 | Technology                                   |
-| ------------------------ | -------------------------------------------- |
-| **Backend**              | ASP. NET Core 8.0, C#                        |
-| **Frontend**             | JavaScript, HTML, CSS                        |
-| **CSS Framework**        | Tailwind CSS, Bootstrap 4                    |
-| **Admin Template**       | AdminLTE 3                                   |
-| **Database**             | Entity Framework Core, SQL Server            |
+| Category                 | Technology                              |
+| ------------------------ | --------------------------------------- |
+| **Backend**              | ASP. NET Core 8.0, C#                   |
+| **Frontend**             | JavaScript, HTML, CSS                   |
+| **CSS Framework**        | Tailwind CSS, Bootstrap 4               |
+| **Admin Template**       | AdminLTE 3                              |
+| **Database**             | Entity Framework Core, SQL Server       |
 | **Authentication**       | ASP.NET Core Identity, HttpOnly Cookies |
-| **Payment Gateway**      | SSLCommerz                                   |
-| **AI Services**          | Hugging Face Inference API                   |
-| **Location API**         | LocationIQ                                   |
-| **JavaScript Libraries** | jQuery, DataTables, Font Awesome             |
+| **Payment Gateway**      | SSLCommerz                              |
+| **AI Services**          | Hugging Face Inference API              |
+| **Location API**         | LocationIQ                              |
+| **JavaScript Libraries** | jQuery, DataTables, Font Awesome        |
 
 ## 🏗 Architecture
 
