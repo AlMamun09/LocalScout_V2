@@ -53,10 +53,16 @@
                 <!-- Progress Timeline -->
                 <div class="timeline-progress mb-4">
                     @{
+                        // Determine if job has been started (InProgress or later)
+                        var isStarted = Model.Status == BookingStatus.InProgress || 
+                                       Model.Status == BookingStatus.JobDone || 
+                                       Model.Status == BookingStatus.Completed ||
+                                       Model.JobDoneAt.HasValue;
+                        
                         var steps = new[] {
                             ("Requested", Model.CreatedAt != default, Model.CreatedAt),
                             ("Accepted", Model.AcceptedAt.HasValue, Model.AcceptedAt),
-                            ("Paid", Model.PaymentReceivedAt.HasValue, Model.PaymentReceivedAt),
+                            ("Started", isStarted, isStarted ? (DateTime?)DateTime.Now : null),
                             ("Job Done", Model.JobDoneAt.HasValue, Model.JobDoneAt),
                             ("Completed", Model.CompletedAt.HasValue, Model.CompletedAt)
                         };
@@ -69,7 +75,7 @@
                                     <i class="fas @(completed ? "fa-check" : "fa-circle") text-white"></i>
                                 </div>
                                 <p class="small mb-0 mt-1 @(completed ? "text-success font-weight-bold" : "text-muted")">@label</p>
-                                @if (date.HasValue && completed)
+                                @if (date.HasValue && completed && label != "Started")
                                 {
                                     <small class="text-muted">@date.Value.ToString("MMM dd")</small>
                                 }
@@ -83,6 +89,22 @@
                     <div class="alert alert-danger">
                         <i class="fas fa-times-circle mr-2"></i>
                         <strong>This booking has been cancelled.</strong>
+                    </div>
+                }
+                
+                @if (Model.Status == BookingStatus.InProgress)
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        <strong>Job is currently in progress.</strong> The provider is working on your service.
+                    </div>
+                }
+                
+                @if (Model.Status == BookingStatus.JobDone)
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <strong>Job completed!</strong> Please make the payment to confirm completion.
                     </div>
                 }
             </div>
@@ -330,7 +352,8 @@
                 <h5 class="mb-0"><i class="fas fa-cogs mr-2"></i>Actions</h5>
             </div>
             <div class="card-body">
-                @if (Model.CanPay)
+                @* JobDone status - Show only Pay Now button *@
+                @if (Model.Status == BookingStatus.JobDone)
                 {
                     <form asp-controller="Payment" asp-action="Initiate" method="post" class="mb-2">
                         @Html.AntiForgeryToken()
@@ -340,19 +363,32 @@
                         </button>
                     </form>
                 }
-                
-                @if (Model.CanConfirmCompletion)
+                else
                 {
-                    <button type="button" class="btn btn-success btn-block btn-confirm-completion mb-2" data-booking-id="@Model.BookingId">
-                        <i class="fas fa-check-circle mr-2"></i>Confirm Job Completion
-                    </button>
-                }
-                
-                @if (Model.CanCancel)
-                {
-                    <button type="button" class="btn btn-outline-danger btn-block btn-cancel mb-2" data-booking-id="@Model.BookingId">
-                        <i class="fas fa-times mr-2"></i>Cancel Booking
-                    </button>
+                    @if (Model.CanPay)
+                    {
+                        <form asp-controller="Payment" asp-action="Initiate" method="post" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="bookingId" value="@Model.BookingId" />
+                            <button type="submit" class="btn btn-success btn-block">
+                                <i class="fas fa-credit-card mr-2"></i>Pay Tk @Model.NegotiatedPrice?.ToString("N0")
+                            </button>
+                        </form>
+                    }
+                    
+                    @if (Model.CanConfirmCompletion)
+                    {
+                        <button type="button" class="btn btn-success btn-block btn-confirm-completion mb-2" data-booking-id="@Model.BookingId">
+                            <i class="fas fa-check-circle mr-2"></i>Confirm Job Completion
+                        </button>
+                    }
+                    
+                    @if (Model.CanCancel)
+                    {
+                        <button type="button" class="btn btn-outline-danger btn-block btn-cancel mb-2" data-booking-id="@Model.BookingId">
+                            <i class="fas fa-times mr-2"></i>Cancel Booking
+                        </button>
+                    }
                 }
                 
                 <a asp-action="MyBookings" class="btn btn-outline-secondary btn-block">

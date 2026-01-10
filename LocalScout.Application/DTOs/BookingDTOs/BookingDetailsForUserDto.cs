@@ -46,11 +46,10 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public DateTime? JobDoneAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 
-        // Actions available
-        public bool CanPay => Status == BookingStatus.AcceptedByProvider ||
-                              Status == BookingStatus.AwaitingPayment;
+        // Actions available - Payment is now required after JobDone (post-service payment flow)
+        public bool CanPay => Status == BookingStatus.JobDone;
         public bool CanCancel => Status == BookingStatus.PendingProviderReview ||
                                   Status == BookingStatus.AcceptedByProvider;
-        public bool CanConfirmCompletion => Status == BookingStatus.JobDone;
+        public bool CanConfirmCompletion => false; // Completion is automatic after payment in new flow
     }
 }

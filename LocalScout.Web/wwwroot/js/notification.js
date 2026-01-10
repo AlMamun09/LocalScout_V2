@@ -8,23 +8,43 @@
 
   // Context-aware action URL mapping based on notification title/type
   // Note: blocked/unblocked removed since users/providers don't have access to admin pages
+  // IMPORTANT: More specific matches should come BEFORE generic ones
   const ACTION_URL_MAP = {
+    // Admin notifications
     "verification request": "/Admin/VerificationRequests",
     "category request": "/CategoryRequest/PendingRequests",
+
+    // Provider notifications (for providers)
+    "new booking request": "/Booking/ProviderBookings",
     "new booking": "/Booking/ProviderBookings",
     "booking request": "/Booking/ProviderBookings",
-    "booking confirmed": "/Booking/MyBookings",
-    "booking cancelled": "/Booking/MyBookings",
-    "booking completed": "/Booking/MyBookings",
+    "booking rescheduled": "/Booking/ProviderBookings",
+    "payment received - booking completed": "/Booking/ProviderBookings",
+    "payment received": "/Booking/ProviderBookings",
+    "new review received": "/Booking/ProviderBookings",
+
+    // User notifications (for users) - job/payment related should go to MyBookings
+    "job completed - payment required": "/Booking/MyBookings",
+    "job completed": "/Booking/MyBookings",
+    "job started": "/Booking/MyBookings",
     "booking accepted": "/Booking/MyBookings",
+    "booking declined": "/Booking/MyBookings",
+    "booking cancelled": "/Booking/MyBookings",
+    "booking time adjusted": "/Booking/MyBookings",
+    "booking confirmed": "/Booking/MyBookings",
+    "booking completed": "/Booking/MyBookings",
     "booking rejected": "/Booking/MyBookings",
-    "payment received": "/Payment/History",
-    payment: "/Payment/History",
+
+    // Generic review (for provider)
     "new review": "/Review/ProviderReviews",
     review: "/Review/ProviderReviews",
+
+    // Provider verification
     "provider approved": "/Provider/Index",
     "provider verified": "/Provider/Index",
     "account approved": "/Provider/Index",
+    "verification approved": "/Provider/Index",
+    "verification rejected": "/Provider/Dashboard",
   };
 
   // Initialize on page load

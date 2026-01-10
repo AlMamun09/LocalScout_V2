@@ -179,6 +179,21 @@
                                 <i class="fas fa-times mr-1"></i> Cancel
                             </button>
                         }
+                        else if (booking.CanStartJob)
+                        {
+                            <button type="button" class="btn btn-info btn-start-job mb-2" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-play mr-1"></i> Start Job
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-decline" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-times mr-1"></i> Cancel
+                            </button>
+                        }
+                        else if (booking.CanComplete)
+                        {
+                            <button type="button" class="btn btn-success btn-complete mb-2" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-check-double mr-1"></i> Complete
+                            </button>
+                        }
                         else if (booking.CanMarkJobDone)
                         {
                             <button type="button" class="btn btn-primary btn-mark-done mb-2" data-booking-id="@booking.BookingId">

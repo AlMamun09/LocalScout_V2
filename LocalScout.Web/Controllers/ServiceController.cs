@@ -171,6 +171,10 @@ namespace LocalScout.Web.Controllers
                 // Calculate distance
                 var distance = DistanceCalculator.CalculateDistance(userLat, userLon, provider.Latitude, provider.Longitude);
 
+                // Get dynamic rating for this service
+                var ratingSummary = await _reviewRepository.GetServiceRatingAsync(service.ServiceId);
+                double? rating = ratingSummary.TotalReviews > 0 ? ratingSummary.AverageRating : null;
+
                 cards.Add(new ServiceCardDto
                 {
                     ServiceId = service.ServiceId,
@@ -189,7 +193,7 @@ namespace LocalScout.Web.Controllers
                     ProviderJoinedDate = provider.CreatedAt,
                     WorkingDays = provider.WorkingDays,
                     WorkingHours = provider.WorkingHours,
-                    Rating = 4.6,
+                    Rating = rating,
                     DistanceInKm = distance
                 });
             }

@@ -43,6 +43,8 @@ namespace LocalScout.Application.DTOs.BookingDTOs
 
         // Actions available
         public bool CanAcceptAndSetPrice => Status == BookingStatus.PendingProviderReview;
+        public bool CanStartJob => Status == BookingStatus.AcceptedByProvider;
+        public bool CanComplete => Status == BookingStatus.InProgress;
         public bool CanMarkJobDone => Status == BookingStatus.PaymentReceived || Status == BookingStatus.InProgress;
         public bool CanCancel => Status == BookingStatus.PendingProviderReview ||
                                   Status == BookingStatus.AcceptedByProvider;

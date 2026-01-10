@@ -17,6 +17,7 @@ namespace LocalScout.Web.Controllers
         private readonly IVerificationRepository _verificationRepository;
         private readonly IBookingRepository _bookingRepository;
         private readonly IServiceRepository _serviceRepository;
+        private readonly IReviewRepository _reviewRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
 
@@ -25,6 +26,7 @@ namespace LocalScout.Web.Controllers
             IVerificationRepository verificationRepository,
             IBookingRepository bookingRepository,
             IServiceRepository serviceRepository,
+            IReviewRepository reviewRepository,
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment)
         {
@@ -32,6 +34,7 @@ namespace LocalScout.Web.Controllers
             _verificationRepository = verificationRepository;
             _bookingRepository = bookingRepository;
             _serviceRepository = serviceRepository;
+            _reviewRepository = reviewRepository;
             _userManager = userManager;
             _environment = environment;
         }
@@ -49,6 +52,9 @@ namespace LocalScout.Web.Controllers
             var totalBookings = await _bookingRepository.GetProviderCompletedBookingCountAsync(userId);
             var pendingRequests = await _bookingRepository.GetProviderPendingRequestCountAsync(userId);
             var totalEarnings = await _bookingRepository.GetProviderTotalEarningsAsync(userId);
+
+            // Get dynamic average rating from reviews
+            var averageRating = await _reviewRepository.GetProviderAverageRatingAsync(userId);
 
             // Get recent bookings
             var recentBookings = await _bookingRepository.GetProviderBookingsAsync(userId);
@@ -92,7 +98,7 @@ namespace LocalScout.Web.Controllers
                 TotalEarnings = totalEarnings,
                 TotalBookings = totalBookings,
                 PendingRequestsCount = pendingRequests,
-                AverageRating = 0.0m, // TODO: Calculate from reviews
+                AverageRating = (decimal)averageRating,
                 RecentBookings = recentBookingDtos
             };
 

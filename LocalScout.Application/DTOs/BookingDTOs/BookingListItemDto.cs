@@ -67,6 +67,8 @@ namespace LocalScout.Application.DTOs.BookingDTOs
 
         // Actions
         public bool CanAcceptAndSetPrice { get; set; }
+        public bool CanStartJob { get; set; }
+        public bool CanComplete { get; set; }
         public bool CanMarkJobDone { get; set; }
         public bool CanPay { get; set; }
         public bool CanCancel { get; set; }

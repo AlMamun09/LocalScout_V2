@@ -560,25 +560,28 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Booking not found." });
                 }
 
-                if (booking.Status != BookingStatus.AcceptedByProvider &&
-                    booking.Status != BookingStatus.AwaitingPayment)
+                // Payment is now allowed after JobDone status (post-service payment flow)
+                if (booking.Status != BookingStatus.JobDone)
                 {
                     return BadRequest(new { message = "Payment not available for this booking status." });
                 }
 
-                // Simulate payment success - in real implementation, integrate with payment gateway
+                // Mark payment received and complete the booking
                 var result = await _bookingRepository.MarkPaymentReceivedAsync(bookingId);
                 if (!result)
                 {
                     return BadRequest(new { message = "Failed to process payment." });
                 }
 
+                // Also mark booking as completed since payment is the final step
+                await _bookingRepository.MarkCompletedAsync(bookingId);
+
                 // Notify provider - simplified notification
                 var user = await _userManager.FindByIdAsync(userId);
                 await _notificationRepository.CreateNotificationAsync(
                     booking.ProviderId,
-                    "Payment Received",
-                    $"{user?.FullName ?? "User"} has completed payment. You can now proceed with the job. Check your bookings for details.",
+                    "Payment Received - Booking Completed",
+                    $"{user?.FullName ?? "User"} has completed payment. The booking is now complete. Thank you for your service!",
                     null
                 );
 
@@ -591,10 +594,10 @@ namespace LocalScout.Web.Controllers
                     "Payment",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"User confirmed payment for booking."
+                    $"User confirmed payment for booking. Booking marked as completed."
                 );
 
-                return Json(new { success = true, message = "Payment successful! The provider will now proceed with your service." });
+                return Json(new { success = true, message = "Payment successful! Your booking is now complete. Thank you for using our service." });
             }
             catch (Exception ex)
             {
@@ -698,6 +701,99 @@ namespace LocalScout.Web.Controllers
             {
                 _logger.LogError(ex, "Error confirming completion");
                 return StatusCode(500, new { message = "Failed to confirm completion." });
+            }
+        }
+
+        /// <summary>
+        /// User submits a review for a completed booking (called from payment success page)
+        /// </summary>
+        [Authorize(Roles = RoleNames.User)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitReview(Guid bookingId, int rating, string? comment = null)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.UserId != userId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                // Allow review for completed bookings
+                if (booking.Status != BookingStatus.Completed)
+                {
+                    return BadRequest(new { message = "Can only review completed bookings." });
+                }
+
+                // Check if review already exists
+                var existingReview = await _reviewRepository.GetByBookingIdAsync(bookingId);
+                if (existingReview != null)
+                {
+                    return BadRequest(new { message = "You have already submitted a review for this booking." });
+                }
+
+                // Validate rating
+                if (rating < 1 || rating > 5)
+                {
+                    return BadRequest(new { message = "Rating must be between 1 and 5." });
+                }
+
+                var user = await _userManager.FindByIdAsync(userId);
+                var service = await _serviceRepository.GetServiceByIdAsync(booking.ServiceId);
+
+                // Create review
+                var review = new Review
+                {
+                    BookingId = bookingId,
+                    ServiceId = booking.ServiceId,
+                    UserId = userId,
+                    ProviderId = booking.ProviderId,
+                    Rating = rating,
+                    Comment = comment?.Trim()
+                };
+
+                var reviewCreated = await _reviewRepository.CreateReviewAsync(review);
+                
+                if (reviewCreated)
+                {
+                    // Notify provider about the review
+                    await _notificationRepository.CreateNotificationAsync(
+                        booking.ProviderId,
+                        "New Review Received",
+                        $"{user?.FullName ?? "A customer"} left a {rating}-star review for '{service?.ServiceName ?? "your service"}'.",
+                        null
+                    );
+
+                    // Audit Log: Review Created
+                    await _auditService.LogAsync(
+                        userId,
+                        user?.FullName,
+                        user?.Email,
+                        "ReviewCreated",
+                        "Review",
+                        "Review",
+                        review.ReviewId.ToString(),
+                        $"User submitted {rating}-star review for service '{service?.ServiceName ?? "Service"}'. Comment: {(string.IsNullOrEmpty(comment) ? "None" : comment.Substring(0, Math.Min(100, comment.Length)))}"
+                    );
+
+                    return Json(new { success = true, message = "Thank you for your review!" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Failed to submit review." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting review");
+                return StatusCode(500, new { message = "Failed to submit review." });
             }
         }
 
@@ -876,7 +972,7 @@ namespace LocalScout.Web.Controllers
                 await _notificationRepository.CreateNotificationAsync(
                     booking.UserId,
                     "Booking Accepted!",
-                    $"{provider?.FullName ?? "Provider"} has accepted your booking for '{service?.ServiceName}' on {dto.ConfirmedDate:MMM dd, yyyy} from {startTimeStr} to {endTimeStr}. Price: Tk {dto.NegotiatedPrice:N0}. Proceed to payment.",
+                    $"{provider?.FullName ?? "Provider"} has accepted your booking for '{service?.ServiceName ?? "Service"}' on {dto.ConfirmedDate:MMM dd, yyyy} from {startTimeStr} to {endTimeStr}. Price: Tk {dto.NegotiatedPrice:N0}. Proceed to payment.",
                     null
                 );
 
@@ -1113,6 +1209,138 @@ namespace LocalScout.Web.Controllers
             {
                 _logger.LogError(ex, "Error marking job done");
                 return StatusCode(500, new { message = "Failed to update status." });
+            }
+        }
+
+        /// <summary>
+        /// Provider starts the job - changes status from AcceptedByProvider to InProgress (AJAX)
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StartJob(Guid bookingId)
+        {
+            try
+            {
+                var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(providerId))
+                {
+                    return Unauthorized(new { message = "Provider not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.ProviderId != providerId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                if (booking.Status != BookingStatus.AcceptedByProvider)
+                {
+                    return BadRequest(new { message = "Cannot start job at current status. Booking must be in 'Accepted' state." });
+                }
+
+                var result = await _bookingRepository.UpdateStatusAsync(bookingId, BookingStatus.InProgress);
+                if (!result)
+                {
+                    return BadRequest(new { message = "Failed to start job." });
+                }
+
+                // Notify user
+                var provider = await _userManager.FindByIdAsync(providerId);
+                var service = await _serviceRepository.GetServiceByIdAsync(booking.ServiceId);
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.UserId,
+                    "Job Started",
+                    $"{provider?.FullName ?? "The provider"} has started working on your booking for '{service?.ServiceName ?? "Service"}'. The service is now in progress.",
+                    null
+                );
+
+                // Audit Log: Job Started
+                await _auditService.LogAsync(
+                    providerId,
+                    provider?.FullName,
+                    provider?.Email,
+                    "JobStarted",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider started the job for service '{service?.ServiceName ?? "Service"}'."
+                );
+
+                return Json(new { success = true, message = "Job started! The customer has been notified." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting job");
+                return StatusCode(500, new { message = "Failed to start job." });
+            }
+        }
+
+        /// <summary>
+        /// Provider completes the job - changes status from InProgress to JobDone and releases time slot (AJAX)
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProviderComplete(Guid bookingId)
+        {
+            try
+            {
+                var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(providerId))
+                {
+                    return Unauthorized(new { message = "Provider not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.ProviderId != providerId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                if (booking.Status != BookingStatus.InProgress)
+                {
+                    return BadRequest(new { message = "Cannot complete job at current status. Job must be 'In Progress'." });
+                }
+
+                // Mark job as done (this will set status to JobDone)
+                var result = await _bookingRepository.MarkJobDoneAsync(bookingId);
+                if (!result)
+                {
+                    return BadRequest(new { message = "Failed to complete job." });
+                }
+
+                // Release the time slot so it becomes available for new bookings
+                await _timeSlotRepository.DeactivateByBookingIdAsync(bookingId);
+
+                // Notify user
+                var provider = await _userManager.FindByIdAsync(providerId);
+                var service = await _serviceRepository.GetServiceByIdAsync(booking.ServiceId);
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.UserId,
+                    "Job Completed - Payment Required",
+                    $"{provider?.FullName ?? "The provider"} has completed the job for '{service?.ServiceName ?? "Service"}'. Please make the payment to confirm completion.",
+                    null
+                );
+
+                // Audit Log: Job Completed by Provider
+                await _auditService.LogAsync(
+                    providerId,
+                    provider?.FullName,
+                    provider?.Email,
+                    "JobCompletedByProvider",
+                    "Booking",
+                    "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider completed the job for service '{service?.ServiceName ?? "Service"}'. Time slot released. Awaiting payment."
+                );
+
+                return Json(new { success = true, message = "Job completed! The customer has been notified to make the payment." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error completing job");
+                return StatusCode(500, new { message = "Failed to complete job." });
             }
         }
 
@@ -1374,6 +1602,8 @@ namespace LocalScout.Web.Controllers
                 AcceptedAt = booking.AcceptedAt,
 
                 CanAcceptAndSetPrice = booking.Status == BookingStatus.PendingProviderReview,
+                CanStartJob = booking.Status == BookingStatus.AcceptedByProvider,
+                CanComplete = booking.Status == BookingStatus.InProgress,
                 CanMarkJobDone = booking.Status == BookingStatus.PaymentReceived || booking.Status == BookingStatus.InProgress,
                 CanCancel = booking.Status == BookingStatus.PendingProviderReview || booking.Status == BookingStatus.AcceptedByProvider
             };
@@ -1388,7 +1618,7 @@ namespace LocalScout.Web.Controllers
                 BookingStatus.AwaitingPayment => "Awaiting Payment",
                 BookingStatus.PaymentReceived => "Payment Received",
                 BookingStatus.InProgress => "In Progress",
-                BookingStatus.JobDone => "Job Done - Awaiting Payment & Confirmation",
+                BookingStatus.JobDone => "Job Done - Awaiting Payment",
                 BookingStatus.Completed => "Completed",
                 BookingStatus.Cancelled => "Cancelled",
                 BookingStatus.Disputed => "Disputed",

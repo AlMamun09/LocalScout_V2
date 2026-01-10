@@ -304,6 +304,76 @@
                     $('#declineModal').modal('show');
                 });
 
+                // Start Job button
+                container.find('.btn-start-job').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    
+                    Swal.fire({
+                        title: 'Start Job',
+                        text: 'Are you ready to start this job? The customer will be notified that the service is in progress.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#17a2b8',
+                        confirmButtonText: '<i class="fas fa-play mr-1"></i> Yes, Start Job'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("StartJob", "Booking")',
+                                type: 'POST',
+                                data: { bookingId: bookingId },
+                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                                success: function(response) {
+                                    if (response.success) {
+                                        Swal.fire('Started!', response.message, 'success').then(() => {
+                                            refreshCurrentTab();
+                                        });
+                                    } else {
+                                        Swal.fire('Error', response.message, 'error');
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Complete button
+                container.find('.btn-complete').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    
+                    Swal.fire({
+                        title: 'Complete Job',
+                        text: 'Have you finished this job? The customer will be notified to make the payment.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#28a745',
+                        confirmButtonText: '<i class="fas fa-check-double mr-1"></i> Yes, Complete Job'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("ProviderComplete", "Booking")',
+                                type: 'POST',
+                                data: { bookingId: bookingId },
+                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                                success: function(response) {
+                                    if (response.success) {
+                                        Swal.fire('Completed!', response.message, 'success').then(() => {
+                                            refreshCurrentTab();
+                                        });
+                                    } else {
+                                        Swal.fire('Error', response.message, 'error');
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
+
                 // Mark job done
                 container.find('.btn-mark-done').off('click').on('click', function() {
                     var bookingId = $(this).data('booking-id');

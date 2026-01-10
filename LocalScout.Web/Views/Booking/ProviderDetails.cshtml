@@ -1,4 +1,4 @@
-@model LocalScout.Application.DTOs.BookingDTOs.BookingDetailsForProviderDto
+ï»¿@model LocalScout.Application.DTOs.BookingDTOs.BookingDetailsForProviderDto
 @using LocalScout.Domain.Enums
 
 @{
@@ -57,10 +57,16 @@
                 <!-- Progress Timeline -->
                 <div class="timeline-progress mb-4">
                     @{
+                        // Determine if job has been started (InProgress or later)
+                        var isStarted = Model.Status == BookingStatus.InProgress || 
+                                       Model.Status == BookingStatus.JobDone || 
+                                       Model.Status == BookingStatus.Completed ||
+                                       Model.JobDoneAt.HasValue;
+                        
                         var steps = new[] {
                             ("Received", Model.CreatedAt != default, Model.CreatedAt),
                             ("Accepted", Model.AcceptedAt.HasValue, Model.AcceptedAt),
-                            ("Paid", Model.PaymentReceivedAt.HasValue, Model.PaymentReceivedAt),
+                            ("Started", isStarted, isStarted ? (DateTime?)DateTime.Now : null),
                             ("Job Done", Model.JobDoneAt.HasValue, Model.JobDoneAt),
                             ("Completed", Model.CompletedAt.HasValue, Model.CompletedAt)
                         };
@@ -73,7 +79,7 @@
                                     <i class="fas @(completed ? "fa-check" : "fa-circle") text-white"></i>
                                 </div>
                                 <p class="small mb-0 mt-1 @(completed ? "text-success font-weight-bold" : "text-muted")">@label</p>
-                                @if (date.HasValue && completed)
+                                @if (date.HasValue && completed && label != "Started")
                                 {
                                     <small class="text-muted">@date.Value.ToString("MMM dd")</small>
                                 }
@@ -87,6 +93,22 @@
                     <div class="alert alert-danger">
                         <i class="fas fa-times-circle mr-2"></i>
                         <strong>This booking has been cancelled.</strong>
+                    </div>
+                }
+                
+                @if (Model.Status == BookingStatus.InProgress)
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        <strong>Job is currently in progress.</strong> You are working on this service.
+                    </div>
+                }
+                
+                @if (Model.Status == BookingStatus.JobDone)
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock mr-2"></i>
+                        <strong>Job completed!</strong> Please wait for the customer to make the payment.
                     </div>
                 }
             </div>
@@ -132,7 +154,7 @@
                     <div class="w-full md:w-1/2 mb-2">
                         <i class="fas fa-calendar-alt text-primary mr-1"></i>
                         <span class="font-semibold">Requested:</span>
-                        @Model.CreatedAt.ToString("MMM dd, yyyy · hh:mm tt")
+                        @Model.CreatedAt.ToString("MMM dd, yyyy ï¿½ hh:mm tt")
                     </div>
 
                     <div class="w-full md:w-1/2 mb-2">
@@ -209,7 +231,7 @@
                                 @if (Model.PaymentReceivedAt.HasValue)
                                 {
                                     <span class="badge badge-success" style="font-size: 1em; padding: 10px 20px;">
-                                        <i class="fas fa-check-circle mr-1"></i> Payment Received @Model.PaymentReceivedAt.Value.ToString("MMM dd, yyyy")
+                                        <i class="fas fa-check-double mr-1"></i> Payment Received @Model.PaymentReceivedAt.Value.ToString("MMM dd, yyyy")
                                     </span>
                                 }
                                 else if (Model.Status == BookingStatus.AcceptedByProvider || Model.Status == BookingStatus.AwaitingPayment)
@@ -331,16 +353,40 @@
                     </button>
                 }
 
-                @if (Model.CanMarkJobDone)
+                @if (Model.CanStartJob)
+                {
+                    <button type="button"
+                            class="btn btn-info btn-block btn-start-job mb-2"
+                            data-booking-id="@Model.BookingId">
+                        <i class="fas fa-play mr-2"></i>Start Job
+                    </button>
+                    
+                    <button type="button"
+                            class="btn btn-outline-danger btn-block btn-decline mb-2"
+                            data-booking-id="@Model.BookingId">
+                        <i class="fas fa-times mr-2"></i>Cancel Booking
+                    </button>
+                }
+
+                @if (Model.CanComplete)
+                {
+                    <button type="button"
+                            class="btn btn-success btn-block btn-complete mb-2"
+                            data-booking-id="@Model.BookingId">
+                        <i class="fas fa-check-double mr-2"></i>Complete Job
+                    </button>
+                }
+
+                @if (Model.CanMarkJobDone && !Model.CanComplete)
                 {
                     <button type="button"
                             class="btn btn-primary btn-block btn-mark-done mb-2"
                             data-booking-id="@Model.BookingId">
-                        <i class="fas fa-check-circle mr-2"></i>Mark Job as Done
+                        <i class="fas fa-check-circle mr-2"></i>Mark Job Done
                     </button>
                 }
 
-                @if (Model.CanCancel && Model.Status != BookingStatus.PendingProviderReview)
+                @if (Model.CanCancel && !Model.CanAcceptAndSetPrice && !Model.CanStartJob)
                 {
                     <button type="button"
                             class="btn btn-outline-danger btn-block btn-decline mb-2"
@@ -362,7 +408,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title"><i class="fas fa-check-circle mr-2"></i>Accept Booking</h5>
+                <h5 class="modal-title"><i class="fas fa-check-double mr-2"></i>Accept Booking</h5>
                 <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -510,15 +556,80 @@
                 });
             });
 
-            // Mark done
+            // Start Job
+            $('.btn-start-job').on('click', function() {
+                var bookingId = $(this).data('booking-id');
+                Swal.fire({
+                    title: 'Start Job',
+                    text: 'Are you ready to start this job? The customer will be notified that the service is in progress.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#17a2b8',
+                    confirmButtonText: '<i class="fas fa-play mr-1"></i> Yes, Start Job'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("StartJob", "Booking")',
+                            type: 'POST',
+                            data: { bookingId: bookingId },
+                            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire('Started!', response.message, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Complete Job
+            $('.btn-complete').on('click', function() {
+                var bookingId = $(this).data('booking-id');
+                Swal.fire({
+                    title: 'Complete Job',
+                    text: 'Have you finished this job? The customer will be notified to make the payment.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    confirmButtonText: '<i class="fas fa-check-double mr-1"></i> Yes, Complete Job'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("ProviderComplete", "Booking")',
+                            type: 'POST',
+                            data: { bookingId: bookingId },
+                            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire('Completed!', response.message, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Mark job done (legacy, for PaymentReceived status)
             $('.btn-mark-done').on('click', function() {
                 var bookingId = $(this).data('booking-id');
                 Swal.fire({
                     title: 'Mark Job as Done',
-                    text: 'Has the job been completed?',
+                    text: 'Are you sure the job has been completed? The customer will be notified to confirm.',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Yes, Mark Done'
+                    confirmButtonColor: '#007bff',
+                    confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Yes, Mark as Done'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({

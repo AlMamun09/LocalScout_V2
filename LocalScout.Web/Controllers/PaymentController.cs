@@ -62,8 +62,8 @@ namespace LocalScout.Web.Controllers
                     return RedirectToAction("MyBookings", "Booking");
                 }
 
-                if (booking.Status != Domain.Enums.BookingStatus.AcceptedByProvider &&
-                    booking.Status != Domain.Enums.BookingStatus.AwaitingPayment)
+                // Payment is allowed after JobDone status (post-service payment flow)
+                if (booking.Status != Domain.Enums.BookingStatus.JobDone)
                 {
                     TempData["Error"] = "Payment is not available for this booking.";
                     return RedirectToAction("MyBookings", "Booking");
@@ -214,11 +214,14 @@ namespace LocalScout.Web.Controllers
 
                 if (result)
                 {
+                    // Mark booking as completed (payment is the final step in new flow)
+                    await _bookingRepository.MarkCompletedAsync(booking.BookingId);
+
                     // Notify provider
                     await _notificationRepository.CreateNotificationAsync(
                         booking.ProviderId,
-                        "Payment Received",
-                        $"{user?.FullName ?? "User"} has completed payment via {callback.card_type ?? "online payment"}. You can now proceed with the job.",
+                        "Payment Received - Booking Completed",
+                        $"{user?.FullName ?? "User"} has completed payment via {callback.card_type ?? "online payment"}. The booking is now complete. Thank you for your service!",
                         null
                     );
 
@@ -233,11 +236,11 @@ namespace LocalScout.Web.Controllers
                             "Payment",
                             "Booking",
                             booking.BookingId.ToString(),
-                            $"Payment completed successfully. Amount: {booking.NegotiatedPrice:C}, Method: {callback.card_type ?? "Online"}, TransactionId: {callback.tran_id}, BankTranId: {callback.bank_tran_id}"
+                            $"Payment completed successfully. Amount: {booking.NegotiatedPrice:C}, Method: {callback.card_type ?? "Online"}, TransactionId: {callback.tran_id}, BankTranId: {callback.bank_tran_id}. Booking marked as completed."
                         );
                     }
 
-                    return await HandlePaymentResult(callback.tran_id, true, "Payment successful!", booking.BookingId);
+                    return await HandlePaymentResult(callback.tran_id, true, "Payment successful! Your booking is now complete.", booking.BookingId);
                 }
                 else
                 {
@@ -350,7 +353,7 @@ namespace LocalScout.Web.Controllers
 
                 // Find booking
                 var booking = await _bookingRepository.GetByTransactionIdAsync(callback.tran_id ?? "");
-                if (booking == null || booking.Status == Domain.Enums.BookingStatus.PaymentReceived)
+                if (booking == null || booking.Status == Domain.Enums.BookingStatus.Completed)
                 {
                     // Already processed or not found
                     return Ok();
@@ -365,6 +368,9 @@ namespace LocalScout.Web.Controllers
                     callback.bank_tran_id
                 );
 
+                // Mark booking as completed (payment is the final step)
+                await _bookingRepository.MarkCompletedAsync(booking.BookingId);
+
                 // Audit Log for IPN processing
                 var user = await _userManager.FindByIdAsync(booking.UserId);
                 if (user != null)
@@ -377,7 +383,7 @@ namespace LocalScout.Web.Controllers
                         "Payment",
                         "Booking",
                         booking.BookingId.ToString(),
-                        $"Payment confirmed via IPN. TransactionId: {callback.tran_id}"
+                        $"Payment confirmed via IPN. TransactionId: {callback.tran_id}. Booking marked as completed."
                     );
                 }
 

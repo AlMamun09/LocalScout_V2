@@ -73,9 +73,9 @@
                             </div>
                         }
 
-                        <div class="alert alert-info d-inline-block">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            The service provider has been notified and will proceed with your booking.
+                        <div class="alert alert-success d-inline-block">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Your booking is now complete. Thank you for using our service!
                         </div>
                         
                         <div class="mt-4">
@@ -99,3 +99,183 @@
         </div>
     </div>
 </div>
+
+<!-- Review Modal for Post-Payment Review -->
+<div class="modal fade" id="paymentReviewModal" tabindex="-1" role="dialog" aria-labelledby="paymentReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title" id="paymentReviewModalLabel">
+                    <i class="fas fa-star mr-2"></i>Rate Your Experience
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle fa-3x text-success"></i>
+                    </div>
+                    <h5 class="text-success">Payment Complete!</h5>
+                    <p class="text-muted mb-3">Would you like to leave a review for this service?</p>
+                    
+                    <!-- Star Rating -->
+                    <div class="star-rating mb-3" id="paymentStarRating">
+                        <i class="far fa-star star" data-rating="1"></i>
+                        <i class="far fa-star star" data-rating="2"></i>
+                        <i class="far fa-star star" data-rating="3"></i>
+                        <i class="far fa-star star" data-rating="4"></i>
+                        <i class="far fa-star star" data-rating="5"></i>
+                    </div>
+                    <p class="rating-text text-muted small" id="paymentRatingText">Click to rate</p>
+                    <input type="hidden" id="paymentSelectedRating" value="0" />
+                </div>
+                
+                <!-- Comment -->
+                <div class="form-group">
+                    <label for="paymentReviewComment" class="font-weight-bold">Your Review (Optional)</label>
+                    <textarea class="form-control" id="paymentReviewComment" rows="3" 
+                              placeholder="Share your experience with this service..."></textarea>
+                    <small class="text-muted">Help others by sharing what you liked or disliked</small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Maybe Later
+                </button>
+                <button type="button" class="btn btn-primary" id="submitPaymentReviewBtn" disabled>
+                    <i class="fas fa-check mr-1"></i>Submit Review
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .star-rating {
+        font-size: 2.5rem;
+        cursor: pointer;
+    }
+    .star-rating .star {
+        color: #ddd;
+        transition: all 0.2s ease;
+        margin: 0 3px;
+        cursor: pointer;
+    }
+    .star-rating .star:hover,
+    .star-rating .star.hovered {
+        color: #ffc107;
+        transform: scale(1.1);
+    }
+    .star-rating .star.selected {
+        color: #ffc107;
+    }
+    .star-rating .star.fas {
+        color: #ffc107;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            var bookingId = '@(Model?.BookingId)';
+            var paymentSelectedRating = 0;
+            var ratingTexts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+            
+            // Function to highlight stars
+            function highlightStars(rating) {
+                $('#paymentStarRating .star').each(function() {
+                    var starRating = parseInt($(this).attr('data-rating'));
+                    if (starRating <= rating) {
+                        $(this).removeClass('far').addClass('fas selected');
+                    } else {
+                        $(this).removeClass('fas selected').addClass('far');
+                    }
+                });
+            }
+            
+            // Star hover - show preview
+            $('#paymentStarRating .star').on('mouseenter', function() {
+                var rating = parseInt($(this).attr('data-rating'));
+                highlightStars(rating);
+            });
+            
+            // Star hover out - restore selection
+            $('#paymentStarRating').on('mouseleave', function() {
+                highlightStars(paymentSelectedRating);
+            });
+            
+            // Star click - select rating
+            $('#paymentStarRating .star').on('click', function(e) {
+                e.preventDefault();
+                paymentSelectedRating = parseInt($(this).attr('data-rating'));
+                $('#paymentSelectedRating').val(paymentSelectedRating);
+                highlightStars(paymentSelectedRating);
+                $('#paymentRatingText').text(ratingTexts[paymentSelectedRating]);
+                $('#submitPaymentReviewBtn').prop('disabled', false);
+            });
+            
+            // Submit review button
+            $('#submitPaymentReviewBtn').on('click', function(e) {
+                e.preventDefault();
+                
+                if (!bookingId || bookingId === '00000000-0000-0000-0000-000000000000') {
+                    Swal.fire('Error', 'Invalid booking ID', 'error');
+                    return;
+                }
+                
+                if (paymentSelectedRating === 0) {
+                    Swal.fire('Error', 'Please select a rating', 'warning');
+                    return;
+                }
+                
+                var comment = $('#paymentReviewComment').val().trim();
+                
+                // Hide modal
+                $('#paymentReviewModal').modal('hide');
+                
+                Swal.fire({
+                    title: 'Submitting Review...',
+                    allowOutsideClick: false,
+                    didOpen: function() {
+                        Swal.showLoading();
+                    }
+                });
+                
+                $.ajax({
+                    url: '@Url.Action("SubmitReview", "Booking")',
+                    type: 'POST',
+                    data: {
+                        bookingId: bookingId,
+                        rating: paymentSelectedRating,
+                        comment: comment
+                    },
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Thank You!',
+                                text: response.message || 'Your review has been submitted successfully.',
+                                icon: 'success'
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Failed to submit review', 'error');
+                    }
+                });
+            });
+            
+            // Show review modal after a short delay (only if valid booking)
+            if (bookingId && bookingId !== '00000000-0000-0000-0000-000000000000') {
+                setTimeout(function() {
+                    $('#paymentReviewModal').modal('show');
+                }, 1000);
+            }
+        });
+    </script>
+    @Html.AntiForgeryToken()
+}
