@@ -40,28 +40,23 @@ namespace LocalScout.Infrastructure.Services
             string providerId,
             DateTime requestedDate,
             TimeSpan startTime,
-            TimeSpan endTime)
+            TimeSpan? endTime)
         {
-            // 1. Check if end time is after start time
-            if (endTime <= startTime)
-            {
-                return (false, "End time must be after start time.");
-            }
-
-            // 2. Check if date is in the future
+            // 1. Check if date is in the future
             if (requestedDate.Date < DateTime.Now.Date)
             {
                 return (false, "Cannot book for past dates.");
             }
 
-            // 3. Check minimum lead time (2 hours)
+            // 2. Check minimum lead time (2 hours)
             if (!ValidateMinimumLeadTime(requestedDate, startTime))
             {
                 return (false, "Bookings must be made at least 2 hours in advance.");
             }
 
-            // 4. Check duty hours
-            var dutyCheck = await IsWithinProviderDutyHoursAsync(providerId, startTime, endTime);
+            // 3. Check duty hours - only check start time if end time not provided
+            var effectiveEndTime = endTime ?? startTime;
+            var dutyCheck = await IsWithinProviderDutyHoursAsync(providerId, startTime, effectiveEndTime);
             if (!dutyCheck.IsWithinHours)
             {
                 var dutyMessage = dutyCheck.DutyStart.HasValue && dutyCheck.DutyEnd.HasValue
@@ -70,14 +65,49 @@ namespace LocalScout.Infrastructure.Services
                 return (false, dutyMessage);
             }
 
-            // 5. Check provider availability (overlapping slots)
+            // 4. Check provider availability (overlapping slots) - only if we have meaningful time range
+            // For user bookings without end time, we just check if start time conflicts with any locked slot
             var startDateTime = CombineDateAndTime(requestedDate, startTime);
-            var endDateTime = CombineDateAndTime(requestedDate, endTime);
             
-            var availabilityCheck = await CheckProviderAvailabilityAsync(providerId, startDateTime, endDateTime);
-            if (!availabilityCheck.IsAvailable)
+            if (endTime.HasValue && endTime.Value != startTime)
             {
-                return (false, availabilityCheck.Message);
+                // End time provided - check full range
+                var endDateTime = CombineDateAndTime(requestedDate, endTime.Value);
+                var availabilityCheck = await CheckProviderAvailabilityAsync(providerId, startDateTime, endDateTime);
+                if (!availabilityCheck.IsAvailable)
+                {
+                    return (false, availabilityCheck.Message);
+                }
+            }
+            else
+            {
+                // No end time - check if start time falls within any locked slot
+                var availabilityCheck = await CheckStartTimeAvailabilityAsync(providerId, startDateTime);
+                if (!availabilityCheck.IsAvailable)
+                {
+                    return (false, availabilityCheck.Message);
+                }
+            }
+
+            return (true, null);
+        }
+
+        /// <summary>
+        /// Check if a specific start time falls within any locked time slot
+        /// </summary>
+        private async Task<(bool IsAvailable, string? Message)> CheckStartTimeAvailabilityAsync(
+            string providerId,
+            DateTime startDateTime)
+        {
+            // Check if the start time falls within any active time slot
+            var conflictingSlot = await _context.Set<ProviderTimeSlot>()
+                .Where(ts => ts.ProviderId == providerId && ts.IsActive)
+                .Where(ts => startDateTime >= ts.StartDateTime && startDateTime < ts.EndDateTime)
+                .FirstOrDefaultAsync();
+
+            if (conflictingSlot != null)
+            {
+                return (false, $"Provider is not available at {startDateTime:h:mm tt}. This time is already booked from {conflictingSlot.StartDateTime:h:mm tt} to {conflictingSlot.EndDateTime:h:mm tt}.");
             }
 
             return (true, null);
@@ -120,7 +150,16 @@ namespace LocalScout.Infrastructure.Services
             var dutyEnd = dutyHours.End.Value;
 
             // Check if requested time is within duty hours
-            var isWithin = startTime >= dutyStart && endTime <= dutyEnd;
+            // For bookings without end time (endTime == startTime), just check start time
+            bool isWithin;
+            if (startTime == endTime)
+            {
+                isWithin = startTime >= dutyStart && startTime < dutyEnd;
+            }
+            else
+            {
+                isWithin = startTime >= dutyStart && endTime <= dutyEnd;
+            }
 
             return (isWithin, dutyStart, dutyEnd);
         }
@@ -175,8 +214,7 @@ namespace LocalScout.Infrastructure.Services
                 .Where(b => b.BookingId != acceptedBookingId)
                 .Where(b => b.Status == BookingStatus.PendingProviderReview)
                 .Where(b => b.RequestedDate.HasValue && 
-                           b.RequestedStartTime.HasValue && 
-                           b.RequestedEndTime.HasValue)
+                           b.RequestedStartTime.HasValue)
                 .ToListAsync();
 
             var affectedCount = 0;
@@ -185,7 +223,10 @@ namespace LocalScout.Infrastructure.Services
             foreach (var booking in overlappingBookings)
             {
                 var bookingStart = CombineDateAndTime(booking.RequestedDate!.Value, booking.RequestedStartTime!.Value);
-                var bookingEnd = CombineDateAndTime(booking.RequestedDate!.Value, booking.RequestedEndTime!.Value);
+                
+                // For bookings without end time, use start time + 1 hour as assumed duration
+                var bookingEndTime = booking.RequestedEndTime ?? booking.RequestedStartTime!.Value.Add(TimeSpan.FromHours(1));
+                var bookingEnd = CombineDateAndTime(booking.RequestedDate!.Value, bookingEndTime);
 
                 // Check if this booking overlaps
                 if (bookingStart < endDateTime && bookingEnd > startDateTime)

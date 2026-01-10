@@ -66,23 +66,18 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="form-group mb-0">
-                            <label for="requestedDate">Date</label>
+                            <label for="requestedDate">Preferred Date</label>
                             <input type="date" class="form-control" id="requestedDate" name="RequestedDate" 
                                    min="@DateTime.Now.ToString("yyyy-MM-dd")" required>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="form-group mb-0">
-                            <label for="requestedStartTime">Start Time</label>
+                            <label for="requestedStartTime">Preferred Time</label>
                             <input type="time" class="form-control" id="requestedStartTime" name="RequestedStartTime" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-0">
-                            <label for="requestedEndTime">End Time</label>
-                            <input type="time" class="form-control" id="requestedEndTime" name="RequestedEndTime" required>
+                            <small class="form-text text-muted">Provider will confirm the exact schedule</small>
                         </div>
                     </div>
                 </div>
@@ -153,20 +148,13 @@
         function validateTimeSlot() {
             var date = $('#requestedDate').val();
             var startTime = $('#requestedStartTime').val();
-            var endTime = $('#requestedEndTime').val();
             
-            if (!date || !startTime || !endTime) {
+            if (!date || !startTime) {
                 $('#submitBookingBtn').prop('disabled', true);
                 return;
             }
             
-            // Basic client-side validation
-            if (endTime <= startTime) {
-                showTimeError('End time must be after start time.');
-                return;
-            }
-            
-            // AJAX validation
+            // AJAX validation (end time will be set by provider)
             $.ajax({
                 url: '@Url.Action("ValidateTimeSlot", "Booking")',
                 type: 'POST',
@@ -176,7 +164,7 @@
                     ServiceId: '@Model.ServiceId',
                     RequestedDate: date,
                     StartTime: startTime + ':00',
-                    EndTime: endTime + ':00'
+                    EndTime: startTime + ':00' // Same as start time for validation (no end time from user)
                 }),
                 success: function(response) {
                     if (response.isValid) {
@@ -219,7 +207,7 @@
             validateTimeSlot();
         });
         
-        $('#requestedStartTime, #requestedEndTime').on('change', validateTimeSlot);
+        $('#requestedStartTime').on('change', validateTimeSlot);
         
         // Image preview
         $('#bookingImages').on('change', function() {

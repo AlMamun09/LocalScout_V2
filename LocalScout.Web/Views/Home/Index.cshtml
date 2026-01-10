@@ -182,14 +182,14 @@
 
         <!-- View All Button (shown when services exist) -->
         <div id="viewAllSection" class="text-center pt-3" style="display: none;">
-            <a asp-controller="Home" asp-action="Search" 
+            <button type="button" id="exploreAllBtn"
                class="btn btn-lg px-5 py-3 shadow-sm" 
                style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: none; color: white; font-weight: 700; border-radius: 50px; font-size: 1rem; letter-spacing: 0.3px; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 10px;"
                onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(59, 130, 246, 0.35)';"
                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.1)';">
-                <span>Explore All Services</span>
-                <i class="fas fa-arrow-right" style="font-size: 0.9rem;"></i>
-            </a>
+                <span id="exploreAllBtnText">Explore All Services</span>
+                <i id="exploreAllBtnIcon" class="fas fa-chevron-down" style="font-size: 0.9rem; transition: transform 0.3s;"></i>
+            </button>
             <p class="text-muted mt-3 mb-0" style="font-size: 0.9rem;">
                 <i class="fas fa-shield-alt mr-1" style="color: #10b981;"></i>
                 All providers are verified and trusted
@@ -248,6 +248,20 @@
             loadNearbyServices();
         });
 
+        // Track state
+        let allServicesData = [];
+        let isExpanded = false;
+        const INITIAL_ROWS = 2;
+        
+        // Calculate cards per row based on screen width
+        function getCardsPerRow() {
+            const width = $(window).width();
+            if (width >= 992) return 4;      // lg: 4 columns
+            if (width >= 768) return 3;       // md: 3 columns
+            if (width >= 576) return 2;       // sm: 2 columns
+            return 1;                          // xs: 1 column
+        }
+
         function loadNearbyServices() {
             const loadingEl = $('#servicesLoading');
             const gridEl = $('#servicesGrid');
@@ -262,14 +276,22 @@
             $.ajax({
                 url: '@Url.Action("GetNearbyServices", "Home")',
                 type: 'GET',
-                data: { count: 20 },
+                data: { count: 50 },
                 success: function(response) {
                     loadingEl.hide();
 
                     if (response.success && response.data && response.data.length > 0) {
-                        renderServiceCards(response.data);
+                        allServicesData = response.data;
+                        renderServiceCards(false); // Initially show collapsed
                         gridEl.show();
-                        viewAllEl.show();
+                        
+                        // Only show "Explore All" button if there are more services than initial display
+                        const cardsPerRow = getCardsPerRow();
+                        const initialCount = INITIAL_ROWS * cardsPerRow;
+                        if (allServicesData.length > initialCount) {
+                            viewAllEl.show();
+                            updateButtonState();
+                        }
                     } else {
                         emptyEl.show();
                     }
@@ -282,15 +304,108 @@
             });
         }
 
-        function renderServiceCards(services) {
+        function renderServiceCards(showAll) {
             const grid = $('#servicesGrid');
             grid.empty();
 
-            services.forEach(function(service) {
+            const cardsPerRow = getCardsPerRow();
+            const initialCount = INITIAL_ROWS * cardsPerRow;
+            const servicesToShow = showAll ? allServicesData : allServicesData.slice(0, initialCount);
+
+            servicesToShow.forEach(function(service, index) {
                 const card = createServiceCard(service);
-                grid.append(card);
+                const $card = $(card);
+                
+                // Add animation class for cards beyond initial display
+                if (showAll && index >= initialCount) {
+                    $card.addClass('service-card-animated');
+                    $card.css({
+                        'opacity': '0',
+                        'transform': 'translateY(20px)'
+                    });
+                }
+                
+                grid.append($card);
             });
+
+            // Animate newly visible cards
+            if (showAll) {
+                setTimeout(function() {
+                    $('.service-card-animated').each(function(i) {
+                        const $el = $(this);
+                        setTimeout(function() {
+                            $el.css({
+                                'opacity': '1',
+                                'transform': 'translateY(0)',
+                                'transition': 'opacity 0.4s ease, transform 0.4s ease'
+                            });
+                        }, i * 50); // Stagger animation
+                    });
+                }, 50);
+            }
         }
+
+        function updateButtonState() {
+            const btnText = $('#exploreAllBtnText');
+            const btnIcon = $('#exploreAllBtnIcon');
+            const cardsPerRow = getCardsPerRow();
+            const initialCount = INITIAL_ROWS * cardsPerRow;
+            const hiddenCount = allServicesData.length - initialCount;
+            
+            if (isExpanded) {
+                btnText.text('Show Less');
+                btnIcon.css('transform', 'rotate(180deg)');
+            } else {
+                btnText.text(`Explore All Services (${hiddenCount} more)`);
+                btnIcon.css('transform', 'rotate(0deg)');
+
+                // Also update icon color temporarily
+                btnIcon.css('color', '#3b82f6');
+                setTimeout(() => {
+                    btnIcon.css('color', '');
+                }, 300);
+            }
+        }
+
+        // Handle Explore All button click
+        $(document).on('click', '#exploreAllBtn', function() {
+            isExpanded = !isExpanded;
+            renderServiceCards(isExpanded);
+            updateButtonState();
+            
+            // Scroll to show new content if expanding
+            if (isExpanded) {
+                // Smooth scroll to keep button in view
+                setTimeout(function() {
+                    $('html, body').animate({
+                        scrollTop: $('#viewAllSection').offset().top - 100
+                    }, 500);
+                }, 300);
+            } else {
+                // Scroll back to top of services section when collapsing
+                $('html, body').animate({
+                    scrollTop: $('#servicesGrid').offset().top - 100
+                }, 500);
+            }
+        });
+
+        // Handle window resize - recalculate visible cards
+        $(window).on('resize', debounce(function() {
+            if (allServicesData.length > 0) {
+                renderServiceCards(isExpanded);
+                
+                const cardsPerRow = getCardsPerRow();
+                const initialCount = INITIAL_ROWS * cardsPerRow;
+                
+                // Show/hide button based on new calculation
+                if (allServicesData.length > initialCount) {
+                    $('#viewAllSection').show();
+                    updateButtonState();
+                } else {
+                    $('#viewAllSection').hide();
+                }
+            }
+        }, 250));
 
         function createServiceCard(service) {
             const joinedDate = new Date(service.providerJoinedDate).toLocaleDateString('en-US', { 
@@ -472,6 +587,12 @@
 
         .service-card .bg-white.shadow-sm:hover i {
             color: #e53e3e !important;
+        }
+        
+        /* Animation for expanding cards */
+        .service-card-animated {
+            opacity: 0;
+            transform: translateY(20px);
         }
     </style>
 }

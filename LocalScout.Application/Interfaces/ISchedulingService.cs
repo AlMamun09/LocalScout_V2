@@ -8,12 +8,13 @@ namespace LocalScout.Application.Interfaces
         /// <summary>
         /// Validate the requested booking time slot
         /// Returns success status and optional error message
+        /// End time is optional - when null, only validates start time against locked slots
         /// </summary>
         Task<(bool IsValid, string? ErrorMessage)> ValidateBookingTimeAsync(
             string providerId, 
             DateTime requestedDate, 
             TimeSpan startTime, 
-            TimeSpan endTime);
+            TimeSpan? endTime);
         
         /// <summary>
         /// Check if provider is available for the given time range

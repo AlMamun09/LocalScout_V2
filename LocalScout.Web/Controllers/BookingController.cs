@@ -319,12 +319,12 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "You already have an active booking for this service. Please wait until it is completed or cancelled." });
                 }
 
-                // Validate time slot
+                // Validate time slot (end time is optional - pass null if not provided)
                 var timeValidation = await _schedulingService.ValidateBookingTimeAsync(
                     service.Id ?? "",
                     dto.RequestedDate,
                     dto.RequestedStartTime,
-                    dto.RequestedEndTime);
+                    dto.RequestedEndTime); // Pass nullable end time directly
 
                 if (!timeValidation.IsValid)
                 {
@@ -348,21 +348,22 @@ namespace LocalScout.Web.Controllers
                     AddressArea = dto.AddressArea ?? user.Address,
                     ImagePaths = imagePaths.Any() ? JsonSerializer.Serialize(imagePaths) : null,
                     Status = BookingStatus.PendingProviderReview,
-                    // Store requested time
+                    // Store requested time (end time is optional - provider will set it)
                     RequestedDate = dto.RequestedDate,
                     RequestedStartTime = dto.RequestedStartTime,
-                    RequestedEndTime = dto.RequestedEndTime
+                    RequestedEndTime = dto.RequestedEndTime // Can be null
                 };
 
                 await _bookingRepository.CreateAsync(booking);
 
                 // Notify provider with time information
                 var startTimeStr = DateTime.Today.Add(dto.RequestedStartTime).ToString("h:mm tt");
-                var endTimeStr = DateTime.Today.Add(dto.RequestedEndTime).ToString("h:mm tt");
+                var notificationMessage = $"You have a new booking request from {user.FullName} for '{service.ServiceName}' on {dto.RequestedDate:MMM dd, yyyy} at {startTimeStr}. Check your bookings to review and respond.";
+                
                 await _notificationRepository.CreateNotificationAsync(
                     provider.Id,
                     "New Booking Request",
-                    $"You have a new booking request from {user.FullName} for '{service.ServiceName}' on {dto.RequestedDate:MMM dd, yyyy} from {startTimeStr} to {endTimeStr}. Check your bookings to review and respond.",
+                    notificationMessage,
                     null
                 );
 
@@ -375,7 +376,7 @@ namespace LocalScout.Web.Controllers
                     "Booking",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"User created booking request for service '{service.ServiceName}' on {dto.RequestedDate:yyyy-MM-dd} {startTimeStr}-{endTimeStr}"
+                    $"User created booking request for service '{service.ServiceName}' on {dto.RequestedDate:yyyy-MM-dd} at {startTimeStr}"
                 );
 
                 return Json(new { success = true, message = "Booking request sent successfully! The provider will review and respond within 3 hours.", bookingId = booking.BookingId });

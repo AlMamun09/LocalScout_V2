@@ -10,9 +10,9 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public string? AddressArea { get; set; }
         public List<string>? ImagePaths { get; set; }
         
-        // Scheduling fields (required for new bookings)
+        // Scheduling fields
         public DateTime RequestedDate { get; set; }
         public TimeSpan RequestedStartTime { get; set; }
-        public TimeSpan RequestedEndTime { get; set; }
+        public TimeSpan? RequestedEndTime { get; set; } // Optional - provider will set this
     }
 }

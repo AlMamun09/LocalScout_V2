@@ -46,9 +46,43 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public DateTime? ConfirmedEndDateTime { get; set; }
         
         // Formatted time display helpers
-        public string? RequestedScheduleFormatted => RequestedDate.HasValue && RequestedStartTime.HasValue && RequestedEndTime.HasValue
-            ? $"{RequestedDate.Value:MMM dd, yyyy} • {DateTime.Today.Add(RequestedStartTime.Value):h:mm tt} - {DateTime.Today.Add(RequestedEndTime.Value):h:mm tt}"
-            : null;
+        public string? RequestedScheduleFormatted
+        {
+            get
+            {
+                if (!RequestedDate.HasValue || !RequestedStartTime.HasValue)
+                    return null;
+                
+                var dateStr = RequestedDate.Value.ToString("MMM dd, yyyy");
+                var startTimeStr = DateTime.Today.Add(RequestedStartTime.Value).ToString("h:mm tt");
+                
+                // If end time is provided, show range; otherwise just show preferred time
+                if (RequestedEndTime.HasValue && RequestedEndTime.Value != RequestedStartTime.Value)
+                {
+                    var endTimeStr = DateTime.Today.Add(RequestedEndTime.Value).ToString("h:mm tt");
+                    return $"{dateStr} • {startTimeStr} - {endTimeStr}";
+                }
+                
+                return $"{dateStr} • {startTimeStr}";
+            }
+        }
+        
+        // Formatted preferred time (start time only) for display
+        public string? PreferredTimeFormatted
+        {
+            get
+            {
+                if (!RequestedDate.HasValue || !RequestedStartTime.HasValue)
+                    return null;
+                
+                var dateStr = RequestedDate.Value.ToString("MMM dd, yyyy");
+                var startTimeStr = DateTime.Today.Add(RequestedStartTime.Value).ToString("h:mm tt");
+                return $"{dateStr} at {startTimeStr}";
+            }
+        }
+        
+        // Check if user provided end time
+        public bool HasRequestedEndTime => RequestedEndTime.HasValue && RequestedEndTime.Value != RequestedStartTime;
             
         public string? ConfirmedScheduleFormatted => ConfirmedStartDateTime.HasValue && ConfirmedEndDateTime.HasValue
             ? $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:h:mm tt}"
