@@ -379,7 +379,7 @@ namespace LocalScout.Web.Controllers
                     $"User created booking request for service '{service.ServiceName}' on {dto.RequestedDate:yyyy-MM-dd} at {startTimeStr}"
                 );
 
-                return Json(new { success = true, message = "Booking request sent successfully! The provider will review and respond within 3 hours.", bookingId = booking.BookingId });
+                return Json(new { success = true, message = "Booking request sent successfully! The provider will review and respond within 12 hours.", bookingId = booking.BookingId });
             }
             catch (Exception ex)
             {
@@ -483,15 +483,6 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "This booking cannot be rescheduled at current status." });
                 }
 
-                // Validate new time slot
-                var newStartDateTime = _schedulingService.CombineDateAndTime(dto.RequestedDate, dto.RequestedStartTime);
-                var newEndDateTime = _schedulingService.CombineDateAndTime(dto.RequestedDate, dto.RequestedEndTime);
-
-                if (newEndDateTime <= newStartDateTime)
-                {
-                    return BadRequest(new { message = "End time must be after start time." });
-                }
-
                 // Validate minimum lead time (2 hours)
                 var isLeadTimeValid = _schedulingService.ValidateMinimumLeadTime(dto.RequestedDate, dto.RequestedStartTime);
                 if (!isLeadTimeValid)
@@ -499,10 +490,22 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Booking must be at least 2 hours in advance." });
                 }
 
+                // Validate the new time slot (end time is optional)
+                var timeValidation = await _schedulingService.ValidateBookingTimeAsync(
+                    booking.ProviderId,
+                    dto.RequestedDate,
+                    dto.RequestedStartTime,
+                    dto.RequestedEndTime); // Pass nullable end time
+
+                if (!timeValidation.IsValid)
+                {
+                    return BadRequest(new { message = timeValidation.ErrorMessage });
+                }
+
                 // Update booking with new requested time and reset to pending
                 booking.RequestedDate = dto.RequestedDate;
                 booking.RequestedStartTime = dto.RequestedStartTime;
-                booking.RequestedEndTime = dto.RequestedEndTime;
+                booking.RequestedEndTime = dto.RequestedEndTime; // Can be null - provider will set it
                 booking.Status = BookingStatus.PendingProviderReview;
                 booking.UpdatedAt = DateTime.Now;
 
@@ -510,10 +513,11 @@ namespace LocalScout.Web.Controllers
 
                 // Notify provider about the new proposed time
                 var user = await _userManager.FindByIdAsync(userId);
+                var startTimeStr = DateTime.Today.Add(dto.RequestedStartTime).ToString("h:mm tt");
                 await _notificationRepository.CreateNotificationAsync(
                     booking.ProviderId,
                     "Booking Rescheduled",
-                    $"{user?.FullName ?? "A user"} has proposed a new time for their booking. Please review and accept the request.",
+                    $"{user?.FullName ?? "A user"} has proposed a new time ({dto.RequestedDate:MMM dd, yyyy} at {startTimeStr}) for their booking. Please review and accept the request.",
                     null
                 );
 
@@ -526,7 +530,7 @@ namespace LocalScout.Web.Controllers
                     "Booking",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"User rescheduled booking to {dto.RequestedDate:d} at {dto.RequestedStartTime} - {dto.RequestedEndTime}",
+                    $"User rescheduled booking to {dto.RequestedDate:d} at {startTimeStr}",
                     true
                 );
 
