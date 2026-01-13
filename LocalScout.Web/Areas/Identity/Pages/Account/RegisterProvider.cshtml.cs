@@ -82,7 +82,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             [StringLength(
                 100,
                 ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.",
-                MinimumLength = 6
+                MinimumLength = 8
             )]
             [DataType(DataType.Password)]
             [Display(Name = "Password")]
@@ -126,6 +126,8 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             public double? Latitude { get; set; }
             public double? Longitude { get; set; }
 
+            [Required(ErrorMessage = "Gender is required.")]
+            [RegularExpression("^(Male|Female|Other)$", ErrorMessage = "Please select a valid gender.")]
             [Display(Name = "Gender")]
             public string Gender { get; set; }
 
@@ -137,16 +139,20 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             [DataType(DataType.Date)]
             public DateTime DateOfBirth { get; set; }
 
+            [Required(ErrorMessage = "Working days are required.")]
             [Display(Name = "Working Days")]
             public string WorkingDays { get; set; }
 
+            [Required(ErrorMessage = "Working hours are required.")]
             [Display(Name = "Working Hours")]
             public string WorkingHours { get; set; }
 
             [Display(Name = "Business Name (Optional)")]
             public string BusinessName { get; set; }
 
-            [Display(Name = "Description (Optional)")]
+            [Required(ErrorMessage = "Business description is required.")]
+            [StringLength(2000, MinimumLength = 10, ErrorMessage = "Description must be between 10 and 2000 characters.")]
+            [Display(Name = "Business Description")]
             public string Description { get; set; }
         }
 
@@ -172,6 +178,23 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
             if (age < 18)
             {
                 ModelState.AddModelError("Input.DateOfBirth", "Providers must be at least 18 years old to register.");
+            }
+
+            // Validate ProfilePicture if provided
+            if (Input.ProfilePicture != null && Input.ProfilePicture.Length > 0)
+            {
+                const long maxFileSize = 5 * 1024 * 1024; // 5MB
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+                
+                if (Input.ProfilePicture.Length > maxFileSize)
+                {
+                    ModelState.AddModelError("Input.ProfilePicture", "Profile picture must be less than 5MB.");
+                }
+                
+                if (!allowedTypes.Contains(Input.ProfilePicture.ContentType.ToLower()))
+                {
+                    ModelState.AddModelError("Input.ProfilePicture", "Only JPEG, PNG, GIF, and WebP images are allowed.");
+                }
             }
 
             if (ModelState.IsValid)
@@ -241,10 +264,17 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                         protocol: Request.Scheme
                     );
 
+                    // Generate professional email template for Provider
+                    var emailBody = LocalScout.Infrastructure.Services.EmailService.GetConfirmationEmailTemplate(
+                        Input.FullName,
+                        HtmlEncoder.Default.Encode(callbackUrl),
+                        "Provider"
+                    );
+
                     await _emailSender.SendEmailAsync(
                         Input.Email,
-                        "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>."
+                        "Welcome to Neighbourly - Please Confirm Your Email",
+                        emailBody
                     );
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)

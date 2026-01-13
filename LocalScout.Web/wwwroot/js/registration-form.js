@@ -15,41 +15,51 @@ export class RegistrationForm {
   }
 
   init() {
-    document.addEventListener("DOMContentLoaded", () => {
-      // Initialize validation
-      this.validator = new FormValidation({
-        formId: "registerForm",
-        currentStep: 1,
-      });
+    // ES6 modules are deferred, so DOM may already be loaded
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () =>
+        this.initializeComponents()
+      );
+    } else {
+      // DOM is already ready
+      this.initializeComponents();
+    }
+  }
 
-      // Initialize multi-step form
-      this.multiStepForm = new MultiStepForm({
-        totalSteps: this.totalSteps,
-        formId: "registerForm",
-        progressLineId: "progressLine",
-        onValidateStep: (step) => this.validateStep(step),
-      });
-
-      // Initialize password strength indicator
-      this.passwordStrength = new PasswordStrength({
-        passwordInputId: "passwordInput",
-        strengthBarId: "passwordStrengthBar",
-        strengthTextId: "passwordStrengthText",
-        strengthContainerId: "passwordStrength",
-      });
-
-      // Initialize location service
-      this.locationService = new LocationService({
-        addressInputId: "addressInput",
-        useLocationBtnId: "useLocationBtn",
-        suggestionsId: "addressSuggestions",
-        latitudeInputId: "latitudeInput",
-        longitudeInputId: "longitudeInput",
-      });
-
-      // Make location service available globally for onclick handlers
-      window.locationService = this.locationService;
+  initializeComponents() {
+    // Initialize validation
+    this.validator = new FormValidation({
+      formId: "registerForm",
+      currentStep: 1,
     });
+
+    // Initialize multi-step form
+    this.multiStepForm = new MultiStepForm({
+      totalSteps: this.totalSteps,
+      formId: "registerForm",
+      progressLineId: "progressLine",
+      onValidateStep: (step) => this.validateStep(step),
+    });
+
+    // Initialize password strength indicator
+    this.passwordStrength = new PasswordStrength({
+      passwordInputId: "passwordInput",
+      strengthBarId: "passwordStrengthBar",
+      strengthTextId: "passwordStrengthText",
+      strengthContainerId: "passwordStrength",
+    });
+
+    // Initialize location service
+    this.locationService = new LocationService({
+      addressInputId: "addressInput",
+      useLocationBtnId: "useLocationBtn",
+      suggestionsId: "addressSuggestions",
+      latitudeInputId: "latitudeInput",
+      longitudeInputId: "longitudeInput",
+    });
+
+    // Make location service available globally for onclick handlers
+    window.locationService = this.locationService;
   }
 
   validateStep(step) {
@@ -57,6 +67,8 @@ export class RegistrationForm {
       return this.validator.validateAccountInfo();
     } else if (step === 2) {
       return this.validator.validatePersonalDetails();
+    } else if (step === 3) {
+      return this.validator.validateBusinessInfo();
     }
 
     return true;

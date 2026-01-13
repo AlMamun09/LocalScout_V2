@@ -71,10 +71,16 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                     values: new { area = "Identity", code },
                     protocol: Request.Scheme);
 
+                // Generate professional password reset email template
+                var emailBody = LocalScout.Infrastructure.Services.EmailService.GetPasswordResetEmailTemplate(
+                    user.FullName ?? "User",
+                    HtmlEncoder.Default.Encode(callbackUrl)
+                );
+
                 await _emailSender.SendEmailAsync(
                     Input.Email,
-                    "Reset Password",
-                    $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    "Reset Your LocalScout Password",
+                    emailBody);
 
                 return RedirectToPage("./ForgotPasswordConfirmation");
             }

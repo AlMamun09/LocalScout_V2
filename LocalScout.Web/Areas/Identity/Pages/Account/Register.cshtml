@@ -62,12 +62,12 @@
             <div class="form-step active" data-step="1">
                 <div class="form-group mb-3.5 relative">
                     <label asp-for="Input.FullName" class="font-semibold text-gray-700 mb-1 text-xs block">Full
-                        Name</label>
+                        Name <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <i class="fas fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
                         <input asp-for="Input.FullName"
                             class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
-                            placeholder="Enter your full name" />
+                            placeholder="Enter your full name" minlength="2" maxlength="100" required />
                     </div>
                     <span asp-validation-for="Input.FullName" class="text-danger text-[0.65rem] mt-0.5 block"></span>
                 </div>
@@ -86,13 +86,13 @@
 
                 <div class="form-group mb-3.5 relative">
                     <label asp-for="Input.Password"
-                        class="font-semibold text-gray-700 mb-1 text-xs block">Password</label>
+                        class="font-semibold text-gray-700 mb-1 text-xs block">Password <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
                         <input asp-for="Input.Password"
                             class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
                             placeholder="Create a strong password" autocomplete="new-password" type="password"
-                            id="passwordInput" />
+                            id="passwordInput" minlength="8" maxlength="100" required />
                     </div>
                     <div class="mt-1 h-0.75 bg-gray-200 rounded-sm overflow-hidden hidden" id="passwordStrength">
                         <div class="h-full transition-all rounded-sm" id="passwordStrengthBar"></div>
@@ -139,12 +139,12 @@
                 <div class="grid grid-cols-2 gap-3 mb-3.5">
                     <div class="form-group relative">
                         <label asp-for="Input.DateOfBirth" class="font-semibold text-gray-700 mb-1 text-xs block">Date of
-                            Birth</label>
+                            Birth <span class="text-red-500">*</span></label>
                         <div class="relative">
                             <i class="fas fa-calendar absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
                             <input asp-for="Input.DateOfBirth"
                                 class="form-control w-full rounded-lg px-3.5 py-2 border-2 border-gray-200 transition-all text-sm pl-10"
-                                type="date" max="@DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd")" />
+                                type="date" max="@DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd")" required />
                         </div>
                         <span asp-validation-for="Input.DateOfBirth" class="text-danger text-[0.65rem] mt-0.5 block"></span>
                     </div>
@@ -190,7 +190,7 @@
                 </div>
 
                 <div class="form-group mb-3.5 relative">
-                    <label asp-for="Input.Gender" class="font-semibold text-gray-700 mb-1 text-xs block">Gender</label>
+                    <label asp-for="Input.Gender" class="font-semibold text-gray-700 mb-1 text-xs block">Gender <span class="text-red-500">*</span></label>
                     <div class="flex gap-2 mt-1.5">
                         <div class="flex-1">
                             <input type="radio" asp-for="Input.Gender" value="Male" id="genderMale" class="hidden" />
