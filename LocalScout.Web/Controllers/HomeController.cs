@@ -81,15 +81,16 @@ namespace LocalScout.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchServices(string? query, Guid? categoryId, int take = 20)
+        public async Task<IActionResult> SearchServices(string? query, Guid? categoryId, double? latitude, double? longitude, int take = 20)
         {
             try
             {
-                // Get user's location if authenticated
-                double? userLat = null;
-                double? userLon = null;
+                // Get user's location from parameters first (for manual location-based sorting)
+                // Then fall back to authenticated user's stored location
+                double? userLat = latitude;
+                double? userLon = longitude;
 
-                if (User.Identity?.IsAuthenticated == true)
+                if ((!userLat.HasValue || !userLon.HasValue) && User.Identity?.IsAuthenticated == true)
                 {
                     var currentUser = await _userManager.GetUserAsync(User);
                     if (currentUser != null)
