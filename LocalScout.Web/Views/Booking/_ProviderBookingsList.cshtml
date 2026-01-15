@@ -109,6 +109,16 @@
                             </div>
                         }
                         
+                        @* User Proposal Display *@
+                        @if (booking.Status == BookingStatus.PendingProviderApproval && booking.HasProposal)
+                        {
+                            <div class="alert alert-warning py-2 px-3 mb-2">
+                                <strong><i class="fas fa-clock mr-1"></i> Customer Proposal:</strong><br/>
+                                <span class="text-primary">@booking.ProposedScheduleFormatted</span>
+                                <br/><small class="text-muted">Please accept or decline this proposed time.</small>
+                            </div>
+                        }
+                        
                         @if (!string.IsNullOrEmpty(booking.Description))
                         {
                             <p class="mb-1">
@@ -175,7 +185,7 @@
                         else if (booking.Status == BookingStatus.NeedRescheduling)
                         {
                             @* Provider can propose a new time for rescheduling *@
-                            <button type="button" class="btn btn-warning btn-accept mb-2" 
+                            <button type="button" class="btn btn-warning btn-propose-time mb-2" 
                                     data-booking-id="@booking.BookingId" 
                                     data-service-name="@booking.ServiceName"
                                     data-customer-name="@booking.UserName"
@@ -188,6 +198,22 @@
                             </button>
                             <button type="button" class="btn btn-outline-danger btn-decline" data-booking-id="@booking.BookingId">
                                 <i class="fas fa-times mr-1"></i> Cancel
+                            </button>
+                        }
+                        else if (booking.Status == BookingStatus.PendingProviderApproval && booking.HasProposal)
+                        {
+                            @* User proposed a new time - Provider can accept/reject via accept modal *@
+                            <button type="button" class="btn btn-success btn-accept-user-proposal mb-2" 
+                                    data-booking-id="@booking.BookingId"
+                                    data-service-name="@booking.ServiceName"
+                                    data-base-price="@booking.ServiceMinPrice"
+                                    data-proposed-start="@booking.ProposedStartDateTime?.ToString("yyyy-MM-ddTHH:mm")"
+                                    data-proposed-end="@booking.ProposedEndDateTime?.ToString("yyyy-MM-ddTHH:mm")"
+                                    data-proposed-schedule="@booking.ProposedScheduleFormatted">
+                                <i class="fas fa-check mr-1"></i> Accept & Set Price
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-reject-user-proposal" data-booking-id="@booking.BookingId">
+                                <i class="fas fa-times mr-1"></i> Decline
                             </button>
                         }
                         else if (booking.CanStartJob)

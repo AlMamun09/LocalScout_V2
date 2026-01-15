@@ -150,10 +150,11 @@ namespace LocalScout.Infrastructure.Repositories
         public async Task<bool> AcceptBookingAsync(Guid bookingId, decimal negotiatedPrice, string? providerNotes)
         {
             var booking = await GetByIdAsync(bookingId);
-            // Allow accept for PendingProviderReview or rescheduling proposal for NeedRescheduling
+            // Allow accept for PendingProviderReview, NeedRescheduling, or user proposal (PendingProviderApproval)
             if (booking == null || 
                 (booking.Status != BookingStatus.PendingProviderReview && 
-                 booking.Status != BookingStatus.NeedRescheduling))
+                 booking.Status != BookingStatus.NeedRescheduling &&
+                 booking.Status != BookingStatus.PendingProviderApproval))
             {
                 return false;
             }
@@ -163,6 +164,13 @@ namespace LocalScout.Infrastructure.Repositories
             booking.Status = BookingStatus.AcceptedByProvider;
             booking.AcceptedAt = DateTime.UtcNow;
             booking.UpdatedAt = DateTime.UtcNow;
+            
+            // Clear proposal fields
+            booking.ProposedStartDateTime = null;
+            booking.ProposedEndDateTime = null;
+            booking.ProposedPrice = null;
+            booking.ProposedNotes = null;
+            booking.ProposedBy = null;
 
             await _context.SaveChangesAsync();
             return true;
@@ -418,10 +426,11 @@ namespace LocalScout.Infrastructure.Repositories
             DateTime confirmedStartDateTime, DateTime confirmedEndDateTime)
         {
             var booking = await GetByIdAsync(bookingId);
-            // Allow accept for PendingProviderReview or rescheduling proposal for NeedRescheduling
+            // Allow accept for PendingProviderReview, NeedRescheduling, or user proposal (PendingProviderApproval)
             if (booking == null || 
                 (booking.Status != BookingStatus.PendingProviderReview && 
-                 booking.Status != BookingStatus.NeedRescheduling))
+                 booking.Status != BookingStatus.NeedRescheduling &&
+                 booking.Status != BookingStatus.PendingProviderApproval))
             {
                 return false;
             }
@@ -433,6 +442,13 @@ namespace LocalScout.Infrastructure.Repositories
             booking.Status = BookingStatus.AcceptedByProvider;
             booking.AcceptedAt = DateTime.Now;
             booking.UpdatedAt = DateTime.Now;
+            
+            // Clear proposal fields
+            booking.ProposedStartDateTime = null;
+            booking.ProposedEndDateTime = null;
+            booking.ProposedPrice = null;
+            booking.ProposedNotes = null;
+            booking.ProposedBy = null;
 
             await _context.SaveChangesAsync();
             return true;

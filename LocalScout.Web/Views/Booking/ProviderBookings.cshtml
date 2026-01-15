@@ -135,27 +135,33 @@
                         <div class="card-body">
                             <p class="text-muted small mb-3">
                                 <i class="fas fa-info-circle mr-1"></i>
-                                You can adjust the customer's preferred time or set the exact schedule for the service.
+                                You can adjust the customer's preferred time or set the exact schedule. For multi-day services, set different start and end dates.
                             </p>
                             <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group mb-0">
-                                        <label for="confirmedDate">Date <span class="text-danger">*</span></label>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="confirmedDate">Start Date <span class="text-danger">*</span></label>
                                         <input type="date" class="form-control" id="confirmedDate" name="ConfirmedDate" required>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="form-group mb-0">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
                                         <label for="confirmedStartTime">Start Time <span class="text-danger">*</span></label>
                                         <input type="time" class="form-control" id="confirmedStartTime" name="ConfirmedStartTime" required>
-                                        <small class="form-text text-muted">Based on customer's preferred time</small>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="form-group mb-0">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="confirmedEndDate">End Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="confirmedEndDate" name="ConfirmedEndDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
                                         <label for="confirmedEndTime">End Time <span class="text-danger">*</span></label>
                                         <input type="time" class="form-control" id="confirmedEndTime" name="ConfirmedEndTime" required>
-                                        <small id="endTimeHint" class="form-text text-muted">Please set when the job will end</small>
                                     </div>
                                 </div>
                             </div>
@@ -221,6 +227,91 @@
     </div>
 </div>
 
+<!-- Propose New Time Modal (for NeedRescheduling bookings) -->
+<div class="modal fade" id="proposeTimeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-calendar-alt mr-2"></i>Propose New Time</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="proposeTimeForm">
+                <div class="modal-body">
+                    <input type="hidden" id="proposeBookingId" name="BookingId" />
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Service:</strong> <span id="proposeServiceName"></span><br>
+                        <strong>Customer:</strong> <span id="proposeCustomerName"></span>
+                        <p class="mb-0 mt-2 small">The customer's requested time doesn't work for you. Propose a new schedule and price below.</p>
+                    </div>
+                    
+                    <!-- Schedule Section -->
+                    <div class="card card-outline card-warning mb-3">
+                        <div class="card-header py-2">
+                            <h6 class="mb-0"><i class="fas fa-clock mr-2"></i>Proposed Schedule <span class="text-danger">*</span></h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeDate">Start Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="proposeDate" name="ConfirmedDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeStartTime">Start Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="proposeStartTime" name="ConfirmedStartTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeEndDate">End Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="proposeEndDate" name="ConfirmedEndDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeEndTime">End Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="proposeEndTime" name="ConfirmedEndTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="proposeTimeValidationMsg" class="mt-2" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="proposePrice">Your Price (Tk) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Tk</span>
+                            </div>
+                            <input type="number" class="form-control form-control-lg" id="proposePrice" name="NegotiatedPrice" min="1" step="1" required placeholder="Enter your price">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="proposeNotes">Message to Customer (Optional)</label>
+                        <textarea class="form-control" id="proposeNotes" name="ProviderNotes" rows="2" placeholder="Explain why you're suggesting this new time..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning" id="proposeSubmitBtn">
+                        <i class="fas fa-paper-plane mr-1"></i> Send Proposal to Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         $(document).ready(function() {
@@ -275,6 +366,9 @@
                     var requestedEnd = $(this).data('requested-end');
                     var hasEndTime = $(this).data('has-end-time') === true || $(this).data('has-end-time') === 'true';
                     
+                    // Clear user proposal flag for normal accept
+                    $('#acceptForm').data('is-user-proposal', false);
+                    
                     $('#acceptBookingId').val(bookingId);
                     $('#acceptServiceName').text(serviceName);
                     $('#acceptCustomerName').text(customerName);
@@ -301,26 +395,25 @@
                         
                         // Pre-fill confirmed time with requested time
                         $('#confirmedDate').val(requestedDate);
+                        $('#confirmedEndDate').val(requestedDate); // Default end date same as start
                         $('#confirmedStartTime').val(requestedStart);
                         
-                        // Set end time - if customer provided it, use it; otherwise leave empty for provider to fill
+                        // Set end time - if customer provided it, use it; otherwise leave empty
                         if (hasEndTime && requestedEnd) {
                             $('#confirmedEndTime').val(requestedEnd);
-                            $('#endTimeHint').text('Customer\'s requested end time (you can adjust)');
                         } else {
-                            // Leave end time empty - provider must set it
                             $('#confirmedEndTime').val('');
-                            $('#endTimeHint').text('Please set when the job will end');
                         }
                     } else {
                         $('#preferredTimeBox').hide();
                         // Set default to tomorrow if no requested date
                         var tomorrow = new Date();
                         tomorrow.setDate(tomorrow.getDate() + 1);
-                        $('#confirmedDate').val(tomorrow.toISOString().split('T')[0]);
+                        var tomorrowStr = tomorrow.toISOString().split('T')[0];
+                        $('#confirmedDate').val(tomorrowStr);
+                        $('#confirmedEndDate').val(tomorrowStr); // Default end date same as start
                         $('#confirmedStartTime').val('');
                         $('#confirmedEndTime').val('');
-                        $('#endTimeHint').text('Please set when the job will end');
                     }
                     
                     $('#acceptModal').modal('show');
@@ -331,6 +424,121 @@
                     $('#declineBookingId').val($(this).data('booking-id'));
                     $('#declineReason').val('');
                     $('#declineModal').modal('show');
+                });
+
+                // Propose Time button (for NeedRescheduling bookings) - show propose modal
+                container.find('.btn-propose-time').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    var serviceName = $(this).data('service-name');
+                    var customerName = $(this).data('customer-name');
+                    var basePrice = $(this).data('base-price');
+                    
+                    // Set defaults
+                    var tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    var tomorrowStr = tomorrow.toISOString().split('T')[0];
+                    
+                    $('#proposeBookingId').val(bookingId);
+                    $('#proposeServiceName').text(serviceName);
+                    $('#proposeCustomerName').text(customerName);
+                    $('#proposePrice').val(basePrice);
+                    $('#proposeNotes').val('');
+                    
+                    // Set default dates and clear times
+                    $('#proposeDate').val(tomorrowStr);
+                    $('#proposeEndDate').val(tomorrowStr);
+                    $('#proposeStartTime').val('');
+                    $('#proposeEndTime').val('');
+                    $('#proposeTimeValidationMsg').hide();
+                    $('#proposeSubmitBtn').prop('disabled', false);
+                    
+                    $('#proposeTimeModal').modal('show');
+                });
+
+                // Accept User Proposal button - show accept modal with proposed schedule pre-filled
+                container.find('.btn-accept-user-proposal').off('click').on('click', function() {
+                    var btn = $(this);
+                    var bookingId = btn.data('booking-id');
+                    var serviceName = btn.data('service-name');
+                    var basePrice = btn.data('base-price');
+                    var proposedStart = btn.data('proposed-start');
+                    var proposedEnd = btn.data('proposed-end');
+                    var proposedSchedule = btn.data('proposed-schedule');
+                    
+                    // Set modal values
+                    $('#acceptBookingId').val(bookingId);
+                    $('#acceptServiceName').text(serviceName || 'Service');
+                    $('#negotiatedPrice').val(basePrice);
+                    
+                    // Parse proposed datetime and fill fields
+                    if (proposedStart) {
+                        var startDate = proposedStart.split('T')[0];
+                        var startTime = proposedStart.split('T')[1];
+                        $('#confirmedDate').val(startDate);
+                        $('#confirmedStartTime').val(startTime);
+                    }
+                    
+                    if (proposedEnd) {
+                        var endDate = proposedEnd.split('T')[0];
+                        var endTime = proposedEnd.split('T')[1];
+                        $('#confirmedEndDate').val(endDate);
+                        $('#confirmedEndTime').val(endTime);
+                    } else if (proposedStart) {
+                        // Default end date to start date if not provided
+                        $('#confirmedEndDate').val(proposedStart.split('T')[0]);
+                        $('#confirmedEndTime').val('');
+                    }
+                    
+                    // Show customer's proposed time in the modal
+                    if (proposedSchedule) {
+                        $('#displayPreferredTime').text('Customer Proposal: ' + proposedSchedule);
+                        $('#preferredTimeBox').show();
+                        $('#noEndTimeNote').hide();
+                    } else {
+                        $('#preferredTimeBox').hide();
+                    }
+                    
+                    // Set user proposal mode flag
+                    $('#acceptForm').data('is-user-proposal', true);
+                    
+                    $('#acceptModal').modal('show');
+                });
+
+                // Reject User Proposal button
+                container.find('.btn-reject-user-proposal').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    
+                    Swal.fire({
+                        title: 'Decline Customer Proposal?',
+                        text: 'Would you like to decline this time proposal? The customer can propose again or you can propose a different time.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-times mr-1"></i> Decline',
+                        cancelButtonText: 'Keep'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("ProviderRejectUserProposal", "Booking")',
+                                type: 'POST',
+                                data: { bookingId: bookingId },
+                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                                success: function(response) {
+                                    if (response.success) {
+                                        Swal.fire('Declined', response.message, 'info').then(() => {
+                                            refreshCurrentTab();
+                                        });
+                                    } else {
+                                        Swal.fire('Error', response.message, 'error');
+                                    }
+                                },
+                                error: function() {
+                                    Swal.fire('Error', 'Failed to decline proposal.', 'error');
+                                }
+                            });
+                        }
+                    });
                 });
 
                 // Start Job button
@@ -465,13 +673,25 @@
                 return hours + ':' + minutes + ' ' + ampm;
             }
             
-            // Real-time validation for time fields
-            $('#confirmedStartTime, #confirmedEndTime').on('change', function() {
+            // Real-time validation for date/time fields
+            $('#confirmedDate, #confirmedEndDate, #confirmedStartTime, #confirmedEndTime').on('change', function() {
+                var startDate = $('#confirmedDate').val();
+                var endDate = $('#confirmedEndDate').val();
                 var startTime = $('#confirmedStartTime').val();
                 var endTime = $('#confirmedEndTime').val();
                 
-                if (startTime && endTime) {
-                    if (endTime <= startTime) {
+                if (startDate && endDate && startTime && endTime) {
+                    // Check if end date is before start date
+                    if (endDate < startDate) {
+                        $('#timeValidationMsg')
+                            .removeClass('alert-success')
+                            .addClass('alert alert-danger')
+                            .html('<i class="fas fa-exclamation-circle mr-1"></i> End date cannot be before start date')
+                            .show();
+                        $('#acceptSubmitBtn').prop('disabled', true);
+                    } 
+                    // For same-day bookings, check if end time is after start time
+                    else if (endDate === startDate && endTime <= startTime) {
                         $('#timeValidationMsg')
                             .removeClass('alert-success')
                             .addClass('alert alert-danger')
@@ -479,16 +699,28 @@
                             .show();
                         $('#acceptSubmitBtn').prop('disabled', true);
                     } else {
+                        var msg = startDate === endDate 
+                            ? '<i class="fas fa-check-circle mr-1"></i> Schedule looks good!'
+                            : '<i class="fas fa-check-circle mr-1"></i> Multi-day service schedule set!';
                         $('#timeValidationMsg')
                             .removeClass('alert-danger')
                             .addClass('alert alert-success')
-                            .html('<i class="fas fa-check-circle mr-1"></i> Schedule looks good!')
+                            .html(msg)
                             .show();
                         $('#acceptSubmitBtn').prop('disabled', false);
                     }
                 } else {
                     $('#timeValidationMsg').hide();
                     $('#acceptSubmitBtn').prop('disabled', false);
+                }
+            });
+            
+            // Sync end date with start date when start date changes (if end date is empty or before new start)
+            $('#confirmedDate').on('change', function() {
+                var startDate = $(this).val();
+                var endDate = $('#confirmedEndDate').val();
+                if (!endDate || endDate < startDate) {
+                    $('#confirmedEndDate').val(startDate);
                 }
             });
             
@@ -506,7 +738,11 @@
             // Accept form submit
             $('#acceptForm').on('submit', function(e) {
                 e.preventDefault();
-                
+                submitAcceptForm(false);
+            });
+            
+            // Function to submit accept form (can be called with confirmation flag)
+            function submitAcceptForm(confirmOutsideWorkingHours) {
                 var price = parseFloat($('#negotiatedPrice').val());
                 if (!price || price <= 0) {
                     Swal.fire('Error', 'Please enter a valid price', 'error');
@@ -514,11 +750,22 @@
                 }
                 
                 var confirmedDate = $('#confirmedDate').val();
+                var confirmedEndDate = $('#confirmedEndDate').val();
                 var confirmedStartTime = $('#confirmedStartTime').val();
                 var confirmedEndTime = $('#confirmedEndTime').val();
                 
                 if (!confirmedDate) {
-                    Swal.fire('Error', 'Please select a date', 'error');
+                    Swal.fire('Error', 'Please select a start date', 'error');
+                    return;
+                }
+                
+                if (!confirmedEndDate) {
+                    Swal.fire('Error', 'Please select an end date', 'error');
+                    return;
+                }
+                
+                if (confirmedEndDate < confirmedDate) {
+                    Swal.fire('Error', 'End date cannot be before start date', 'error');
                     return;
                 }
                 
@@ -532,7 +779,8 @@
                     return;
                 }
                 
-                if (confirmedEndTime <= confirmedStartTime) {
+                // For same-day bookings, ensure end time is after start time
+                if (confirmedDate === confirmedEndDate && confirmedEndTime <= confirmedStartTime) {
                     Swal.fire('Error', 'End time must be after start time', 'error');
                     return;
                 }
@@ -542,8 +790,10 @@
                     NegotiatedPrice: price,
                     ProviderNotes: $('#providerNotes').val(),
                     ConfirmedDate: confirmedDate,
+                    ConfirmedEndDate: confirmedEndDate,
                     ConfirmedStartTime: confirmedStartTime + ':00',
-                    ConfirmedEndTime: confirmedEndTime + ':00'
+                    ConfirmedEndTime: confirmedEndTime + ':00',
+                    ConfirmOutsideWorkingHours: confirmOutsideWorkingHours
                 };
 
                 // Disable submit button and show loading
@@ -556,6 +806,28 @@
                     data: data,
                     headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                     success: function(response) {
+                        // Check if server is asking for confirmation (working hours warning)
+                        if (response.requiresConfirmation) {
+                            submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Accept & Send to Customer');
+                            
+                            Swal.fire({
+                                title: 'Working Hours Warning',
+                                html: response.warningMessage,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#28a745',
+                                cancelButtonColor: '#6c757d',
+                                confirmButtonText: '<i class="fas fa-check mr-1"></i> Yes, Accept Anyway',
+                                cancelButtonText: 'Edit Schedule'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Resubmit with confirmation flag
+                                    submitAcceptForm(true);
+                                }
+                            });
+                            return;
+                        }
+                        
                         $('#acceptModal').modal('hide');
                         submitBtn.prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Accept & Send to Customer');
                         if (response.success) {
@@ -572,7 +844,7 @@
                         Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
                     }
                 });
-            });
+            }
 
             // Decline form submit
             $('#declineForm').on('submit', function(e) {
@@ -611,8 +883,123 @@
                 $('#acceptSubmitBtn').prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Accept & Send to Customer');
                 // Clear all form fields
                 $('#confirmedDate').val('');
+                $('#confirmedEndDate').val('');
                 $('#confirmedStartTime').val('');
                 $('#confirmedEndTime').val('');
+            });
+            
+            // Propose Time validation
+            $('#proposeDate, #proposeEndDate, #proposeStartTime, #proposeEndTime').on('change', function() {
+                var startDate = $('#proposeDate').val();
+                var endDate = $('#proposeEndDate').val();
+                var startTime = $('#proposeStartTime').val();
+                var endTime = $('#proposeEndTime').val();
+                
+                if (startDate && endDate && startTime && endTime) {
+                    if (endDate < startDate) {
+                        $('#proposeTimeValidationMsg')
+                            .removeClass('alert-success').addClass('alert alert-danger')
+                            .html('<i class="fas fa-exclamation-circle mr-1"></i> End date cannot be before start date')
+                            .show();
+                        $('#proposeSubmitBtn').prop('disabled', true);
+                    } else if (endDate === startDate && endTime <= startTime) {
+                        $('#proposeTimeValidationMsg')
+                            .removeClass('alert-success').addClass('alert alert-danger')
+                            .html('<i class="fas fa-exclamation-circle mr-1"></i> End time must be after start time')
+                            .show();
+                        $('#proposeSubmitBtn').prop('disabled', true);
+                    } else {
+                        var msg = startDate === endDate 
+                            ? '<i class="fas fa-check-circle mr-1"></i> Schedule looks good!'
+                            : '<i class="fas fa-check-circle mr-1"></i> Multi-day schedule set!';
+                        $('#proposeTimeValidationMsg')
+                            .removeClass('alert-danger').addClass('alert alert-success')
+                            .html(msg).show();
+                        $('#proposeSubmitBtn').prop('disabled', false);
+                    }
+                } else {
+                    $('#proposeTimeValidationMsg').hide();
+                }
+            });
+            
+            // Sync propose end date with start date
+            $('#proposeDate').on('change', function() {
+                var startDate = $(this).val();
+                var endDate = $('#proposeEndDate').val();
+                if (!endDate || endDate < startDate) {
+                    $('#proposeEndDate').val(startDate);
+                }
+            });
+            
+            // Propose Time form submit
+            $('#proposeTimeForm').on('submit', function(e) {
+                e.preventDefault();
+                submitProposeForm();
+            });
+            
+            function submitProposeForm() {
+                var price = parseFloat($('#proposePrice').val());
+                if (!price || price <= 0) {
+                    Swal.fire('Error', 'Please enter a valid price', 'error');
+                    return;
+                }
+                
+                var startDate = $('#proposeDate').val();
+                var endDate = $('#proposeEndDate').val();
+                var startTime = $('#proposeStartTime').val();
+                var endTime = $('#proposeEndTime').val();
+                
+                if (!startDate || !endDate || !startTime || !endTime) {
+                    Swal.fire('Error', 'Please fill in all schedule fields', 'error');
+                    return;
+                }
+                
+                if (endDate < startDate || (startDate === endDate && endTime <= startTime)) {
+                    Swal.fire('Error', 'Please fix the schedule errors', 'error');
+                    return;
+                }
+                
+                var data = {
+                    BookingId: $('#proposeBookingId').val(),
+                    NegotiatedPrice: price,
+                    ProviderNotes: $('#proposeNotes').val(),
+                    ConfirmedDate: startDate,
+                    ConfirmedEndDate: endDate,
+                    ConfirmedStartTime: startTime + ':00',
+                    ConfirmedEndTime: endTime + ':00'
+                };
+                
+                var submitBtn = $('#proposeSubmitBtn');
+                submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Sending...');
+                
+                $.ajax({
+                    url: '@Url.Action("ProviderProposeTime", "Booking")',
+                    type: 'POST',
+                    data: data,
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function(response) {
+                        $('#proposeTimeModal').modal('hide');
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send Proposal to Customer');
+                        if (response.success) {
+                            Swal.fire('Proposal Sent!', response.message, 'success').then(() => {
+                                refreshCurrentTab();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#proposeTimeModal').modal('hide');
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send Proposal to Customer');
+                        Swal.fire('Error', xhr.responseJSON?.message || 'An error occurred', 'error');
+                    }
+                });
+            }
+            
+            // Reset propose modal on close
+            $('#proposeTimeModal').on('hidden.bs.modal', function() {
+                $('#proposeTimeValidationMsg').hide();
+                $('#proposeSubmitBtn').prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Send Proposal to Customer');
             });
             
             // Load initial tab (All)

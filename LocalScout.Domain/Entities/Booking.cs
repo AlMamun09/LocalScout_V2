@@ -35,6 +35,13 @@ namespace LocalScout.Domain.Entities
         public DateTime? ConfirmedEndDateTime { get; set; }    // Final confirmed end (date+time)
         public int AutoCancelWarningCount { get; set; } = 0;   // Track auto-cancel count for service blocking
 
+        //Reschedule Properties
+        public DateTime? ProposedStartDateTime { get; set; }
+        public DateTime? ProposedEndDateTime { get; set; }
+        public decimal? ProposedPrice { get; set; }
+        public string? ProposedNotes { get; set; }
+        public string? ProposedBy { get; set; } // "Provider" or "User"
+
         //Payment Details
         public string? TransactionId { get; set; }
         public string? ValidationId { get; set; }

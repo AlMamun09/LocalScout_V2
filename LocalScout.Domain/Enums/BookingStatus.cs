@@ -12,6 +12,8 @@
         Cancelled,              // Booking cancelled by either party
         Disputed,               // Issue raised by either party
         NeedRescheduling,       // Overlapping requests moved here after another booking accepted
-        AutoCancelled           // System auto-cancelled due to provider inaction (3 hours timeout)
+        AutoCancelled,           // System auto-cancelled due to provider inaction (3 hours timeout)
+        PendingUserApproval,      // Provider proposed time, waiting for user acceptance
+        PendingProviderApproval  // User proposed new time, waiting for provider acceptance
     }
 }

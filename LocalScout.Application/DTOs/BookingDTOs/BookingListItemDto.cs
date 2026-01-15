@@ -88,6 +88,19 @@ namespace LocalScout.Application.DTOs.BookingDTOs
             ? $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:h:mm tt}"
             : null;
 
+        // Proposed Schedule (for PendingUserApproval/PendingProviderApproval)
+        public DateTime? ProposedStartDateTime { get; set; }
+        public DateTime? ProposedEndDateTime { get; set; }
+        public decimal? ProposedPrice { get; set; }
+        public string? ProposedNotes { get; set; }
+        public string? ProposedBy { get; set; }
+        
+        public string? ProposedScheduleFormatted => ProposedStartDateTime.HasValue && ProposedEndDateTime.HasValue
+            ? $"{ProposedStartDateTime.Value:MMM dd, yyyy} • {ProposedStartDateTime.Value:h:mm tt} - {ProposedEndDateTime.Value:h:mm tt}"
+            : ProposedStartDateTime.HasValue ? $"{ProposedStartDateTime.Value:MMM dd, yyyy h:mm tt}" : null;
+        
+        public bool HasProposal => ProposedStartDateTime.HasValue;
+
         // Status
         public BookingStatus Status { get; set; }
         public string StatusDisplay { get; set; } = string.Empty;

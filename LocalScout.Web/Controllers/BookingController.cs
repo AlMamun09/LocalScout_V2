@@ -502,11 +502,17 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = timeValidation.ErrorMessage });
                 }
 
-                // Update booking with new requested time and reset to pending
-                booking.RequestedDate = dto.RequestedDate;
-                booking.RequestedStartTime = dto.RequestedStartTime;
-                booking.RequestedEndTime = dto.RequestedEndTime; // Can be null - provider will set it
-                booking.Status = BookingStatus.PendingProviderReview;
+                // Store proposed schedule in the new fields (don't overwrite original request)
+                var proposedStartDateTime = dto.RequestedDate.Date.Add(dto.RequestedStartTime);
+                var proposedEndDateTime = dto.RequestedEndTime.HasValue 
+                    ? dto.RequestedDate.Date.Add(dto.RequestedEndTime.Value)
+                    : (DateTime?)null;
+                
+                booking.ProposedStartDateTime = proposedStartDateTime;
+                booking.ProposedEndDateTime = proposedEndDateTime;
+                booking.ProposedBy = "User";
+                booking.ProposedNotes = null;
+                booking.Status = BookingStatus.PendingProviderApproval;
                 booking.UpdatedAt = DateTime.Now;
 
                 await _bookingRepository.UpdateAsync(booking);
@@ -516,8 +522,8 @@ namespace LocalScout.Web.Controllers
                 var startTimeStr = DateTime.Today.Add(dto.RequestedStartTime).ToString("h:mm tt");
                 await _notificationRepository.CreateNotificationAsync(
                     booking.ProviderId,
-                    "Booking Rescheduled",
-                    $"{user?.FullName ?? "A user"} has proposed a new time ({dto.RequestedDate:MMM dd, yyyy} at {startTimeStr}) for their booking. Please review and accept the request.",
+                    "New Time Proposal",
+                    $"{user?.FullName ?? "A customer"} has proposed a new time ({dto.RequestedDate:MMM dd, yyyy} at {startTimeStr}) for their booking. Please review and accept or decline.",
                     null
                 );
 
@@ -526,20 +532,334 @@ namespace LocalScout.Web.Controllers
                     userId,
                     user?.FullName,
                     user?.Email,
-                    "BookingRescheduled",
+                    "UserProposedReschedule",
                     "Booking",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"User rescheduled booking to {dto.RequestedDate:d} at {startTimeStr}",
+                    $"User proposed new time: {dto.RequestedDate:d} at {startTimeStr}",
                     true
                 );
 
-                return Ok(new { success = true, message = "Your booking has been rescheduled. Waiting for provider confirmation." });
+                return Ok(new { success = true, message = "Your proposal has been sent to the provider. Waiting for their response." });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error rescheduling booking");
                 return StatusCode(500, new { message = "Failed to reschedule booking." });
+            }
+        }
+
+        /// <summary>
+        /// Provider accepts user's reschedule proposal
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProviderAcceptUserProposal(Guid bookingId)
+        {
+            try
+            {
+                var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(providerId))
+                {
+                    return Unauthorized(new { message = "Provider not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.ProviderId != providerId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                if (booking.Status != BookingStatus.PendingProviderApproval)
+                {
+                    return BadRequest(new { message = "This booking is not pending your approval." });
+                }
+
+                if (!booking.ProposedStartDateTime.HasValue)
+                {
+                    return BadRequest(new { message = "No proposed schedule found." });
+                }
+
+                // Check for availability (overlapping bookings)
+                var proposedEnd = booking.ProposedEndDateTime ?? booking.ProposedStartDateTime.Value.AddHours(2);
+                var availabilityCheck = await _schedulingService.CheckProviderAvailabilityAsync(
+                    providerId, booking.ProposedStartDateTime.Value, proposedEnd, booking.BookingId);
+
+                if (!availabilityCheck.IsAvailable)
+                {
+                    return BadRequest(new { message = availabilityCheck.Message });
+                }
+
+                // Move proposed to confirmed
+                booking.ConfirmedStartDateTime = booking.ProposedStartDateTime;
+                booking.ConfirmedEndDateTime = booking.ProposedEndDateTime ?? booking.ProposedStartDateTime.Value.AddHours(2);
+                booking.NegotiatedPrice = booking.ProposedPrice ?? booking.NegotiatedPrice;
+                booking.Status = BookingStatus.AcceptedByProvider;
+                booking.AcceptedAt = DateTime.Now;
+                booking.UpdatedAt = DateTime.Now;
+                
+                // Clear proposal fields
+                booking.ProposedStartDateTime = null;
+                booking.ProposedEndDateTime = null;
+                booking.ProposedPrice = null;
+                booking.ProposedNotes = null;
+                booking.ProposedBy = null;
+
+                await _bookingRepository.UpdateAsync(booking);
+
+                // Create time slot
+                await _timeSlotRepository.CreateAsync(new ProviderTimeSlot
+                {
+                    ProviderId = providerId,
+                    BookingId = booking.BookingId,
+                    StartDateTime = booking.ConfirmedStartDateTime!.Value,
+                    EndDateTime = booking.ConfirmedEndDateTime!.Value,
+                    IsActive = true
+                });
+
+                // Notify user
+                var provider = await _userManager.FindByIdAsync(providerId);
+                var startStr = booking.ConfirmedStartDateTime!.Value.ToString("MMM dd, yyyy h:mm tt");
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.UserId,
+                    "Proposal Accepted!",
+                    $"{provider?.FullName ?? "The service provider"} has accepted your time proposal for {startStr}. Your booking is now confirmed!",
+                    null
+                );
+
+                // Audit log
+                await _auditService.LogAsync(
+                    providerId, provider?.FullName, provider?.Email,
+                    "ProviderAcceptedUserProposal", "Booking", "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider accepted user's proposal for {startStr}",
+                    true
+                );
+
+                return Ok(new { success = true, message = "Proposal accepted. Booking is now confirmed." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error accepting user proposal");
+                return StatusCode(500, new { message = "Failed to accept proposal." });
+            }
+        }
+
+        /// <summary>
+        /// Provider rejects user's reschedule proposal (back to NeedRescheduling)
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProviderRejectUserProposal(Guid bookingId, string? reason = null)
+        {
+            try
+            {
+                var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(providerId))
+                {
+                    return Unauthorized(new { message = "Provider not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.ProviderId != providerId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                if (booking.Status != BookingStatus.PendingProviderApproval)
+                {
+                    return BadRequest(new { message = "This booking is not pending your approval." });
+                }
+
+                // Go back to NeedRescheduling
+                booking.Status = BookingStatus.NeedRescheduling;
+                booking.ProposedStartDateTime = null;
+                booking.ProposedEndDateTime = null;
+                booking.ProposedPrice = null;
+                booking.ProposedNotes = null;
+                booking.ProposedBy = null;
+                booking.UpdatedAt = DateTime.Now;
+
+                await _bookingRepository.UpdateAsync(booking);
+
+                // Notify user
+                var provider = await _userManager.FindByIdAsync(providerId);
+                var reasonText = !string.IsNullOrEmpty(reason) ? $" Reason: {reason}" : "";
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.UserId,
+                    "Proposal Declined",
+                    $"{provider?.FullName ?? "The service provider"} has declined your time proposal.{reasonText} Please propose a different time.",
+                    null
+                );
+
+                await _auditService.LogAsync(
+                    providerId, provider?.FullName, provider?.Email,
+                    "ProviderRejectedUserProposal", "Booking", "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider rejected user's proposal. Reason: {reason ?? "Not specified"}",
+                    true
+                );
+
+                return Ok(new { success = true, message = "Proposal declined. The customer can propose a new time." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting user proposal");
+                return StatusCode(500, new { message = "Failed to reject proposal." });
+            }
+        }
+
+        /// <summary>
+        /// User accepts provider's time proposal
+        /// </summary>
+        [Authorize(Roles = RoleNames.User)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserAcceptProposal(Guid bookingId)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.UserId != userId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                if (booking.Status != BookingStatus.PendingUserApproval)
+                {
+                    return BadRequest(new { message = "This booking is not pending your approval." });
+                }
+
+                if (!booking.ProposedStartDateTime.HasValue)
+                {
+                    return BadRequest(new { message = "No proposed schedule found." });
+                }
+
+                // Move proposed to confirmed
+                booking.ConfirmedStartDateTime = booking.ProposedStartDateTime;
+                booking.ConfirmedEndDateTime = booking.ProposedEndDateTime ?? booking.ProposedStartDateTime.Value.AddHours(2);
+                booking.NegotiatedPrice = booking.ProposedPrice ?? booking.NegotiatedPrice;
+                booking.ProviderNotes = booking.ProposedNotes ?? booking.ProviderNotes;
+                booking.Status = BookingStatus.AcceptedByProvider;
+                booking.AcceptedAt = DateTime.Now;
+                booking.UpdatedAt = DateTime.Now;
+                
+                // Clear proposal fields
+                booking.ProposedStartDateTime = null;
+                booking.ProposedEndDateTime = null;
+                booking.ProposedPrice = null;
+                booking.ProposedNotes = null;
+                booking.ProposedBy = null;
+
+                await _bookingRepository.UpdateAsync(booking);
+
+                // Create time slot
+                await _timeSlotRepository.CreateAsync(new ProviderTimeSlot
+                {
+                    ProviderId = booking.ProviderId,
+                    BookingId = booking.BookingId,
+                    StartDateTime = booking.ConfirmedStartDateTime!.Value,
+                    EndDateTime = booking.ConfirmedEndDateTime!.Value,
+                    IsActive = true
+                });
+
+                // Notify provider
+                var user = await _userManager.FindByIdAsync(userId);
+                var startStr = booking.ConfirmedStartDateTime!.Value.ToString("MMM dd, yyyy h:mm tt");
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.ProviderId,
+                    "Proposal Accepted!",
+                    $"{user?.FullName ?? "The customer"} has accepted your time proposal for {startStr}. The booking is now confirmed!",
+                    null
+                );
+
+                await _auditService.LogAsync(
+                    userId, user?.FullName, user?.Email,
+                    "UserAcceptedProviderProposal", "Booking", "Booking",
+                    booking.BookingId.ToString(),
+                    $"User accepted provider's proposal for {startStr}",
+                    true
+                );
+
+                return Ok(new { success = true, message = "You've accepted the proposal! The booking is now confirmed." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error accepting provider proposal");
+                return StatusCode(500, new { message = "Failed to accept proposal." });
+            }
+        }
+
+        /// <summary>
+        /// User rejects provider's time proposal (back to NeedRescheduling)
+        /// </summary>
+        [Authorize(Roles = RoleNames.User)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserRejectProposal(Guid bookingId, string? reason = null)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null || booking.UserId != userId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                if (booking.Status != BookingStatus.PendingUserApproval)
+                {
+                    return BadRequest(new { message = "This booking is not pending your approval." });
+                }
+
+                // Go back to NeedRescheduling
+                booking.Status = BookingStatus.NeedRescheduling;
+                booking.ProposedStartDateTime = null;
+                booking.ProposedEndDateTime = null;
+                booking.ProposedPrice = null;
+                booking.ProposedNotes = null;
+                booking.ProposedBy = null;
+                booking.UpdatedAt = DateTime.Now;
+
+                await _bookingRepository.UpdateAsync(booking);
+
+                // Notify provider
+                var user = await _userManager.FindByIdAsync(userId);
+                var reasonText = !string.IsNullOrEmpty(reason) ? $" Reason: {reason}" : "";
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.ProviderId,
+                    "Proposal Declined",
+                    $"{user?.FullName ?? "The customer"} has declined your time proposal.{reasonText}",
+                    null
+                );
+
+                await _auditService.LogAsync(
+                    userId, user?.FullName, user?.Email,
+                    "UserRejectedProviderProposal", "Booking", "Booking",
+                    booking.BookingId.ToString(),
+                    $"User rejected provider's proposal. Reason: {reason ?? "Not specified"}",
+                    true
+                );
+
+                return Ok(new { success = true, message = "You've declined the proposal. The provider can propose a new time." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting provider proposal");
+                return StatusCode(500, new { message = "Failed to reject proposal." });
             }
         }
 
@@ -852,6 +1172,95 @@ namespace LocalScout.Web.Controllers
         }
 
         /// <summary>
+        /// Provider proposes a new time for a NeedRescheduling booking
+        /// This stores the proposal and sets PendingUserApproval status (user must accept)
+        /// </summary>
+        [Authorize(Roles = RoleNames.ServiceProvider)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProviderProposeTime([FromForm] AcceptBookingDto dto)
+        {
+            try
+            {
+                var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(providerId))
+                {
+                    return Unauthorized(new { message = "Provider not authenticated." });
+                }
+
+                var booking = await _bookingRepository.GetByIdAsync(dto.BookingId);
+                if (booking == null || booking.ProviderId != providerId)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+
+                // Only allow proposal for NeedRescheduling bookings
+                if (booking.Status != BookingStatus.NeedRescheduling)
+                {
+                    return BadRequest(new { message = "This booking cannot have a time proposal at its current status." });
+                }
+
+                // Validate price
+                if (dto.NegotiatedPrice <= 0)
+                {
+                    return BadRequest(new { message = "Please enter a valid price." });
+                }
+
+                // Calculate proposed start and end datetime
+                var proposedStartDateTime = dto.ConfirmedDate.Date.Add(dto.ConfirmedStartTime);
+                var proposedEndDateTime = dto.ConfirmedEndDate.Date.Add(dto.ConfirmedEndTime);
+
+                if (proposedEndDateTime <= proposedStartDateTime)
+                {
+                    return BadRequest(new { message = "End time must be after start time." });
+                }
+
+                // Store proposal (don't create time slot yet - that happens on acceptance)
+                booking.ProposedStartDateTime = proposedStartDateTime;
+                booking.ProposedEndDateTime = proposedEndDateTime;
+                booking.ProposedPrice = dto.NegotiatedPrice;
+                booking.ProposedNotes = dto.ProviderNotes;
+                booking.ProposedBy = "Provider";
+                booking.Status = BookingStatus.PendingUserApproval;
+                booking.UpdatedAt = DateTime.Now;
+
+                await _bookingRepository.UpdateAsync(booking);
+
+                // Notify user about the proposal
+                var provider = await _userManager.FindByIdAsync(providerId);
+                var startStr = proposedStartDateTime.ToString("MMM dd, yyyy h:mm tt");
+                var endStr = proposedEndDateTime.ToString("h:mm tt");
+                var priceStr = dto.NegotiatedPrice.ToString("N0");
+                
+                await _notificationRepository.CreateNotificationAsync(
+                    booking.UserId,
+                    "New Time Proposal",
+                    $"{provider?.FullName ?? "The service provider"} has proposed a new time: {startStr} - {endStr} for Tk {priceStr}. Please review and accept or decline.",
+                    null
+                );
+
+                // Audit log
+                await _auditService.LogAsync(
+                    providerId, provider?.FullName, provider?.Email,
+                    "ProviderProposedTime", "Booking", "Booking",
+                    booking.BookingId.ToString(),
+                    $"Provider proposed time: {startStr} - {endStr}, Price: Tk {priceStr}",
+                    true
+                );
+
+                return Ok(new { 
+                    success = true, 
+                    message = "Your proposal has been sent to the customer. Waiting for their response." 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error proposing time");
+                return StatusCode(500, new { message = "Failed to propose time." });
+            }
+        }
+
+        /// <summary>
         /// Provider views booking details
         /// </summary>
         [Authorize(Roles = RoleNames.ServiceProvider)]
@@ -880,6 +1289,7 @@ namespace LocalScout.Web.Controllers
 
         /// <summary>
         /// Provider accepts booking and sets price with confirmed time (AJAX)
+        /// Supports multi-day bookings and working hours warning confirmation
         /// </summary>
         [Authorize(Roles = RoleNames.ServiceProvider)]
         [HttpPost]
@@ -900,9 +1310,10 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Booking not found." });
                 }
 
-                // Allow accept for PendingProviderReview or rescheduling proposal for NeedRescheduling
+                // Allow accept for PendingProviderReview, NeedRescheduling, or user proposal (PendingProviderApproval)
                 if (booking.Status != BookingStatus.PendingProviderReview && 
-                    booking.Status != BookingStatus.NeedRescheduling)
+                    booking.Status != BookingStatus.NeedRescheduling &&
+                    booking.Status != BookingStatus.PendingProviderApproval)
                 {
                     return BadRequest(new { message = "This booking has already been processed." });
                 }
@@ -912,14 +1323,20 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Please enter a valid price." });
                 }
 
-                // Combine confirmed date and time
+                // Validate end date is not before start date
+                if (dto.ConfirmedEndDate.Date < dto.ConfirmedDate.Date)
+                {
+                    return BadRequest(new { message = "End date cannot be before start date." });
+                }
+
+                // Combine confirmed date and time (use ConfirmedEndDate for end datetime to support multi-day)
                 var confirmedStartDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedDate, dto.ConfirmedStartTime);
-                var confirmedEndDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedDate, dto.ConfirmedEndTime);
+                var confirmedEndDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedEndDate, dto.ConfirmedEndTime);
 
                 // Validate confirmed time
                 if (confirmedEndDateTime <= confirmedStartDateTime)
                 {
-                    return BadRequest(new { message = "End time must be after start time." });
+                    return BadRequest(new { message = "End date/time must be after start date/time." });
                 }
 
                 // Check for overlapping accepted bookings
@@ -931,16 +1348,23 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = availabilityCheck.Message });
                 }
 
-                // Validate duty hours
+                // Validate duty hours - but allow override with confirmation
                 var dutyCheck = await _schedulingService.IsWithinProviderDutyHoursAsync(
                     providerId, dto.ConfirmedStartTime, dto.ConfirmedEndTime);
                 
-                if (!dutyCheck.IsWithinHours)
+                var isOutsideWorkingHours = !dutyCheck.IsWithinHours;
+                
+                if (isOutsideWorkingHours && !dto.ConfirmOutsideWorkingHours)
                 {
-                    var dutyMsg = dutyCheck.DutyStart.HasValue && dutyCheck.DutyEnd.HasValue
-                        ? $"Time must be within your working hours ({DateTime.Today.Add(dutyCheck.DutyStart.Value):h:mm tt} - {DateTime.Today.Add(dutyCheck.DutyEnd.Value):h:mm tt})."
-                        : "Time is outside your working hours.";
-                    return BadRequest(new { message = dutyMsg });
+                    // Return warning response (not error) - frontend will show confirmation dialog
+                    var warningMsg = dutyCheck.DutyStart.HasValue && dutyCheck.DutyEnd.HasValue
+                        ? $"The selected time exceeds your configured working hours ({DateTime.Today.Add(dutyCheck.DutyStart.Value):h:mm tt} - {DateTime.Today.Add(dutyCheck.DutyEnd.Value):h:mm tt}). Are you sure you want to accept this booking?"
+                        : "The selected time is outside your configured working hours. Are you sure you want to accept this booking?";
+                    
+                    return Ok(new { 
+                        requiresConfirmation = true,
+                        warningMessage = warningMsg
+                    });
                 }
 
                 // Accept booking with confirmed time
@@ -953,7 +1377,7 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "Failed to accept booking." });
                 }
 
-                // Create provider time slot to lock availability
+                // Create provider time slot to lock availability (spans full duration for multi-day)
                 var timeSlot = new ProviderTimeSlot
                 {
                     ProviderId = providerId,
@@ -974,14 +1398,25 @@ namespace LocalScout.Web.Controllers
                 var startTimeStr = confirmedStartDateTime.ToString("h:mm tt");
                 var endTimeStr = confirmedEndDateTime.ToString("h:mm tt");
                 
+                // Format date range for notification
+                var isMultiDay = dto.ConfirmedDate.Date != dto.ConfirmedEndDate.Date;
+                var dateDisplay = isMultiDay 
+                    ? $"from {dto.ConfirmedDate:MMM dd} to {dto.ConfirmedEndDate:MMM dd, yyyy}"
+                    : $"on {dto.ConfirmedDate:MMM dd, yyyy}";
+                
                 await _notificationRepository.CreateNotificationAsync(
                     booking.UserId,
                     "Booking Accepted!",
-                    $"{provider?.FullName ?? "Provider"} has accepted your booking for '{service?.ServiceName ?? "Service"}' on {dto.ConfirmedDate:MMM dd, yyyy} from {startTimeStr} to {endTimeStr}. Price: Tk {dto.NegotiatedPrice:N0}. Proceed to payment.",
+                    $"{provider?.FullName ?? "Provider"} has accepted your booking for '{service?.ServiceName ?? "Service"}' {dateDisplay} ({startTimeStr} to {endTimeStr}). Price: Tk {dto.NegotiatedPrice:N0}. Proceed to payment.",
                     null
                 );
 
-                // Audit Log: Booking Accepted
+                // Audit Log: Booking Accepted (with outside working hours flag if applicable)
+                var outsideHoursFlag = isOutsideWorkingHours ? " [ACCEPTED OUTSIDE WORKING HOURS]" : "";
+                var dateRangeStr = isMultiDay 
+                    ? $"{dto.ConfirmedDate:yyyy-MM-dd} to {dto.ConfirmedEndDate:yyyy-MM-dd}"
+                    : $"{dto.ConfirmedDate:yyyy-MM-dd}";
+                    
                 await _auditService.LogAsync(
                     providerId,
                     provider?.FullName,
@@ -990,7 +1425,7 @@ namespace LocalScout.Web.Controllers
                     "Booking",
                     "Booking",
                     booking.BookingId.ToString(),
-                    $"Provider accepted booking with price Tk {dto.NegotiatedPrice}, scheduled {dto.ConfirmedDate:yyyy-MM-dd} {startTimeStr}-{endTimeStr}. {overlapsProcessed} overlapping requests moved to NeedRescheduling."
+                    $"Provider accepted booking with price Tk {dto.NegotiatedPrice}, scheduled {dateRangeStr} {startTimeStr}-{endTimeStr}. {overlapsProcessed} overlapping requests moved to NeedRescheduling.{outsideHoursFlag}"
                 );
 
                 var successMsg = "Booking accepted! The user has been notified and can now proceed with payment.";
@@ -1486,6 +1921,13 @@ namespace LocalScout.Web.Controllers
                 RequestedEndTime = booking.RequestedEndTime,
                 ConfirmedStartDateTime = booking.ConfirmedStartDateTime,
                 ConfirmedEndDateTime = booking.ConfirmedEndDateTime,
+                
+                // Proposed schedule fields
+                ProposedStartDateTime = booking.ProposedStartDateTime,
+                ProposedEndDateTime = booking.ProposedEndDateTime,
+                ProposedPrice = booking.ProposedPrice,
+                ProposedNotes = booking.ProposedNotes,
+                ProposedBy = booking.ProposedBy,
 
                 Status = booking.Status,
                 StatusDisplay = GetStatusDisplayText(booking.Status),
@@ -1598,6 +2040,13 @@ namespace LocalScout.Web.Controllers
                 RequestedEndTime = booking.RequestedEndTime,
                 ConfirmedStartDateTime = booking.ConfirmedStartDateTime,
                 ConfirmedEndDateTime = booking.ConfirmedEndDateTime,
+                
+                // Proposed schedule fields
+                ProposedStartDateTime = booking.ProposedStartDateTime,
+                ProposedEndDateTime = booking.ProposedEndDateTime,
+                ProposedPrice = booking.ProposedPrice,
+                ProposedNotes = booking.ProposedNotes,
+                ProposedBy = booking.ProposedBy,
 
                 Status = booking.Status,
                 StatusDisplay = GetStatusDisplayText(booking.Status),
@@ -1629,6 +2078,8 @@ namespace LocalScout.Web.Controllers
                 BookingStatus.Disputed => "Disputed",
                 BookingStatus.NeedRescheduling => "Needs Rescheduling",
                 BookingStatus.AutoCancelled => "Auto-Cancelled",
+                BookingStatus.PendingUserApproval => "Awaiting Your Approval",
+                BookingStatus.PendingProviderApproval => "Awaiting Provider Approval",
                 _ => status.ToString()
             };
         }
@@ -1648,6 +2099,8 @@ namespace LocalScout.Web.Controllers
                 BookingStatus.Disputed => "badge-danger",
                 BookingStatus.NeedRescheduling => "badge-warning",
                 BookingStatus.AutoCancelled => "badge-secondary",
+                BookingStatus.PendingUserApproval => "badge-info",
+                BookingStatus.PendingProviderApproval => "badge-info",
                 _ => "badge-secondary"
             };
         }

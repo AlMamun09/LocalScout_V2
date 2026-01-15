@@ -81,6 +81,17 @@ namespace LocalScout.Web.Controllers
                 });
             }
 
+            // Validate category name
+            if (string.IsNullOrWhiteSpace(dto.RequestedCategoryName))
+            {
+                return BadRequest(new { message = "Category name is required." });
+            }
+
+            if (dto.RequestedCategoryName.Length > 100)
+            {
+                return BadRequest(new { message = "Category name must be 100 characters or less." });
+            }
+
             // Check for duplicate pending request
             if (await _categoryRequestRepo.HasPendingRequestAsync(userId!, dto.RequestedCategoryName))
             {

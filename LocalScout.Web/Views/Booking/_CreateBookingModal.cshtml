@@ -87,9 +87,16 @@
 
         <div class="form-group">
             <label for="addressArea">Job Location <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="addressArea" name="AddressArea" 
-                   value="@Model.UserAddress" placeholder="Where do you need the service?" required>
-            <small class="form-text text-muted">Enter the address or area where the service is needed</small>
+            <div class="input-group">
+                <input type="text" class="form-control" id="addressArea" name="AddressArea" 
+                       value="@Model.UserAddress" placeholder="Where do you need the service?" required>
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-primary" id="getLocationBtn" title="Get Current Location">
+                        <i class="fas fa-map-marker-alt" id="locationIcon"></i>
+                    </button>
+                </div>
+            </div>
+            <small class="form-text text-muted">Enter the address or click the button to use your current location</small>
         </div>
 
         <div class="form-group">
@@ -230,6 +237,91 @@
                 };
                 reader.readAsDataURL(files[i]);
             }
+        });
+
+        // Get Current Location button handler
+        $('#getLocationBtn').on('click', function() {
+            var btn = $(this);
+            var icon = $('#locationIcon');
+            var addressInput = $('#addressArea');
+            
+            // Check if geolocation is supported
+            if (!navigator.geolocation) {
+                Swal.fire('Error', 'Geolocation is not supported by your browser.', 'error');
+                return;
+            }
+            
+            // Show loading state
+            btn.prop('disabled', true);
+            icon.removeClass('fa-map-marker-alt').addClass('fa-spinner fa-spin');
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    
+                    // Call reverse geocode API to get address
+                    $.ajax({
+                        url: '/api/Location/reverse-geocode',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            Latitude: lat,
+                            Longitude: lng
+                        }),
+                        success: function(response) {
+                            if (response && response.displayName) {
+                                addressInput.val(response.displayName);
+                            } else if (response && response.address) {
+                                // Fallback to address components
+                                var addr = response.address;
+                                var parts = [];
+                                if (addr.road) parts.push(addr.road);
+                                if (addr.suburb) parts.push(addr.suburb);
+                                if (addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
+                                if (addr.country) parts.push(addr.country);
+                                addressInput.val(parts.join(', ') || 'Location found');
+                            } else {
+                                addressInput.val('Lat: ' + lat.toFixed(6) + ', Lng: ' + lng.toFixed(6));
+                            }
+                            
+                            // Reset button state
+                            btn.prop('disabled', false);
+                            icon.removeClass('fa-spinner fa-spin').addClass('fa-map-marker-alt');
+                        },
+                        error: function() {
+                            // If reverse geocode fails, just show coordinates
+                            addressInput.val('Lat: ' + lat.toFixed(6) + ', Lng: ' + lng.toFixed(6));
+                            btn.prop('disabled', false);
+                            icon.removeClass('fa-spinner fa-spin').addClass('fa-map-marker-alt');
+                        }
+                    });
+                },
+                function(error) {
+                    // Reset button state
+                    btn.prop('disabled', false);
+                    icon.removeClass('fa-spinner fa-spin').addClass('fa-map-marker-alt');
+                    
+                    var errorMsg = 'Unable to get your location.';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = 'Location access was denied. Please allow location access in your browser settings.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = 'Location request timed out.';
+                            break;
+                    }
+                    Swal.fire('Location Error', errorMsg, 'warning');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
         });
 
         // Form submit

@@ -307,6 +307,86 @@
                     
                     $('#rescheduleModal').modal('show');
                 });
+                
+                // Accept Proposal button click
+                container.find('.btn-accept-proposal').off('click').on('click', function() {
+                    var btn = $(this);
+                    var bookingId = btn.data('booking-id');
+                    var proposedSchedule = btn.data('proposed-schedule');
+                    var proposedPrice = btn.data('proposed-price');
+                    
+                    Swal.fire({
+                        title: 'Accept Proposal?',
+                        html: `<p>The provider has proposed:</p>
+                               <p class="text-primary font-weight-bold">${proposedSchedule}</p>
+                               ${proposedPrice ? `<p class="text-success">Price: Tk ${Number(proposedPrice).toLocaleString()}</p>` : ''}
+                               <p>Do you want to accept this time slot?</p>`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#28a745',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-check mr-1"></i> Accept',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("UserAcceptProposal", "Booking")',
+                                type: 'POST',
+                                data: { bookingId: bookingId },
+                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                                success: function(response) {
+                                    if (response.success) {
+                                        Swal.fire('Accepted!', response.message, 'success').then(() => {
+                                            refreshCurrentTab();
+                                        });
+                                    } else {
+                                        Swal.fire('Error', response.message, 'error');
+                                    }
+                                },
+                                error: function() {
+                                    Swal.fire('Error', 'Failed to accept proposal.', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                // Reject Proposal button click
+                container.find('.btn-reject-proposal').off('click').on('click', function() {
+                    var bookingId = $(this).data('booking-id');
+                    
+                    Swal.fire({
+                        title: 'Decline Proposal?',
+                        text: 'Would you like to decline this time proposal? The provider can propose a new time.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-times mr-1"></i> Decline',
+                        cancelButtonText: 'Keep'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("UserRejectProposal", "Booking")',
+                                type: 'POST',
+                                data: { bookingId: bookingId },
+                                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                                success: function(response) {
+                                    if (response.success) {
+                                        Swal.fire('Declined', response.message, 'info').then(() => {
+                                            refreshCurrentTab();
+                                        });
+                                    } else {
+                                        Swal.fire('Error', response.message, 'error');
+                                    }
+                                },
+                                error: function() {
+                                    Swal.fire('Error', 'Failed to decline proposal.', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
             }
             
             // Refresh current active tab

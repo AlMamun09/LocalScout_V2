@@ -1,4 +1,5 @@
 using LocalScout.Application.Extensions;
+using System.ComponentModel.DataAnnotations;
 
 namespace LocalScout.Application.DTOs.ReviewDTOs
 {
@@ -7,8 +8,14 @@ namespace LocalScout.Application.DTOs.ReviewDTOs
     /// </summary>
     public class ReviewCreateDto
     {
+        [Required(ErrorMessage = "Booking is required")]
         public Guid BookingId { get; set; }
+
+        [Required(ErrorMessage = "Rating is required")]
+        [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
         public int Rating { get; set; }  // 1-5
+
+        [StringLength(2000, ErrorMessage = "Comment must be 2000 characters or less")]
         public string? Comment { get; set; }
     }
 

@@ -79,6 +79,23 @@
                             </p>
                         }
                         
+                        @* Provider Proposal Display *@
+                        @if (booking.Status == BookingStatus.PendingUserApproval && booking.HasProposal)
+                        {
+                            <div class="alert alert-info py-2 px-3 mb-2">
+                                <strong><i class="fas fa-clock mr-1"></i> Provider Proposal:</strong><br/>
+                                <span class="text-dark">@booking.ProposedScheduleFormatted</span>
+                                @if (booking.ProposedPrice.HasValue)
+                                {
+                                    <span class="ml-2 font-weight-bold">• Tk @booking.ProposedPrice.Value.ToString("N0")</span>
+                                }
+                                @if (!string.IsNullOrEmpty(booking.ProposedNotes))
+                                {
+                                    <br/><small class="text-muted">Note: @booking.ProposedNotes</small>
+                                }
+                            </div>
+                        }
+                        
                         @if (!string.IsNullOrEmpty(booking.Description))
                         {
                             <p class="mb-1">
@@ -178,7 +195,7 @@
                                 </button>
                             }
                             
-                            @* Reschedule Button for NeedRescheduling status *@
+                        @* Reschedule Button for NeedRescheduling status *@
                             @if (booking.Status == BookingStatus.NeedRescheduling)
                             {
                                 <button type="button" class="btn btn-sm btn-warning btn-reschedule" 
@@ -186,6 +203,23 @@
                                         data-service-name="@booking.ServiceName">
                                     <i class="fas fa-calendar-alt mr-1"></i> Reschedule
                                 </button>
+                            }
+                            
+                            @* Provider Proposal - Accept/Reject buttons for PendingUserApproval status *@
+                            @if (booking.Status == BookingStatus.PendingUserApproval && booking.HasProposal)
+                            {
+                                <div class="d-inline-block ml-2">
+                                    <button type="button" class="btn btn-sm btn-success btn-accept-proposal" 
+                                            data-booking-id="@booking.BookingId"
+                                            data-proposed-schedule="@booking.ProposedScheduleFormatted"
+                                            data-proposed-price="@booking.ProposedPrice">
+                                        <i class="fas fa-check mr-1"></i> Accept Proposal
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-reject-proposal" 
+                                            data-booking-id="@booking.BookingId">
+                                        <i class="fas fa-times mr-1"></i> Decline
+                                    </button>
+                                </div>
                             }
                             
                             @* Cancel Button - show for pending, accepted, or need rescheduling *@
