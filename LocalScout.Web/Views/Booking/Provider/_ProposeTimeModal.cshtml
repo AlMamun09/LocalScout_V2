@@ -1,0 +1,84 @@
+@* Propose New Time Modal (Provider - for NeedRescheduling bookings) *@
+<div class="modal fade" id="proposeTimeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-calendar-alt mr-2"></i>Propose New Time</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="proposeTimeForm">
+                <div class="modal-body">
+                    <input type="hidden" id="proposeBookingId" name="BookingId" />
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Service:</strong> <span id="proposeServiceName"></span><br>
+                        <strong>Customer:</strong> <span id="proposeCustomerName"></span>
+                        <p class="mb-0 mt-2 small">The customer's requested time doesn't work for you. Propose a new schedule and price below.</p>
+                    </div>
+                    
+                    <!-- Schedule Section -->
+                    <div class="card card-outline card-warning mb-3">
+                        <div class="card-header py-2">
+                            <h6 class="mb-0"><i class="fas fa-clock mr-2"></i>Proposed Schedule <span class="text-danger">*</span></h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeDate">Start Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="proposeDate" name="ConfirmedDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeStartTime">Start Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="proposeStartTime" name="ConfirmedStartTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeEndDate">End Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="proposeEndDate" name="ConfirmedEndDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="proposeEndTime">End Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="proposeEndTime" name="ConfirmedEndTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="proposeTimeValidationMsg" class="mt-2" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="proposePrice">Your Price (Tk) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Tk</span>
+                            </div>
+                            <input type="number" class="form-control form-control-lg" id="proposePrice" name="NegotiatedPrice" min="1" step="1" required placeholder="Enter your price">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="proposeNotes">Message to Customer (Optional)</label>
+                        <textarea class="form-control" id="proposeNotes" name="ProviderNotes" rows="2" placeholder="Explain why you're suggesting this new time..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning" id="proposeSubmitBtn">
+                        <i class="fas fa-paper-plane mr-1"></i> Send Proposal to Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

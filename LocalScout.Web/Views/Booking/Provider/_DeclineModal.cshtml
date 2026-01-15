@@ -1,0 +1,29 @@
+@* Decline Booking Modal (Provider) *@
+<div class="modal fade" id="declineModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle mr-2"></i>Decline Booking</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="declineForm">
+                <div class="modal-body">
+                    <input type="hidden" id="declineBookingId" name="BookingId" />
+                    <p>Are you sure you want to decline this booking request?</p>
+                    <div class="form-group">
+                        <label for="declineReason">Reason (Optional but recommended)</label>
+                        <textarea class="form-control" id="declineReason" name="Reason" rows="3" placeholder="Let the customer know why you can't accept this request..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times mr-1"></i> Decline Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,104 @@
+@* Accept Booking Modal (Provider) *@
+<div class="modal fade" id="acceptModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle mr-2"></i>Accept Booking</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="acceptForm">
+                <div class="modal-body">
+                    <input type="hidden" id="acceptBookingId" name="BookingId" />
+                    
+                    <div class="alert alert-info">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Service:</strong> <span id="acceptServiceName"></span><br>
+                                <strong>Customer:</strong> <span id="acceptCustomerName"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Base Price:</strong> Tk <span id="acceptBasePrice"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer's Preferred Time Display -->
+                    <div id="preferredTimeBox" class="alert alert-warning mb-3">
+                        <i class="fas fa-clock mr-2"></i>
+                        <strong>Customer's Preferred Time:</strong>
+                        <span id="displayPreferredTime"></span>
+                        <div id="noEndTimeNote" class="mt-1" style="display: none;">
+                            <small class="text-dark"><i class="fas fa-info-circle mr-1"></i>Customer did not specify end time. Please set the schedule below.</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirm/Adjust Time Section -->
+                    <div class="card card-outline card-success mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Confirm Schedule <span class="text-danger">*</span></h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                You can adjust the customer's preferred time or set the exact schedule. For multi-day services, set different start and end dates.
+                            </p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="confirmedDate">Start Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="confirmedDate" name="ConfirmedDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="confirmedStartTime">Start Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="confirmedStartTime" name="ConfirmedStartTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="confirmedEndDate">End Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="confirmedEndDate" name="ConfirmedEndDate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label for="confirmedEndTime">End Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="confirmedEndTime" name="ConfirmedEndTime" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="timeValidationMsg" class="mt-2" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Section -->
+                    <div class="form-group">
+                        <label for="negotiatedPrice">Final Price (Tk) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Tk</span>
+                            </div>
+                            <input type="number" class="form-control form-control-lg" id="negotiatedPrice" name="NegotiatedPrice" min="1" step="1" required placeholder="Enter final price">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="providerNotes">Notes for Customer (Optional)</label>
+                        <textarea class="form-control" id="providerNotes" name="ProviderNotes" rows="2" placeholder="Any details about the price, what's included, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="acceptSubmitBtn">
+                        <i class="fas fa-check mr-1"></i> Accept & Send to Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

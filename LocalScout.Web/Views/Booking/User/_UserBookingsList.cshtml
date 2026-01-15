@@ -16,7 +16,7 @@
                     </div>
                     <div class="text-right">
                         <span class="badge @booking.StatusBadgeClass" style="font-size: 0.9em;">@booking.StatusDisplay</span>
-                        @await Html.PartialAsync("_CountdownClock", booking)
+                        @await Html.PartialAsync("~/Views/Booking/Shared/_CountdownClock.cshtml", booking)
                     </div>
                 </div>
             </div>

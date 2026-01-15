@@ -68,7 +68,7 @@ namespace LocalScout.Web.Controllers
         [Authorize(Roles = RoleNames.User)]
         public IActionResult MyBookings()
         {
-            return View();
+            return View("User/MyBookings");
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace LocalScout.Web.Controllers
                     }
                 }
 
-                return PartialView("_UserBookingsList", bookingDtos);
+                return PartialView("User/_UserBookingsList", bookingDtos);
             }
             catch (Exception ex)
             {
@@ -222,7 +222,7 @@ namespace LocalScout.Web.Controllers
                 return NotFound();
             }
 
-            return View(dto);
+            return View("User/UserDetails", dto);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace LocalScout.Web.Controllers
                 ProviderWorkingHours = dutyHours.RawValue
             };
 
-            return PartialView("_CreateBookingModal", model);
+            return PartialView("User/_CreateBookingModal", model);
         }
 
         /// <summary>
@@ -1282,7 +1282,7 @@ namespace LocalScout.Web.Controllers
         [Authorize(Roles = RoleNames.ServiceProvider)]
         public IActionResult ProviderBookings()
         {
-            return View();
+            return View("Provider/ProviderBookings");
         }
 
         /// <summary>
@@ -1358,7 +1358,7 @@ namespace LocalScout.Web.Controllers
                     }
                 }
 
-                return PartialView("_ProviderBookingsList", bookingDtos);
+                return PartialView("Provider/_ProviderBookingsList", bookingDtos);
             }
             catch (Exception ex)
             {
@@ -1516,7 +1516,7 @@ namespace LocalScout.Web.Controllers
                 return NotFound();
             }
 
-            return View(dto);
+            return View("Provider/ProviderDetails", dto);
         }
 
         /// <summary>
