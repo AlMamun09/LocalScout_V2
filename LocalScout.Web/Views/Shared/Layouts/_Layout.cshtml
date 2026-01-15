@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity
 @using LocalScout.Domain.Entities
 @using LocalScout.Infrastructure.Constants
 @inject UserManager<ApplicationUser> UserManager
@@ -80,9 +80,9 @@
                         style="visibility: visible !important; display: flex !important;">
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            <partial name="_NotificationPartial" />
+                            <partial name="~/Views/Shared/Components/_NotificationPartial.cshtml" />
                         }
-                        <partial name="_LoginPartial" />
+                        <partial name="~/Views/Shared/Components/_LoginPartial.cshtml" />
                     </ul>
                 </div>
             </div>
@@ -93,11 +93,11 @@
         @RenderBody()
     </main>
 
-    <partial name="_Footer" />
+    <partial name="~/Views/Shared/Components/_Footer.cshtml" />
 
     @if (SignInManager.IsSignedIn(User))
     {
-        <partial name="_NotificationModals" />
+        <partial name="~/Views/Shared/Components/_NotificationModals.cshtml" />
     }
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

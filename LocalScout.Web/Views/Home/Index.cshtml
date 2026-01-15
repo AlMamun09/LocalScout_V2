@@ -1,4 +1,4 @@
-﻿@using LocalScout.Domain.Entities
+@using LocalScout.Domain.Entities
 @model IEnumerable<ServiceCategory>
 
 @{
@@ -26,7 +26,6 @@
                 <div id="categoryHeroCarousel" class="carousel slide mt-4" data-ride="carousel">
                     <div class="carousel-inner">
                         @{
-                            // If Model is null, init empty list to avoid crash
                             var categoryList = Model != null ? Model.ToList() : new List<ServiceCategory>();
                             var itemsPerSlide = 4;
                             var chunkedCategories = categoryList
@@ -249,17 +248,17 @@
         });
 
         // Track state
-        let allServicesData = [];
+        let allCardsHtml = '';
+        let totalCardCount = 0;
         let isExpanded = false;
         const INITIAL_ROWS = 2;
         
-        // Calculate cards per row based on screen width
         function getCardsPerRow() {
             const width = $(window).width();
-            if (width >= 992) return 4;      // lg: 4 columns
-            if (width >= 768) return 3;       // md: 3 columns
-            if (width >= 576) return 2;       // sm: 2 columns
-            return 1;                          // xs: 1 column
+            if (width >= 992) return 4;
+            if (width >= 768) return 3;
+            if (width >= 576) return 2;
+            return 1;
         }
 
         function loadNearbyServices() {
@@ -273,24 +272,30 @@
             emptyEl.hide();
             viewAllEl.hide();
 
+            // Use endpoint that returns rendered HTML from _ServiceCard partial
             $.ajax({
-                url: '@Url.Action("GetNearbyServices", "Home")',
+                url: '@Url.Action("GetNearbyServicesHtml", "Home")',
                 type: 'GET',
                 data: { count: 50 },
-                success: function(response) {
+                success: function(html) {
                     loadingEl.hide();
 
-                    if (response.success && response.data && response.data.length > 0) {
-                        allServicesData = response.data;
-                        renderServiceCards(false); // Initially show collapsed
-                        gridEl.show();
+                    if (html && html.trim().length > 0) {
+                        allCardsHtml = html;
+                        totalCardCount = $(html).filter('.col-12').length;
                         
-                        // Only show "Explore All" button if there are more services than initial display
-                        const cardsPerRow = getCardsPerRow();
-                        const initialCount = INITIAL_ROWS * cardsPerRow;
-                        if (allServicesData.length > initialCount) {
-                            viewAllEl.show();
-                            updateButtonState();
+                        if (totalCardCount > 0) {
+                            renderServiceCards(false);
+                            gridEl.show();
+                            
+                            const cardsPerRow = getCardsPerRow();
+                            const initialCount = INITIAL_ROWS * cardsPerRow;
+                            if (totalCardCount > initialCount) {
+                                viewAllEl.show();
+                                updateButtonState();
+                            }
+                        } else {
+                            emptyEl.show();
                         }
                     } else {
                         emptyEl.show();
@@ -310,26 +315,18 @@
 
             const cardsPerRow = getCardsPerRow();
             const initialCount = INITIAL_ROWS * cardsPerRow;
-            const servicesToShow = showAll ? allServicesData : allServicesData.slice(0, initialCount);
-
-            servicesToShow.forEach(function(service, index) {
-                const card = createServiceCard(service);
-                const $card = $(card);
-                
-                // Add animation class for cards beyond initial display
-                if (showAll && index >= initialCount) {
-                    $card.addClass('service-card-animated');
-                    $card.css({
-                        'opacity': '0',
-                        'transform': 'translateY(20px)'
-                    });
-                }
-                
-                grid.append($card);
-            });
-
-            // Animate newly visible cards
+            const $allCards = $(allCardsHtml).filter('.col-12');
+            
             if (showAll) {
+                $allCards.each(function(index) {
+                    const $card = $(this).clone();
+                    if (index >= initialCount) {
+                        $card.addClass('service-card-animated');
+                        $card.css({ 'opacity': '0', 'transform': 'translateY(20px)' });
+                    }
+                    grid.append($card);
+                });
+                
                 setTimeout(function() {
                     $('.service-card-animated').each(function(i) {
                         const $el = $(this);
@@ -339,9 +336,13 @@
                                 'transform': 'translateY(0)',
                                 'transition': 'opacity 0.4s ease, transform 0.4s ease'
                             });
-                        }, i * 50); // Stagger animation
+                        }, i * 50);
                     });
                 }, 50);
+            } else {
+                $allCards.slice(0, initialCount).each(function() {
+                    grid.append($(this).clone());
+                });
             }
         }
 
@@ -350,55 +351,37 @@
             const btnIcon = $('#exploreAllBtnIcon');
             const cardsPerRow = getCardsPerRow();
             const initialCount = INITIAL_ROWS * cardsPerRow;
-            const hiddenCount = allServicesData.length - initialCount;
+            const hiddenCount = totalCardCount - initialCount;
             
             if (isExpanded) {
                 btnText.text('Show Less');
                 btnIcon.css('transform', 'rotate(180deg)');
             } else {
-                btnText.text(`Explore All Services (${hiddenCount} more)`);
+                btnText.text('Explore All Services (' + hiddenCount + ' more)');
                 btnIcon.css('transform', 'rotate(0deg)');
-
-                // Also update icon color temporarily
-                btnIcon.css('color', '#3b82f6');
-                setTimeout(() => {
-                    btnIcon.css('color', '');
-                }, 300);
             }
         }
 
-        // Handle Explore All button click
         $(document).on('click', '#exploreAllBtn', function() {
             isExpanded = !isExpanded;
             renderServiceCards(isExpanded);
             updateButtonState();
             
-            // Scroll to show new content if expanding
             if (isExpanded) {
-                // Smooth scroll to keep button in view
                 setTimeout(function() {
-                    $('html, body').animate({
-                        scrollTop: $('#viewAllSection').offset().top - 100
-                    }, 500);
+                    $('html, body').animate({ scrollTop: $('#viewAllSection').offset().top - 100 }, 500);
                 }, 300);
             } else {
-                // Scroll back to top of services section when collapsing
-                $('html, body').animate({
-                    scrollTop: $('#servicesGrid').offset().top - 100
-                }, 500);
+                $('html, body').animate({ scrollTop: $('#servicesGrid').offset().top - 100 }, 500);
             }
         });
 
-        // Handle window resize - recalculate visible cards
         $(window).on('resize', debounce(function() {
-            if (allServicesData.length > 0) {
+            if (totalCardCount > 0) {
                 renderServiceCards(isExpanded);
-                
                 const cardsPerRow = getCardsPerRow();
                 const initialCount = INITIAL_ROWS * cardsPerRow;
-                
-                // Show/hide button based on new calculation
-                if (allServicesData.length > initialCount) {
+                if (totalCardCount > initialCount) {
                     $('#viewAllSection').show();
                     updateButtonState();
                 } else {
@@ -407,185 +390,17 @@
             }
         }, 250));
 
-        function createServiceCard(service) {
-            const joinedDate = new Date(service.providerJoinedDate).toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            });
-
-            const hasRating = service.rating !== null && service.rating !== undefined;
-            const rating = hasRating ? service.rating.toFixed(1) : null;
-            
-            // Format distance
-            let distanceDisplay = '';
-            if (service.distanceInKm !== null && service.distanceInKm !== undefined) {
-                if (service.distanceInKm < 1) {
-                    distanceDisplay = `${Math.round(service.distanceInKm * 1000)}m away`;
-                } else {
-                    distanceDisplay = `${service.distanceInKm.toFixed(1)}km away`;
-                }
-            }
-             
-             // Build price display with unit
-             const pricingUnit = service.pricingUnit === 'Per Hour' ? 'Tk/Hour' : 
-                                 service.pricingUnit === 'Per Day' ? 'Tk/Day' : 
-                                 service.pricingUnit === 'Per Project' ? 'Tk/Project' : 'Tk';
-             const priceWithUnit = `${service.minPrice.toLocaleString()} ${pricingUnit}`;
-             const serviceDetailsUrl = `/Service/Details/${service.serviceId}`;
-
-             // Get short address (up to 2nd comma)
-             let shortAddress = service.providerLocation;
-             if (shortAddress) {
-                 let commaCount = 0;
-                 let endIndex = -1;
-                 
-                 for (let i = 0; i < shortAddress.length; i++) {
-                     if (shortAddress[i] === ',') {
-                         commaCount++;
-                         if (commaCount === 2) {
-                             endIndex = i;
-                             break;
-                         }
-                     }
-                 }
-                 
-                 if (endIndex > 0) {
-                     shortAddress = shortAddress.substring(0, endIndex).trim();
-                 }
-                 
-                 // Limit to 30 characters max
-                 if (shortAddress.length > 30) {
-                     shortAddress = shortAddress.substring(0, 30) + '...';
-                 }
-             }
-
-            // Rating HTML
-            let ratingHtml;
-            if (hasRating) {
-                ratingHtml = `
-                    <i class="fas fa-star text-warning" style="font-size: 0.75rem;"></i>
-                    <span class="font-weight-bold text-dark ml-1" style="font-size: 0.8rem;">${rating}</span>
-                    <span class="text-muted" style="font-size: 0.7rem;">/5</span>
-                `;
-            } else {
-                ratingHtml = `
-                    <i class="far fa-star text-muted" style="font-size: 0.75rem;"></i>
-                    <span class="text-muted ml-1" style="font-size: 0.7rem;">No Rating</span>
-                `;
-            }
-
-            return `
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-                    <a href="${serviceDetailsUrl}" class="text-decoration-none d-block h-100">
-                    <div class="card h-100 border-0 shadow-sm service-card" style="border-radius: 16px; overflow: hidden; transition: all 0.3s ease; cursor: pointer;">
-                        <!-- Service Image -->
-                        <div class="position-relative" style="height: 200px; overflow: hidden;">
-                            <img src="${service.firstImagePath || '/images/placeholder-service.jpg'}" 
-                                 alt="${service.serviceName}" 
-                                 class="w-100 h-100" 
-                                 style="object-fit: cover; transition: transform 0.3s ease;"
-                                 onerror="this.src='/images/placeholder-service.jpg'">
-                        </div>
-
-                        <!-- Card Body -->
-                        <div class="card-body p-3 bg-white">
-                            <!-- Title & Rating Row -->
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.95rem; line-height: 1.3; flex: 1;">
-                                    ${service.serviceName}
-                                </h6>
-                                <div class="d-flex align-items-center ml-2">
-                                    ${ratingHtml}
-                                </div>
-                            </div>
-
-                            <!-- Category & Provider Name Row -->
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="badge bg-light text-primary" style="font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px;">
-                                    ${service.categoryName}
-                                </span>
-                                <span class="text-muted" style="font-size: 0.7rem;">
-                                    ${service.providerName}
-                                </span>
-                            </div>
-
-                            <!-- Join Date -->
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="far fa-calendar text-muted" style="font-size: 0.75rem; width: 16px;"></i>
-                                <span class="text-muted ml-2" style="font-size: 0.75rem;">Joined ${joinedDate}</span>
-                            </div>
-
-                            <!-- Location -->
-                            ${shortAddress ? `
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <i class="fas fa-map-marker-alt text-muted" style="font-size: 0.75rem; width: 16px;"></i>
-                                    <span class="text-muted ml-2 flex-1" style="font-size: 0.75rem;">${shortAddress}</span>
-                                    ${distanceDisplay ? `<span class="text-primary ml-2 font-weight-bold" style="font-size: 0.7rem;">${distanceDisplay}</span>` : ''}
-                                 </div>
-                             ` : ''}
-
-                            <!-- Working Days & Hours -->
-                            ${service.workingDays && service.workingHours ? `
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="far fa-clock text-muted" style="font-size: 0.75rem; width: 16px;"></i>
-                                    <span class="text-muted ml-2" style="font-size: 0.75rem;">${service.workingDays} ${service.workingHours}</span>
-                                </div>
-                            ` : ''}
-
-                            <!-- Price & Book Button Row -->
-                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 mt-3">
-                                <div>
-                                    <small class="text-muted d-block" style="font-size: 0.65rem;">Starts from</small>
-                                    <strong class="text-dark" style="font-size: 1.1rem; font-weight: 700;">${priceWithUnit}</strong>
-                                </div>
-                                <span class="btn btn-primary btn-sm px-3 mt-3 shadow-sm text-white" style="background-color: #005C89; border-color: #005C89; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">
-                                    Book Now
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    </a>
-                </div>
-            `;
-        }
-
         function debounce(func, wait) {
             let timeout;
             return function () {
                 const context = this, args = arguments;
                 clearTimeout(timeout);
-                timeout = setTimeout(function () {
-                    func.apply(context, args);
-                }, wait);
+                timeout = setTimeout(function () { func.apply(context, args); }, wait);
             };
         }
     </script>
 
     <style>
-        .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
-        }
-
-        .service-card:hover img {
-            transform: scale(1.05);
-        }
-
-        .service-card .btn-primary:hover {
-            background-color: #137DD6 !important;
-            border-color: #137DD6 !important;
-            transform: scale(1.02);
-        }
-
-        .service-card .bg-white.shadow-sm:hover i {
-            color: #e53e3e !important;
-        }
-        
-        /* Animation for expanding cards */
-        .service-card-animated {
-            opacity: 0;
-            transform: translateY(20px);
-        }
+        .service-card-animated { opacity: 0; transform: translateY(20px); }
     </style>
 }

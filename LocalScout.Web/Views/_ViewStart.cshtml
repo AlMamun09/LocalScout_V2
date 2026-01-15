@@ -1,6 +1,6 @@
-﻿@{
+@{
     // Default layout for public pages
-    Layout = "_Layout";
+    Layout = "~/Views/Shared/Layouts/_Layout.cshtml";
 
     // Get current controller name
     var controller = ViewContext.RouteData.Values["Controller"]?.ToString();
@@ -10,7 +10,7 @@
     
     if (User?.Identity?.IsAuthenticated == true && dashboardControllers.Contains(controller))
     {
-        Layout = "_DashboardLayout";
+        Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
     }
     
     // Additional check: If user is accessing specific booking/payment pages from their dashboard
@@ -21,20 +21,20 @@
         // Service Providers accessing their bookings or payments
         if (controller == "Booking" && action == "ProviderBookings" && User.IsInRole("ServiceProvider"))
         {
-            Layout = "_DashboardLayout";
+            Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
         }
         
         // Regular Users accessing their dashboard-related pages
         if (controller == "Booking" && action == "MyBookings" && User.IsInRole("User"))
         {
-            Layout = "_DashboardLayout";
+            Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
         }
         
         // Payment and Review pages for authenticated users
         if ((controller == "Payment" || controller == "Review") && 
             (User.IsInRole("User") || User.IsInRole("ServiceProvider")))
         {
-            Layout = "_DashboardLayout";
+            Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
         }
     }
 }

@@ -1,7 +1,7 @@
 @model LocalScout.Application.DTOs.ReportDTOs.UserReportDto
 @{
     ViewData["Title"] = "My Reports";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
     var startDateStr = Model.StartDate.ToString("yyyyMMdd");
     var endDateStr = Model.EndDate.ToString("yyyyMMdd");
 }

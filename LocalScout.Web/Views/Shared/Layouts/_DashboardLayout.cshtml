@@ -1,4 +1,4 @@
-﻿@using LocalScout.Infrastructure.Constants
+@using LocalScout.Infrastructure.Constants
 @using Microsoft.AspNetCore.Identity
 @using LocalScout.Domain.Entities
 @inject UserManager<ApplicationUser> UserManager
@@ -84,9 +84,9 @@
             <ul class="navbar-nav ml-auto align-items-center">
                 @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <partial name="_NotificationPartial" />
+                    <partial name="~/Views/Shared/Components/_NotificationPartial.cshtml" />
                 }
-                <partial name="_LoginPartial" />
+                <partial name="~/Views/Shared/Components/_LoginPartial.cshtml" />
             </ul>
         </nav>
         <aside class="main-sidebar sidebar-dark-primary elevation-4">

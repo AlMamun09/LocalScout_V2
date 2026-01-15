@@ -344,11 +344,12 @@
             <h3 class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-3">
                 <i class="fas fa-store text-blue-600"></i> More from @Model.ProviderName
             </h3>
-            <div class="services-carousel flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 @foreach (var service in Model.OtherProviderServices)
                 {
-                    <div class="flex-shrink-0 w-64 snap-start">
-                        @await Html.PartialAsync("_ServiceCard", service)
+                    <!-- Wrapper div to match partial expectation if needed, though partial renders card directly -->
+                    <div>
+                        @await Html.PartialAsync("~/Views/Service/Public/_ServiceCard.cshtml", service)
                     </div>
                 }
             </div>
@@ -362,10 +363,12 @@
             <h3 class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-3">
                 <i class="fas fa-th-large text-blue-600"></i> Similar Services You May Like
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 @foreach (var service in Model.RelatedServices)
                 {
-                    @await Html.PartialAsync("_ServiceCard", service)
+                    <div>
+                        @await Html.PartialAsync("~/Views/Service/Public/_ServiceCard.cshtml", service)
+                    </div>
                 }
             </div>
         </section>

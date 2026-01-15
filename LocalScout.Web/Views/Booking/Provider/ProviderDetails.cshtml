@@ -1,9 +1,9 @@
-﻿@model LocalScout.Application.DTOs.BookingDTOs.BookingDetailsForProviderDto
+@model LocalScout.Application.DTOs.BookingDTOs.BookingDetailsForProviderDto
 @using LocalScout.Domain.Enums
 
 @{
     ViewData["Title"] = "Booking Details";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
     
     var badgeClass = Model.Status switch
     {
@@ -154,7 +154,7 @@
                     <div class="w-full md:w-1/2 mb-2">
                         <i class="fas fa-calendar-alt text-primary mr-1"></i>
                         <span class="font-semibold">Requested:</span>
-                        @Model.CreatedAt.ToString("MMM dd, yyyy � hh:mm tt")
+                        @Model.CreatedAt.ToString("MMM dd, yyyy ? hh:mm tt")
                     </div>
 
                     <div class="w-full md:w-1/2 mb-2">

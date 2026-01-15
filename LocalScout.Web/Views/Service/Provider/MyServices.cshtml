@@ -2,7 +2,7 @@
 @inject Microsoft.AspNetCore.Identity.UserManager<LocalScout.Domain.Entities.ApplicationUser> UserManager
 @{
     ViewData["Title"] = ViewData["Title"] ?? "My Services";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
     var isActive = (bool)(ViewData["IsActive"] ?? true);
     
     // Check if current user is verified

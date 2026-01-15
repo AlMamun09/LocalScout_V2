@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Audit Log";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
     
     var categories = ViewBag.Categories as List<string> ?? new List<string>();
     var actions = ViewBag.Actions as List<string> ?? new List<string>();

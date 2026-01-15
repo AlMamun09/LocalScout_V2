@@ -150,7 +150,7 @@ namespace LocalScout.Web.Controllers
                 dto.RatingSummary = ratingSummary;
                 dto.Reviews = reviews;
 
-                return View(dto);
+                return View("Public/Details", dto);
             }
             catch (Exception ex)
             {
@@ -225,13 +225,13 @@ namespace LocalScout.Web.Controllers
 
                 ViewData["Title"] = "Active Services";
                 ViewData["IsActive"] = true;
-                return View("MyServices", serviceDtos);
+                return View("Provider/MyServices", serviceDtos);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading active services for provider");
                 TempData["ErrorMessage"] = "Failed to load services.";
-                return View("MyServices", new List<ServiceDto>());
+                return View("Provider/MyServices", new List<ServiceDto>());
             }
         }
 
@@ -254,13 +254,13 @@ namespace LocalScout.Web.Controllers
 
                 ViewData["Title"] = "Inactive Services";
                 ViewData["IsActive"] = false;
-                return View("MyServices", serviceDtos);
+                return View("Provider/MyServices", serviceDtos);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading inactive services for provider");
                 TempData["ErrorMessage"] = "Failed to load services.";
-                return View("MyServices", new List<ServiceDto>());
+                return View("Provider/MyServices", new List<ServiceDto>());
             }
         }
 
@@ -329,7 +329,7 @@ namespace LocalScout.Web.Controllers
 
                 if (id == null || id == Guid.Empty)
                 {
-                    return PartialView("_CreateEditModal", new ServiceDto());
+                    return PartialView("Provider/_CreateEditModal", new ServiceDto());
                 }
 
                 var service = await _serviceRepository.GetServiceByIdAsync(id.Value);
@@ -345,7 +345,7 @@ namespace LocalScout.Web.Controllers
                 }
 
                 var dto = MapToDto(service, null);
-                return PartialView("_CreateEditModal", dto);
+                return PartialView("Provider/_CreateEditModal", dto);
             }
             catch (Exception ex)
             {

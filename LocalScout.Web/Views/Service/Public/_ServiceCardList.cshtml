@@ -1,0 +1,14 @@
+@* Service Card List - Renders multiple service cards with configurable columns *@
+@model IEnumerable<LocalScout.Application.DTOs.ServiceCardDto>
+
+@{
+    // Default to 4 cards per row (col-lg-3), can be overridden via ViewData["ColumnClass"]
+    var columnClass = ViewData["ColumnClass"]?.ToString() ?? "col-12 col-sm-6 col-md-4 col-lg-3";
+}
+
+@foreach (var service in Model)
+{
+    <div class="@columnClass mb-4">
+        @await Html.PartialAsync("~/Views/Service/Public/_ServiceCard.cshtml", service)
+    </div>
+}

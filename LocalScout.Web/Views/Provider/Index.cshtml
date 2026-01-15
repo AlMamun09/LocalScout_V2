@@ -1,9 +1,9 @@
-﻿@model LocalScout.Application.DTOs.ProviderDashboardDto
+@model LocalScout.Application.DTOs.ProviderDashboardDto
 @using LocalScout.Domain.Enums
 
 @{
     ViewData["Title"] = "Provider Dashboard";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
 
     // Determine Verification Status
     var isVerified = Model.VerificationRequest != null && Model.VerificationRequest.Status == VerificationStatus.Approved;
@@ -117,7 +117,7 @@
             <!-- Total Earnings -->
             <div class="small-box bg-success">
                 <div class="inner">
-                    <h3>৳@Model.TotalEarnings.ToString("N0")</h3>
+                    <h3>@Model.TotalEarnings.ToString("N0") Taka</h3>
                     <p>Total Earnings</p>
                 </div>
                 <div class="icon">
@@ -208,7 +208,7 @@
                         </li>
                         <li class="nav-item">
                             <a asp-controller="Payment" asp-action="History" class="nav-link">
-                                Total Earnings <span class="float-right badge bg-success">৳@Model.TotalEarnings.ToString("N0")</span>
+                                Total Earnings <span class="float-right badge bg-success">?@Model.TotalEarnings.ToString("N0")</span>
                             </a>
                         </li>
                     </ul>

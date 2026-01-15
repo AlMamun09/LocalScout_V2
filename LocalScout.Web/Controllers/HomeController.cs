@@ -80,6 +80,48 @@ namespace LocalScout.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// Returns rendered HTML for service cards (single source of truth)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetNearbyServicesHtml(double? latitude, double? longitude, int count = 50)
+        {
+            try
+            {
+                double? userLat = latitude;
+                double? userLon = longitude;
+
+                if ((!userLat.HasValue || !userLon.HasValue) && User.Identity?.IsAuthenticated == true)
+                {
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        userLat = currentUser.Latitude;
+                        userLon = currentUser.Longitude;
+                    }
+                }
+
+                var services = await _serviceRepository.GetNearbyServicesAsync(userLat, userLon, count);
+                var serviceCards = await BuildServiceCardsAsync(services, userLat, userLon);
+
+                if (userLat.HasValue && userLon.HasValue)
+                {
+                    serviceCards = serviceCards
+                        .OrderBy(s => s.DistanceInKm ?? double.MaxValue)
+                        .ToList();
+                }
+
+                // Index page: 4 cards per row
+                ViewData["ColumnClass"] = "col-12 col-sm-6 col-md-4 col-lg-3";
+                return PartialView("~/Views/Service/Public/_ServiceCardList.cshtml", serviceCards);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching nearby services HTML");
+                return StatusCode(500, "Failed to load services");
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> SearchServices(string? query, Guid? categoryId, double? latitude, double? longitude, int take = 20)
         {
@@ -117,6 +159,48 @@ namespace LocalScout.Web.Controllers
             {
                 _logger.LogError(ex, "Error searching services with query {Query} and category {CategoryId}", query, categoryId);
                 return StatusCode(500, new { success = false, message = "Failed to search services" });
+            }
+        }
+
+        /// <summary>
+        /// Returns rendered HTML for search results (single source of truth)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> SearchServicesHtml(string? query, Guid? categoryId, double? latitude, double? longitude, int take = 50)
+        {
+            try
+            {
+                double? userLat = latitude;
+                double? userLon = longitude;
+
+                if ((!userLat.HasValue || !userLon.HasValue) && User.Identity?.IsAuthenticated == true)
+                {
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        userLat = currentUser.Latitude;
+                        userLon = currentUser.Longitude;
+                    }
+                }
+
+                var services = await _serviceRepository.SearchServicesAsync(query, categoryId, take);
+                var serviceCards = await BuildServiceCardsAsync(services, userLat, userLon);
+
+                if (userLat.HasValue && userLon.HasValue)
+                {
+                    serviceCards = serviceCards
+                        .OrderBy(s => s.DistanceInKm ?? double.MaxValue)
+                        .ToList();
+                }
+
+                // Search page: 3 cards per row
+                ViewData["ColumnClass"] = "col-12 col-sm-6 col-md-4 col-lg-4";
+                return PartialView("~/Views/Service/Public/_ServiceCardList.cshtml", serviceCards);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching services HTML with query {Query}", query);
+                return StatusCode(500, "Failed to search services");
             }
         }
 

@@ -2,7 +2,7 @@
 @{
     // Fallback title if not set by Controller
     ViewData["Title"] = ViewData["Title"] ?? "Provider Management";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
 
     var isVerificationPage = ViewData["Title"]?.ToString() == "Provider Verification Requests";
 }

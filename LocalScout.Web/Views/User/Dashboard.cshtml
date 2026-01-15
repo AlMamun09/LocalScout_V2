@@ -1,8 +1,8 @@
-﻿@model LocalScout.Application.DTOs.UserDashboardDto
+@model LocalScout.Application.DTOs.UserDashboardDto
 
 @{
     ViewData["Title"] = "My Dashboard";
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    Layout = "~/Views/Shared/Layouts/_DashboardLayout.cshtml";
 }
 
 <!-- Content Header -->
@@ -76,7 +76,7 @@
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-danger">
                     <div class="inner">
-                        <h3>৳@Model.TotalSpent.ToString("N0")</h3>
+                        <h3>?@Model.TotalSpent.ToString("N0")</h3>
                         <p>Total Spent</p>
                     </div>
                     <div class="icon">
