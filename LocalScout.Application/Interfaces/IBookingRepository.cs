@@ -79,6 +79,35 @@ namespace LocalScout.Application.Interfaces
         /// Update booking time (for provider adjustments)
         /// </summary>
         Task<bool> UpdateBookingTimeAsync(Guid bookingId, DateTime newStartDateTime, DateTime newEndDateTime);
+        
+        #region Limit Checking Methods
+        
+        /// <summary>
+        /// Get count of pending requests for a specific service
+        /// </summary>
+        Task<int> GetPendingRequestCountForServiceAsync(Guid serviceId);
+        
+        /// <summary>
+        /// Get count of provider's currently accepted bookings (AcceptedByProvider, PaymentReceived, InProgress)
+        /// </summary>
+        Task<int> GetProviderAcceptedBookingCountAsync(string providerId);
+        
+        /// <summary>
+        /// Get count of user's cancellations in the current month
+        /// </summary>
+        Task<int> GetUserMonthlyCancellationCountAsync(string userId);
+        
+        /// <summary>
+        /// Get count of user's active bookings with a specific provider
+        /// </summary>
+        Task<int> GetUserActiveBookingsWithProviderAsync(string userId, string providerId);
+        
+        /// <summary>
+        /// Get count of user's total pending requests (awaiting provider response)
+        /// </summary>
+        Task<int> GetUserPendingRequestCountAsync(string userId);
+        
+        #endregion
     }
 }
 

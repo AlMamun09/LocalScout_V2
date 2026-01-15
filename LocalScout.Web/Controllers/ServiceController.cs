@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
 using LocalScout.Application.Utilities;
+using LocalScout.Application.Settings;
+using Microsoft.Extensions.Options;
 
 namespace LocalScout.Web.Controllers
 {
@@ -21,6 +23,7 @@ namespace LocalScout.Web.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ServiceController> _logger;
         private readonly IAuditService _auditService;
+        private readonly LimitsSettings _limits;
 
         // Constants
         private const int MaxImagesPerService = 10;
@@ -33,7 +36,8 @@ namespace LocalScout.Web.Controllers
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment environment,
             ILogger<ServiceController> logger,
-            IAuditService auditService)
+            IAuditService auditService,
+            IOptions<LimitsSettings> limitsOptions)
         {
             _serviceRepository = serviceRepository;
             _categoryRepository = categoryRepository;
@@ -42,6 +46,7 @@ namespace LocalScout.Web.Controllers
             _environment = environment;
             _logger = logger;
             _auditService = auditService;
+            _limits = limitsOptions.Value;
         }
 
         // GET: Service/MyServices - Redirects to ActiveServices
@@ -448,6 +453,15 @@ namespace LocalScout.Web.Controllers
 
                 if (dto.ServiceId == Guid.Empty)
                 {
+                    // PROVIDER LIMITS CHECK - Max active services
+                    var activeServiceCount = await _serviceRepository.GetProviderActiveServiceCountAsync(userId);
+                    if (dto.IsActive && activeServiceCount >= _limits.Provider.MaxActiveServices)
+                    {
+                        return BadRequest(new { 
+                            message = $"You have reached the maximum limit of {_limits.Provider.MaxActiveServices} active services. Please deactivate an existing service first.",
+                            limitReached = true
+                        });
+                    }
                     // Create new service
                     var service = new Service
                     {
@@ -590,6 +604,19 @@ namespace LocalScout.Web.Controllers
                 if (service.Id != userId)
                 {
                     return Forbid();
+                }
+
+                // If activating, check the limit
+                if (!service.IsActive)
+                {
+                    var activeServiceCount = await _serviceRepository.GetProviderActiveServiceCountAsync(userId);
+                    if (activeServiceCount >= _limits.Provider.MaxActiveServices)
+                    {
+                        return BadRequest(new { 
+                            message = $"You have reached the maximum limit of {_limits.Provider.MaxActiveServices} active services. Please deactivate an existing service first.",
+                            limitReached = true
+                        });
+                    }
                 }
 
                 service.IsActive = !service.IsActive;

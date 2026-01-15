@@ -520,6 +520,69 @@ namespace LocalScout.Infrastructure.Repositories
                 timeSlot.UpdatedAt = DateTime.UtcNow;
             }
         }
+
+        #region Limit Checking Methods
+
+        /// <summary>
+        /// Get count of pending requests for a specific service
+        /// </summary>
+        public async Task<int> GetPendingRequestCountForServiceAsync(Guid serviceId)
+        {
+            return await _context.Bookings.CountAsync(b => 
+                b.ServiceId == serviceId && 
+                b.Status == BookingStatus.PendingProviderReview);
+        }
+
+        /// <summary>
+        /// Get count of provider's currently accepted bookings (AcceptedByProvider, PaymentReceived, InProgress)
+        /// </summary>
+        public async Task<int> GetProviderAcceptedBookingCountAsync(string providerId)
+        {
+            return await _context.Bookings.CountAsync(b => 
+                b.ProviderId == providerId && 
+                (b.Status == BookingStatus.AcceptedByProvider ||
+                 b.Status == BookingStatus.PaymentReceived ||
+                 b.Status == BookingStatus.InProgress));
+        }
+
+        /// <summary>
+        /// Get count of user's cancellations in the current month
+        /// </summary>
+        public async Task<int> GetUserMonthlyCancellationCountAsync(string userId)
+        {
+            var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            return await _context.Bookings.CountAsync(b => 
+                b.UserId == userId && 
+                b.Status == BookingStatus.Cancelled &&
+                b.CancelledBy == "User" &&
+                b.CancelledAt >= startOfMonth);
+        }
+
+        /// <summary>
+        /// Get count of user's active bookings with a specific provider
+        /// </summary>
+        public async Task<int> GetUserActiveBookingsWithProviderAsync(string userId, string providerId)
+        {
+            return await _context.Bookings.CountAsync(b => 
+                b.UserId == userId && 
+                b.ProviderId == providerId &&
+                b.Status != BookingStatus.Completed &&
+                b.Status != BookingStatus.Cancelled &&
+                b.Status != BookingStatus.AutoCancelled);
+        }
+
+        /// <summary>
+        /// Get count of user's total pending requests (awaiting provider response)
+        /// </summary>
+        public async Task<int> GetUserPendingRequestCountAsync(string userId)
+        {
+            return await _context.Bookings.CountAsync(b => 
+                b.UserId == userId && 
+                (b.Status == BookingStatus.PendingProviderReview ||
+                 b.Status == BookingStatus.PendingProviderApproval));
+        }
+
+        #endregion
     }
 }
 

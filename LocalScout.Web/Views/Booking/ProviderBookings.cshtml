@@ -34,28 +34,28 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-new" role="tab" data-status="@((int)BookingStatus.PendingProviderReview)">
-                            <i class="fas fa-clock mr-1 text-warning"></i> New Requests
+                        <a class="nav-link" data-toggle="tab" href="#tab-action" role="tab" data-status="action">
+                            <i class="fas fa-exclamation-circle mr-1 text-primary"></i> Action Required
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-accepted" role="tab" data-status="@((int)BookingStatus.AcceptedByProvider)">
-                            <i class="fas fa-check mr-1"></i> Accepted
+                        <a class="nav-link" data-toggle="tab" href="#tab-upcoming" role="tab" data-status="upcoming">
+                            <i class="fas fa-calendar-check mr-1 text-info"></i> Upcoming
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-paid" role="tab" data-status="@((int)BookingStatus.PaymentReceived)">
-                            <i class="fas fa-money-bill mr-1"></i> Paid
+                        <a class="nav-link" data-toggle="tab" href="#tab-jobdone" role="tab" data-status="@((int)BookingStatus.JobDone)">
+                            <i class="fas fa-money-bill mr-1 text-warning"></i> Awaiting Payment
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" data-toggle="tab" href="#tab-completed" role="tab" data-status="@((int)BookingStatus.Completed)">
-                            <i class="fas fa-check-circle mr-1"></i> Completed
+                            <i class="fas fa-check-circle mr-1 text-success"></i> Completed
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-cancelled" role="tab" data-status="@((int)BookingStatus.Cancelled)">
-                            <i class="fas fa-times-circle mr-1"></i> Cancelled
+                        <a class="nav-link" data-toggle="tab" href="#tab-cancelled" role="tab" data-status="cancelled">
+                            <i class="fas fa-times-circle mr-1 text-secondary"></i> Cancelled
                         </a>
                     </li>
                 </ul>
@@ -74,14 +74,14 @@
             </div>
         </div>
     </div>
-    <div class="tab-pane fade" id="tab-new" role="tabpanel">
-        <div id="content-new" class="bookings-container"></div>
+    <div class="tab-pane fade" id="tab-action" role="tabpanel">
+        <div id="content-action" class="bookings-container"></div>
     </div>
-    <div class="tab-pane fade" id="tab-accepted" role="tabpanel">
-        <div id="content-accepted" class="bookings-container"></div>
+    <div class="tab-pane fade" id="tab-upcoming" role="tabpanel">
+        <div id="content-upcoming" class="bookings-container"></div>
     </div>
-    <div class="tab-pane fade" id="tab-paid" role="tabpanel">
-        <div id="content-paid" class="bookings-container"></div>
+    <div class="tab-pane fade" id="tab-jobdone" role="tabpanel">
+        <div id="content-jobdone" class="bookings-container"></div>
     </div>
     <div class="tab-pane fade" id="tab-completed" role="tabpanel">
         <div id="content-completed" class="bookings-container"></div>
@@ -331,7 +331,7 @@
                 
                 var url = '@Url.Action("GetProviderBookingsTab", "Booking")';
                 if (status !== '') {
-                    url += '?status=' + status;
+                    url += '?statusFilter=' + status;
                 }
                 
                 $.ajax({

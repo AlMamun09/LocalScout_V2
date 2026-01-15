@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
+using LocalScout.Application.Settings;
+using Microsoft.Extensions.Options;
 
 namespace LocalScout.Web.Controllers
 {
@@ -25,6 +27,7 @@ namespace LocalScout.Web.Controllers
         private readonly ISchedulingService _schedulingService;
         private readonly IProviderTimeSlotRepository _timeSlotRepository;
         private readonly IServiceBlockRepository _serviceBlockRepository;
+        private readonly LimitsSettings _limits;
 
         private const long MaxImageSizeBytes = 5 * 1024 * 1024; // 5MB
         private const int MaxImagesPerBooking = 5;
@@ -40,7 +43,8 @@ namespace LocalScout.Web.Controllers
             IAuditService auditService,
             ISchedulingService schedulingService,
             IProviderTimeSlotRepository timeSlotRepository,
-            IServiceBlockRepository serviceBlockRepository)
+            IServiceBlockRepository serviceBlockRepository,
+            IOptions<LimitsSettings> limitsOptions)
         {
             _bookingRepository = bookingRepository;
             _serviceRepository = serviceRepository;
@@ -53,6 +57,7 @@ namespace LocalScout.Web.Controllers
             _schedulingService = schedulingService;
             _timeSlotRepository = timeSlotRepository;
             _serviceBlockRepository = serviceBlockRepository;
+            _limits = limitsOptions.Value;
         }
 
         #region User Actions
@@ -71,7 +76,7 @@ namespace LocalScout.Web.Controllers
         /// </summary>
         [Authorize(Roles = RoleNames.User)]
         [HttpGet]
-        public async Task<IActionResult> GetUserBookingsTab(BookingStatus? status = null)
+        public async Task<IActionResult> GetUserBookingsTab(string? statusFilter = null)
         {
             try
             {
@@ -81,9 +86,63 @@ namespace LocalScout.Web.Controllers
                     return Json(new { success = false, message = "User not authenticated." });
                 }
 
-                var bookings = await _bookingRepository.GetUserBookingsAsync(userId, status);
-                var bookingDtos = new List<BookingListItemDto>();
+                // Get all bookings first
+                var allBookings = await _bookingRepository.GetUserBookingsAsync(userId, null);
+                
+                // Filter based on status group
+                List<Booking> bookings;
+                switch (statusFilter?.ToLower())
+                {
+                    case "action":
+                        // Action Required: PendingUserApproval, JobDone, NeedRescheduling
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.PendingUserApproval ||
+                            b.Status == BookingStatus.JobDone ||
+                            b.Status == BookingStatus.NeedRescheduling).ToList();
+                        // Sort oldest first (most urgent)
+                        bookings = bookings.OrderBy(b => b.CreatedAt).ToList();
+                        break;
+                    case "upcoming":
+                        // Upcoming: AcceptedByProvider, PaymentReceived, InProgress
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.AcceptedByProvider ||
+                            b.Status == BookingStatus.PaymentReceived ||
+                            b.Status == BookingStatus.InProgress).ToList();
+                        // Sort by scheduled date (soonest first)
+                        bookings = bookings.OrderBy(b => b.ConfirmedStartDateTime ?? DateTime.MaxValue).ToList();
+                        break;
+                    case "pending":
+                        // Pending: PendingProviderReview, PendingProviderApproval
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.PendingProviderReview ||
+                            b.Status == BookingStatus.PendingProviderApproval).ToList();
+                        // Sort oldest first
+                        bookings = bookings.OrderBy(b => b.CreatedAt).ToList();
+                        break;
+                    case "cancelled":
+                        // Cancelled: Cancelled, AutoCancelled
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.Cancelled ||
+                            b.Status == BookingStatus.AutoCancelled).ToList();
+                        // Sort most recent first
+                        bookings = bookings.OrderByDescending(b => b.UpdatedAt).ToList();
+                        break;
+                    default:
+                        // Single status or all
+                        if (int.TryParse(statusFilter, out int statusInt) && Enum.IsDefined(typeof(BookingStatus), statusInt))
+                        {
+                            var status = (BookingStatus)statusInt;
+                            bookings = allBookings.Where(b => b.Status == status).ToList();
+                        }
+                        else
+                        {
+                            // All - apply priority-based sorting
+                            bookings = SortUserBookingsByPriority(allBookings);
+                        }
+                        break;
+                }
 
+                var bookingDtos = new List<BookingListItemDto>();
                 foreach (var booking in bookings)
                 {
                     var dto = await MapToUserListItemDtoAsync(booking);
@@ -100,6 +159,43 @@ namespace LocalScout.Web.Controllers
                 _logger.LogError(ex, "Error loading user bookings tab");
                 return Json(new { success = false, message = "Failed to load bookings." });
             }
+        }
+        
+        /// <summary>
+        /// Sorts user bookings by priority for optimal UX
+        /// </summary>
+        private List<Booking> SortUserBookingsByPriority(List<Booking> bookings)
+        {
+            return bookings.OrderBy(b => GetUserStatusPriority(b.Status))
+                          .ThenBy(b => b.Status == BookingStatus.AcceptedByProvider || 
+                                      b.Status == BookingStatus.PaymentReceived || 
+                                      b.Status == BookingStatus.InProgress
+                                  ? (b.ConfirmedStartDateTime ?? DateTime.MaxValue)
+                                  : b.Status == BookingStatus.Completed || 
+                                    b.Status == BookingStatus.Cancelled || 
+                                    b.Status == BookingStatus.AutoCancelled
+                                    ? DateTime.MaxValue.Subtract(TimeSpan.FromTicks(b.UpdatedAt.Ticks))
+                                    : b.CreatedAt)
+                          .ToList();
+        }
+        
+        private int GetUserStatusPriority(BookingStatus status)
+        {
+            return status switch
+            {
+                BookingStatus.PendingUserApproval => 1,
+                BookingStatus.JobDone => 2,
+                BookingStatus.NeedRescheduling => 3,
+                BookingStatus.AcceptedByProvider => 4,
+                BookingStatus.PaymentReceived => 5,
+                BookingStatus.InProgress => 6,
+                BookingStatus.PendingProviderReview => 7,
+                BookingStatus.PendingProviderApproval => 8,
+                BookingStatus.Completed => 9,
+                BookingStatus.Cancelled => 10,
+                BookingStatus.AutoCancelled => 11,
+                _ => 99
+            };
         }
 
         /// <summary>
@@ -319,6 +415,48 @@ namespace LocalScout.Web.Controllers
                     return BadRequest(new { message = "You already have an active booking for this service. Please wait until it is completed or cancelled." });
                 }
 
+                // USER LIMITS CHECK
+                // 1. Check user's total active bookings
+                var userActiveBookings = await _bookingRepository.GetUserActiveBookingCountAsync(userId);
+                if (userActiveBookings >= _limits.User.MaxActiveBookings)
+                {
+                    return BadRequest(new { 
+                        message = $"You have reached the maximum limit of {_limits.User.MaxActiveBookings} active bookings. Please complete or cancel an existing booking first.",
+                        limitReached = true
+                    });
+                }
+
+                // 2. Check user's total pending requests
+                var userPendingRequests = await _bookingRepository.GetUserPendingRequestCountAsync(userId);
+                if (userPendingRequests >= _limits.User.MaxPendingRequestsTotal)
+                {
+                    return BadRequest(new { 
+                        message = $"You have reached the maximum limit of {_limits.User.MaxPendingRequestsTotal} pending requests. Please wait for providers to respond.",
+                        limitReached = true
+                    });
+                }
+
+                // 3. Check user's active bookings with this specific provider
+                var userBookingsWithProvider = await _bookingRepository.GetUserActiveBookingsWithProviderAsync(userId, service.Id ?? "");
+                if (userBookingsWithProvider >= _limits.User.MaxActiveBookingsWithSameProvider)
+                {
+                    return BadRequest(new { 
+                        message = $"You already have {_limits.User.MaxActiveBookingsWithSameProvider} active bookings with this provider. Please complete existing bookings first.",
+                        limitReached = true
+                    });
+                }
+
+                // PROVIDER LIMITS CHECK
+                // 4. Check pending requests for this service
+                var pendingRequestsForService = await _bookingRepository.GetPendingRequestCountForServiceAsync(dto.ServiceId);
+                if (pendingRequestsForService >= _limits.Provider.MaxPendingRequestsPerService)
+                {
+                    return BadRequest(new { 
+                        message = "This service has too many pending requests. Please try again later.",
+                        limitReached = true
+                    });
+                }
+
                 // Validate time slot (end time is optional - pass null if not provided)
                 var timeValidation = await _schedulingService.ValidateBookingTimeAsync(
                     service.Id ?? "",
@@ -411,12 +549,24 @@ namespace LocalScout.Web.Controllers
                     return NotFound(new { message = "Booking not found." });
                 }
 
-                // Allow cancellation for pending, accepted, or need rescheduling bookings
+                // Allow cancellation for pending, accepted, need rescheduling, or pending approval bookings
                 if (booking.Status != BookingStatus.PendingProviderReview &&
                     booking.Status != BookingStatus.AcceptedByProvider &&
-                    booking.Status != BookingStatus.NeedRescheduling)
+                    booking.Status != BookingStatus.NeedRescheduling &&
+                    booking.Status != BookingStatus.PendingUserApproval &&
+                    booking.Status != BookingStatus.PendingProviderApproval)
                 {
                     return BadRequest(new { message = "Cannot cancel this booking at current status." });
+                }
+
+                // USER LIMITS CHECK - Monthly cancellations
+                var monthlyCancellations = await _bookingRepository.GetUserMonthlyCancellationCountAsync(userId);
+                if (monthlyCancellations >= _limits.User.MaxCancellationsPerMonth)
+                {
+                    return BadRequest(new { 
+                        message = $"You have reached the maximum limit of {_limits.User.MaxCancellationsPerMonth} cancellations this month.",
+                        limitReached = true
+                    });
                 }
 
                 var result = await _bookingRepository.CancelBookingAsync(dto.BookingId, "User", dto.Reason);
@@ -1140,7 +1290,7 @@ namespace LocalScout.Web.Controllers
         /// </summary>
         [Authorize(Roles = RoleNames.ServiceProvider)]
         [HttpGet]
-        public async Task<IActionResult> GetProviderBookingsTab(BookingStatus? status = null)
+        public async Task<IActionResult> GetProviderBookingsTab(string? statusFilter = null)
         {
             try
             {
@@ -1150,9 +1300,55 @@ namespace LocalScout.Web.Controllers
                     return Json(new { success = false, message = "Provider not authenticated." });
                 }
 
-                var bookings = await _bookingRepository.GetProviderBookingsAsync(providerId, status);
-                var bookingDtos = new List<BookingListItemDto>();
+                // Get all bookings first
+                var allBookings = await _bookingRepository.GetProviderBookingsAsync(providerId, null);
+                
+                // Filter based on status group
+                List<Booking> bookings;
+                switch (statusFilter?.ToLower())
+                {
+                    case "action":
+                        // Action Required: PendingProviderReview, PendingProviderApproval, NeedRescheduling
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.PendingProviderReview ||
+                            b.Status == BookingStatus.PendingProviderApproval ||
+                            b.Status == BookingStatus.NeedRescheduling).ToList();
+                        // Sort oldest first (most urgent)
+                        bookings = bookings.OrderBy(b => b.CreatedAt).ToList();
+                        break;
+                    case "upcoming":
+                        // Upcoming: AcceptedByProvider, PaymentReceived, InProgress
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.AcceptedByProvider ||
+                            b.Status == BookingStatus.PaymentReceived ||
+                            b.Status == BookingStatus.InProgress).ToList();
+                        // Sort by scheduled date (soonest first)
+                        bookings = bookings.OrderBy(b => b.ConfirmedStartDateTime ?? DateTime.MaxValue).ToList();
+                        break;
+                    case "cancelled":
+                        // Cancelled: Cancelled, AutoCancelled
+                        bookings = allBookings.Where(b => 
+                            b.Status == BookingStatus.Cancelled ||
+                            b.Status == BookingStatus.AutoCancelled).ToList();
+                        // Sort most recent first
+                        bookings = bookings.OrderByDescending(b => b.UpdatedAt).ToList();
+                        break;
+                    default:
+                        // Single status or all
+                        if (int.TryParse(statusFilter, out int statusInt) && Enum.IsDefined(typeof(BookingStatus), statusInt))
+                        {
+                            var status = (BookingStatus)statusInt;
+                            bookings = allBookings.Where(b => b.Status == status).ToList();
+                        }
+                        else
+                        {
+                            // All - apply priority-based sorting
+                            bookings = SortProviderBookingsByPriority(allBookings);
+                        }
+                        break;
+                }
 
+                var bookingDtos = new List<BookingListItemDto>();
                 foreach (var booking in bookings)
                 {
                     var dto = await MapToProviderListItemDtoAsync(booking);
@@ -1169,6 +1365,42 @@ namespace LocalScout.Web.Controllers
                 _logger.LogError(ex, "Error loading provider bookings tab");
                 return Json(new { success = false, message = "Failed to load bookings." });
             }
+        }
+        
+        /// <summary>
+        /// Sorts provider bookings by priority for optimal UX
+        /// </summary>
+        private List<Booking> SortProviderBookingsByPriority(List<Booking> bookings)
+        {
+            return bookings.OrderBy(b => GetProviderStatusPriority(b.Status))
+                          .ThenBy(b => b.Status == BookingStatus.AcceptedByProvider || 
+                                      b.Status == BookingStatus.PaymentReceived || 
+                                      b.Status == BookingStatus.InProgress
+                                  ? (b.ConfirmedStartDateTime ?? DateTime.MaxValue)
+                                  : b.Status == BookingStatus.Completed || 
+                                    b.Status == BookingStatus.Cancelled || 
+                                    b.Status == BookingStatus.AutoCancelled
+                                    ? DateTime.MaxValue.Subtract(TimeSpan.FromTicks(b.UpdatedAt.Ticks))
+                                    : b.CreatedAt)
+                          .ToList();
+        }
+        
+        private int GetProviderStatusPriority(BookingStatus status)
+        {
+            return status switch
+            {
+                BookingStatus.PendingProviderReview => 1,
+                BookingStatus.PendingProviderApproval => 2,
+                BookingStatus.NeedRescheduling => 3,
+                BookingStatus.AcceptedByProvider => 4,
+                BookingStatus.PaymentReceived => 5,
+                BookingStatus.InProgress => 6,
+                BookingStatus.JobDone => 7,
+                BookingStatus.Completed => 8,
+                BookingStatus.Cancelled => 9,
+                BookingStatus.AutoCancelled => 10,
+                _ => 99
+            };
         }
 
         /// <summary>
@@ -1321,6 +1553,16 @@ namespace LocalScout.Web.Controllers
                 if (dto.NegotiatedPrice <= 0)
                 {
                     return BadRequest(new { message = "Please enter a valid price." });
+                }
+
+                // PROVIDER LIMITS CHECK - Max accepted bookings
+                var providerAcceptedBookings = await _bookingRepository.GetProviderAcceptedBookingCountAsync(providerId);
+                if (providerAcceptedBookings >= _limits.Provider.MaxAcceptedBookings)
+                {
+                    return BadRequest(new { 
+                        message = $"You have reached the maximum limit of {_limits.Provider.MaxAcceptedBookings} accepted bookings. Please complete existing bookings first.",
+                        limitReached = true
+                    });
                 }
 
                 // Validate end date is not before start date

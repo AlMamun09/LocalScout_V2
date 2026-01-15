@@ -68,6 +68,10 @@ builder.Services.Configure<LocalScout.Application.DTOs.PaymentDTOs.SSLCommerzSet
 builder.Services.AddHttpClient<LocalScout.Application.Interfaces.ISSLCommerzService, 
     LocalScout.Infrastructure.Services.SSLCommerzService>();
 
+// Platform Limits Configuration
+builder.Services.Configure<LocalScout.Application.Settings.LimitsSettings>(
+    builder.Configuration.GetSection("Limits"));
+
 // Scheduling Services (Enhanced Booking System)
 builder.Services.AddScoped<IProviderTimeSlotRepository, ProviderTimeSlotRepository>();
 builder.Services.AddScoped<IServiceBlockRepository, ServiceBlockRepository>();
