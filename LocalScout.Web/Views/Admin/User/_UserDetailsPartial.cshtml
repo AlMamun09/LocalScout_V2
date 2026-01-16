@@ -1,46 +1,121 @@
 @model LocalScout.Application.DTOs.UserDto
 
-<div class="card card-primary card-outline">
-    <div class="card-body box-profile">
-        <div class="text-center">
-            <img class="profile-user-img img-fluid img-circle"
-                src="@(Model.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")" alt="User profile picture"
-                style="width: 100px; height: 100px; object-fit: cover;">
+<div class="card card-widget widget-user shadow-none border-0 mb-0">
+    <!-- 1. Header with Banner -->
+    <div class="widget-user-header text-white"
+         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 120px;">
+        <h3 class="widget-user-username text-right font-weight-bold">@Model.FullName</h3>
+        <h5 class="widget-user-desc text-right opacity-75">@Model.Role</h5>
+    </div>
+
+    <!-- 2. Profile Image (Floating) -->
+    <div class="widget-user-image">
+        <img class="img-circle elevation-2 border-white" 
+             src="@(Model.ProfilePictureUrl ?? "/adminlte/dist/img/user2-160x160.jpg")" 
+             alt="User Avatar"
+             style="width: 90px; height: 90px; object-fit: cover; border: 3px solid #fff;">
+    </div>
+
+    <div class="card-body pt-5 px-4 pb-3">
+        <!-- 3. Account Status Badges -->
+        <div class="text-center mb-4">
+             <span class="badge @(Model.IsActive ? "badge-success" : "badge-danger") px-3 py-1 mx-1 rounded-pill shadow-sm">
+                @(Model.IsActive ? "Active Account" : "Blocked Account")
+            </span>
+            <span class="badge badge-info px-3 py-1 mx-1 rounded-pill shadow-sm">
+                <i class="fas fa-user mr-1"></i> @Model.Gender
+            </span>
         </div>
 
-        <h3 class="profile-username text-center">@Model.FullName</h3>
-        <p class="text-muted text-center">@Model.Role</p>
+        <!-- 4. Contact Info Grid -->
+        <div class="row text-center mb-4 text-muted small">
+            <div class="col-4 border-right">
+                <i class="fas fa-envelope text-primary d-block mb-1"></i> @Model.Email
+            </div>
+            <div class="col-4 border-right">
+                <i class="fas fa-phone text-primary d-block mb-1"></i> @Model.PhoneNumber
+            </div>
+            <div class="col-4">
+                <i class="fas fa-calendar-alt text-primary d-block mb-1"></i> Joined: @Model.CreatedAt.ToString("MMM dd, yyyy")
+            </div>
+        </div>
+        
+        <div class="text-center text-muted small mb-4">
+            <i class="fas fa-map-marker-alt text-primary mr-1"></i> @Model.Address
+        </div>
 
-        <ul class="list-group list-group-unbordered mb-3">
-            <li class="list-group-item">
-                <b>Email</b> <a class="float-right">@Model.Email</a>
-            </li>
-            <li class="list-group-item">
-                <b>Phone</b> <a class="float-right">@Model.PhoneNumber</a>
-            </li>
-            <li class="list-group-item">
-                <b>Gender</b> <a class="float-right">@Model.Gender</a>
-            </li>
-            <li class="list-group-item">
-                <b>Joined</b> <a class="float-right">@Model.CreatedAt.ToString("MMM dd, yyyy")</a>
-            </li>
-            <li class="list-group-item">
-                <b>Address</b> <br>
-                <span class="text-muted">@Model.Address</span>
-            </li>
-            @if (!Model.IsActive && !string.IsNullOrEmpty(Model.BlockReason))
-            {
-                <li class="list-group-item list-group-item-danger">
-                    <b><i class="fas fa-ban mr-1"></i>Block Reason</b> <br>
-                    <span>@Model.BlockReason</span>
-                </li>
-            }
-        </ul>
+        @if (!Model.IsActive && !string.IsNullOrEmpty(Model.BlockReason))
+        {
+            <div class="alert alert-danger mb-4 rounded-lg shadow-sm">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3"><i class="fas fa-ban fa-2x"></i></div>
+                    <div>
+                        <h6 class="font-weight-bold mb-1">Account Blocked</h6>
+                        <small>@Model.BlockReason</small>
+                    </div>
+                </div>
+            </div>
+        }
 
+        <!-- 5. Booking Statistics Grid -->
+        <h6 class="text-secondary text-uppercase font-weight-bold text-xs mb-3 border-bottom pb-2">Booking Activity</h6>
+        <div class="row">
+            <!-- Total -->
+            <div class="col-4 mb-3">
+                <div class="info-box bg-light shadow-sm mb-0 p-2 min-vh-0">
+                    <span class="info-box-icon bg-primary elevation-1 rounded-circle" style="width: 35px; height: 35px; font-size: 1rem;"><i class="fas fa-calendar-alt"></i></span>
+                    <div class="info-box-content p-0 ml-2">
+                        <span class="info-box-text small text-muted">Total</span>
+                        <span class="info-box-number text-primary">@(ViewBag.TotalBookings ?? 0)</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Completed -->
+            <div class="col-4 mb-3">
+                <div class="info-box bg-light shadow-sm mb-0 p-2 min-vh-0">
+                    <span class="info-box-icon bg-success elevation-1 rounded-circle" style="width: 35px; height: 35px; font-size: 1rem;"><i class="fas fa-check"></i></span>
+                    <div class="info-box-content p-0 ml-2">
+                        <span class="info-box-text small text-muted">Done</span>
+                        <span class="info-box-number text-success">@(ViewBag.CompletedBookings ?? 0)</span>
+                    </div>
+                </div>
+            </div>
+             <!-- Cancelled -->
+            <div class="col-4 mb-3">
+                <div class="info-box bg-light shadow-sm mb-0 p-2 min-vh-0">
+                    <span class="info-box-icon bg-danger elevation-1 rounded-circle" style="width: 35px; height: 35px; font-size: 1rem;"><i class="fas fa-times"></i></span>
+                    <div class="info-box-content p-0 ml-2">
+                        <span class="info-box-text small text-muted">Cancelled</span>
+                        <span class="info-box-number text-danger">@(ViewBag.CancelledBookings ?? 0)</span>
+                    </div>
+                </div>
+            </div>
+             <!-- Pending -->
+            <div class="col-4 mb-3">
+                <div class="info-box bg-light shadow-sm mb-0 p-2 min-vh-0">
+                    <span class="info-box-icon bg-warning elevation-1 text-white rounded-circle" style="width: 35px; height: 35px; font-size: 1rem;"><i class="fas fa-clock"></i></span>
+                    <div class="info-box-content p-0 ml-2">
+                        <span class="info-box-text small text-muted">Pending</span>
+                        <span class="info-box-number text-warning">@(ViewBag.PendingBookings ?? 0)</span>
+                    </div>
+                </div>
+            </div>
+             <!-- In Progress -->
+            <div class="col-8 mb-3">
+                <div class="info-box bg-light shadow-sm mb-0 p-2 min-vh-0">
+                    <span class="info-box-icon bg-info elevation-1 rounded-circle" style="width: 35px; height: 35px; font-size: 1rem;"><i class="fas fa-spinner"></i></span>
+                    <div class="info-box-content p-0 ml-2">
+                        <span class="info-box-text small text-muted">In Progress</span>
+                        <span class="info-box-number text-info">@(ViewBag.InProgressBookings ?? 0)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         @if (Model.Role == "ServiceProvider")
         {
-            <div class="alert alert-info">
-                <i class="icon fas fa-info"></i> This user is a Service Provider.
+            <div class="alert alert-info small mb-0 text-center">
+                <i class="icon fas fa-info-circle"></i> This user is also a Service Provider.
             </div>
         }
     </div>

@@ -1,108 +1,113 @@
 @model LocalScout.Application.DTOs.ReportDTOs.ProviderReportDto
 
 <!-- Report Period Info -->
-<div class="alert alert-light border-left-primary mb-4 py-3" style="border-left: 4px solid var(--color-primary);">
-    <i class="fas fa-calendar-alt text-primary mr-2"></i>
-    <strong>Report Period:</strong> 
-    <span class="text-primary font-weight-bold">@Model.StartDate.ToString("MMM dd, yyyy")</span> 
-    to 
-    <span class="text-primary font-weight-bold">@Model.EndDate.ToString("MMM dd, yyyy")</span>
-</div>
-
-<!-- Summary Cards - Row 1: Financial & Bookings -->
 <div class="row mb-4">
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-success text-white rounded-circle mr-3">
-                    <i class="fas fa-money-bill-wave"></i>
+    <div class="col-12">
+        <div class="card bg-gradient-light border-0 shadow-sm">
+            <div class="card-body py-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-0 font-weight-bold text-dark"><i class="fas fa-chart-line text-primary mr-2"></i>Performance Summary</h5>
+                    <p class="mb-0 text-muted small">Earnings and booking performance overview</p>
                 </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold text-success">Tk @Model.TotalEarnings.ToString("N0")</h3>
-                    <p class="text-muted mb-0 small">Total Earnings</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-info text-white rounded-circle mr-3">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold">@Model.TotalBookings</h3>
-                    <p class="text-muted mb-0 small">Total Bookings</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-primary text-white rounded-circle mr-3">
-                    <i class="fas fa-check-double"></i>
-                </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold text-primary">@Model.CompletedBookings</h3>
-                    <p class="text-muted mb-0 small">Completed</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-warning text-dark rounded-circle mr-3">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold">@Model.PendingBookings</h3>
-                    <p class="text-muted mb-0 small">Pending</p>
+                <div class="bg-white rounded-pill px-4 py-2 shadow-sm border">
+                    <i class="fas fa-calendar-alt text-primary mr-2"></i>
+                    <span class="font-weight-bold">@Model.StartDate.ToString("MMM dd, yyyy")</span> 
+                    <span class="text-muted mx-2">&mdash;</span> 
+                    <span class="font-weight-bold">@Model.EndDate.ToString("MMM dd, yyyy")</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Summary Cards - Row 2: Cancelled, Rating, Reviews -->
+<!-- Summary Cards - Row 1 -->
+<div class="row mb-2">
+    <!-- Total Earnings -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-success elevation-2">
+            <div class="inner">
+                <h3>Tk @Model.TotalEarnings.ToString("N0")</h3>
+                <p>Total Earnings</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-coins"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Total Bookings -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-info elevation-2">
+            <div class="inner">
+                <h3>@Model.TotalBookings</h3>
+                <p>Total Bookings</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-concierge-bell"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Completed -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-navy elevation-2">
+            <div class="inner">
+                <h3>@Model.CompletedBookings</h3>
+                <p>Jobs Completed</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-check-double"></i>
+            </div>
+        </div>
+    </div>
+     <!-- Rating -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-gradient-warning elevation-2">
+            <div class="inner text-white">
+                <h3>@Model.AverageRating.ToString("F1")<sup style="font-size: 20px">/5</sup></h3>
+                <p>Average Rating</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-star"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards - Row 2 (Mini Info) -->
+<h5 class="text-secondary font-weight-bold mb-3 mt-2 pl-1">Booking Breakdown</h5>
 <div class="row mb-4">
-    <div class="col-lg-4 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-danger text-white rounded-circle mr-3">
-                    <i class="fas fa-times-circle"></i>
-                </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold text-danger">@Model.CancelledBookings</h3>
-                    <p class="text-muted mb-0 small">Cancelled</p>
-                </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3 shadow-sm">
+             <span class="info-box-icon bg-warning elevation-1 text-white"><i class="fas fa-clock"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Pending</span>
+                <span class="info-box-number">@Model.PendingBookings</span>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-warning text-dark rounded-circle mr-3">
-                    <i class="fas fa-star"></i>
-                </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold">@Model.AverageRating.ToString("F1") <small class="text-muted">/ 5</small></h3>
-                    <p class="text-muted mb-0 small">Average Rating</p>
-                </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3 shadow-sm">
+             <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-times"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Cancelled</span>
+                <span class="info-box-number">@Model.CancelledBookings</span>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm h-100 report-stat-card">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="stat-icon bg-purple text-white rounded-circle mr-3" style="background-color: #6f42c1;">
-                    <i class="fas fa-comments"></i>
-                </div>
-                <div class="stat-content">
-                    <h3 class="mb-0 font-weight-bold">@Model.TotalReviews</h3>
-                    <p class="text-muted mb-0 small">Total Reviews</p>
-                </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3 shadow-sm">
+             <span class="info-box-icon bg-purple elevation-1"><i class="fas fa-comments"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Reviews</span>
+                <span class="info-box-number">@Model.TotalReviews</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+         <div class="info-box mb-3 shadow-sm">
+             <span class="info-box-icon bg-info elevation-1"><i class="fas fa-user-friends"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Unique Customers</span>
+                <span class="info-box-number">@(Model.Bookings.Select(b => b.CustomerName).Distinct().Count())</span>
             </div>
         </div>
     </div>
@@ -110,23 +115,23 @@
 
 <!-- Booking Details Table -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 font-weight-bold"><i class="fas fa-list mr-2 text-primary"></i>Booking Details</h5>
+    <div class="card-header bg-white py-3 border-bottom-0">
+         <h5 class="mb-0 font-weight-bold"><i class="fas fa-list mr-2 text-primary"></i>Booking History</h5>
     </div>
     <div class="card-body p-0">
         @if (Model.Bookings.Any())
         {
             <div class="table-responsive">
-                <table class="table table-hover mb-0" id="bookingsTable">
-                    <thead class="bg-light">
+                <table class="table table-hover table-striped mb-0" id="bookingsTable">
+                    <thead class="bg-gradient-navy text-white">
                         <tr>
-                            <th class="border-0 text-muted small py-3 pl-3">#</th>
-                            <th class="border-0 text-muted small py-3">Service</th>
-                            <th class="border-0 text-muted small py-3">Customer</th>
-                            <th class="border-0 text-muted small py-3">Booking Date</th>
-                            <th class="border-0 text-muted small py-3">Completed Date</th>
-                            <th class="border-0 text-muted small py-3">Status</th>
-                            <th class="border-0 text-muted small py-3 text-right pr-3">Earnings (Tk)</th>
+                            <th class="border-0 small py-3 pl-3 font-weight-bold opacity-75">#</th>
+                            <th class="border-0 small py-3 font-weight-bold opacity-75">Service</th>
+                            <th class="border-0 small py-3 font-weight-bold opacity-75">Customer</th>
+                            <th class="border-0 small py-3 font-weight-bold opacity-75">Booking Date</th>
+                            <th class="border-0 small py-3 font-weight-bold opacity-75">Completed Date</th>
+                            <th class="border-0 small py-3 font-weight-bold opacity-75">Status</th>
+                            <th class="border-0 small py-3 text-right pr-3 font-weight-bold opacity-75">Earnings (Tk)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,20 +150,22 @@
                             
                             <tr>
                                 <td class="align-middle text-muted pl-3">@index</td>
-                                <td class="align-middle font-weight-bold">@booking.ServiceName</td>
-                                <td class="align-middle">@booking.CustomerName</td>
-                                <td class="align-middle">@booking.BookingDate.ToString("MMM dd, yyyy")</td>
+                                <td class="align-middle font-weight-bold text-primary">@booking.ServiceName</td>
                                 <td class="align-middle">
+                                    <i class="text-muted mr-1"></i> @booking.CustomerName
+                                </td>
+                                <td class="align-middle text-muted">@booking.BookingDate.ToString("MMM dd, yyyy")</td>
+                                <td class="align-middle text-muted">
                                     @if (booking.CompletedDate.HasValue)
                                     {
                                         @booking.CompletedDate.Value.ToString("MMM dd, yyyy")
                                     }
                                     else
                                     {
-                                        <span class="text-muted">—</span>
+                                        <span>&mdash;</span>
                                     }
                                 </td>
-                                <td class="align-middle"><span class="badge @statusClass px-2 py-1">@booking.Status</span></td>
+                                <td class="align-middle"><span class="badge @statusClass px-2 py-1 shadow-sm">@booking.Status</span></td>
                                 <td class="align-middle text-right pr-3">
                                     @if (booking.Amount.HasValue && booking.Status == "Completed")
                                     {
@@ -166,11 +173,11 @@
                                     }
                                     else if (booking.Amount.HasValue)
                                     {
-                                        <span>Tk @booking.Amount.Value.ToString("N0")</span>
+                                        <span class="text-muted">Tk @booking.Amount.Value.ToString("N0")</span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">—</span>
+                                        <span class="text-muted">&mdash;</span>
                                     }
                                 </td>
                             </tr>
@@ -183,32 +190,29 @@
         else
         {
             <div class="text-center text-muted py-5">
-                <i class="fas fa-inbox fa-3x mb-3 text-secondary"></i>
-                <p class="mb-0 mt-3">No bookings found for this period.</p>
-                <small class="text-muted">Try adjusting the date range above</small>
+                 <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="fas fa-file-invoice-dollar fa-3x text-secondary opacity-50"></i>
+                </div>
+                <h6 class="font-weight-bold text-dark">No records found</h6>
+                <p class="mb-0 text-muted small">No booking activity found for the selected date range.</p>
             </div>
         }
     </div>
 </div>
 
 <style>
-    .report-stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
+    .small-box .icon {
+        color: rgba(0,0,0,0.15);
+        z-index: 0;
     }
-    .report-stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1)!important;
+    .small-box:hover .icon {
+        font-size: 75px;
     }
-    .stat-icon {
-        width: 45px;
-        height: 45px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        flex-shrink: 0;
-    }
-    .stat-content h3 {
-        font-size: 1.25rem;
+    .small-box h3 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 0 0 10px 0;
+        white-space: nowrap;
+        padding: 0;
     }
 </style>

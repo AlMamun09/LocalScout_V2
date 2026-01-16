@@ -269,24 +269,52 @@ namespace LocalScout.Web.Controllers
                 .Where(b => b.NegotiatedPrice.HasValue)
                 .Sum(b => b.NegotiatedPrice!.Value);
             
-            var completedBookings = periodBookings
-                .Where(b => b.Status == BookingStatus.Completed)
-                .ToList();
+            // Detailed booking stats
+            var completedBookings = periodBookings.Count(b => b.Status == BookingStatus.Completed);
+            var cancelledBookings = periodBookings.Count(b => b.Status == BookingStatus.Cancelled || b.Status == BookingStatus.AutoCancelled);
+            var pendingBookings = periodBookings.Count(b => b.Status == BookingStatus.PendingProviderReview || b.Status == BookingStatus.PendingUserApproval || b.Status == BookingStatus.PendingProviderApproval);
+            var inProgressBookings = periodBookings.Count(b => b.Status == BookingStatus.InProgress || b.Status == BookingStatus.AcceptedByProvider || b.Status == BookingStatus.PaymentReceived);
+
+            // Get all services
+            var allServices = await _serviceRepository.GetAllServicesAsync();
+            var allServicesList = allServices.ToList();
+            var newServicesInPeriod = allServicesList.Count(s => s.CreatedAt >= start && s.CreatedAt <= end);
+
+            // Get all reviews for platform rating
+            var allReviews = await _reviewRepository.GetAllReviewsAsync();
+            var allReviewsList = allReviews.ToList();
+            var avgRating = allReviewsList.Any() ? allReviewsList.Average(r => r.Rating) : 0;
 
             return new AdminReportDto
             {
                 DateRange = dateRange,
                 StartDate = start,
                 EndDate = end,
+                // User & Provider Stats
                 TotalUsers = allUsers.Count,
                 TotalProviders = allProviders.Count,
                 ActiveUsers = allUsers.Count(u => u.IsActive),
                 ActiveProviders = allProviders.Count(p => p.IsActive && p.IsVerified),
                 NewUsersInPeriod = newUsers.Count,
                 NewProvidersInPeriod = newProviders.Count,
+                // Blocked & Pending
+                BlockedUsers = allUsers.Count(u => !u.IsActive),
+                BlockedProviders = allProviders.Count(p => !p.IsActive),
+                PendingVerifications = allProviders.Count(p => !p.IsVerified && p.IsActive),
+                // Service Stats
+                TotalServices = allServicesList.Count,
+                ActiveServices = allServicesList.Count(s => s.IsActive),
+                NewServicesInPeriod = newServicesInPeriod,
+                // Revenue & Booking Stats
                 TotalRevenue = totalRevenue,
                 TotalBookings = periodBookings.Count,
-                CompletedBookings = completedBookings.Count
+                CompletedBookings = completedBookings,
+                CancelledBookings = cancelledBookings,
+                PendingBookings = pendingBookings,
+                InProgressBookings = inProgressBookings,
+                // Review Stats
+                TotalReviews = allReviewsList.Count,
+                AverageRating = Math.Round(avgRating, 1)
             };
         }
 

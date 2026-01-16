@@ -2,18 +2,14 @@
 
 @{
     var filter = Model?.AppliedFilters;
+    var itemCount = Model?.Items?.Count ?? 0;
 }
 
 <div class="card-header">
     <h3 class="card-title">
         <i class="fas fa-list mr-2"></i>
-        @(Model?.TotalCount ?? 0) Events Found
+        <span id="events-count">@itemCount</span> Events Loaded
     </h3>
-    <div class="card-tools">
-        <span class="badge badge-info">
-            Page @(Model?.Page ?? 1) of @(Model?.TotalPages ?? 0)
-        </span>
-    </div>
 </div>
 <div class="card-body table-responsive p-0">
     @if (Model?.Items != null && Model.Items.Any())
@@ -32,7 +28,7 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="audit-log-tbody">
                 @foreach (var log in Model.Items)
                 {
                     var categoryBadge = log.Category switch
@@ -136,70 +132,17 @@
     }
 </div>
 
-@if (Model != null && Model.TotalPages > 1)
+@if (Model?.Items != null && Model.Items.Count >= 25)
 {
-    <div class="card-footer clearfix">
-        <ul class="pagination pagination-sm m-0 float-right">
-            @* First Page *@
-            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
-                <a class="page-link" href="#" data-page="1" title="First">
-                    <i class="fas fa-angle-double-left"></i>
-                </a>
-            </li>
-            
-            @* Previous Page *@
-            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                <a class="page-link" href="#" data-page="@(Model.Page - 1)" title="Previous">
-                    <i class="fas fa-chevron-left"></i>
-                </a>
-            </li>
-
-            @* Page Numbers *@
-            @{
-                var startPage = Math.Max(1, Model.Page - 2);
-                var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
-                
-                // Ensure we show at least 5 pages when possible
-                if (endPage - startPage < 4)
-                {
-                    if (startPage == 1)
-                    {
-                        endPage = Math.Min(Model.TotalPages, startPage + 4);
-                    }
-                    else if (endPage == Model.TotalPages)
-                    {
-                        startPage = Math.Max(1, endPage - 4);
-                    }
-                }
-            }
-
-            @for (int i = startPage; i <= endPage; i++)
-            {
-                <li class="page-item @(i == Model.Page ? "active" : "")">
-                    <a class="page-link" href="#" data-page="@i">@i</a>
-                </li>
-            }
-
-            @* Next Page *@
-            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                <a class="page-link" href="#" data-page="@(Model.Page + 1)" title="Next">
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            </li>
-            
-            @* Last Page *@
-            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" href="#" data-page="@Model.TotalPages" title="Last">
-                    <i class="fas fa-angle-double-right"></i>
-                </a>
-            </li>
-        </ul>
-        
-        <div class="float-left">
-            <span class="text-muted small">
-                Showing @((Model.Page - 1) * Model.PageSize + 1) - @Math.Min(Model.Page * Model.PageSize, Model.TotalCount) 
-                of @Model.TotalCount entries
-            </span>
+    <div class="card-footer text-center" id="load-more-container">
+        <button type="button" id="load-more-btn" class="btn btn-outline-primary" data-page="2">
+            <i class="fas fa-plus-circle mr-2"></i>Load More
+        </button>
+        <span id="loading-spinner" class="d-none">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading...
+        </span>
+        <div id="no-more-data" class="text-muted d-none">
+            <i class="fas fa-check-circle mr-2"></i>All records loaded
         </div>
     </div>
 }

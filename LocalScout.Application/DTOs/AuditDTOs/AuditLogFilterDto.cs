@@ -17,5 +17,6 @@ namespace LocalScout.Application.DTOs.AuditDTOs
         // Pagination
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 25;
+        public bool SkipCount { get; set; } = false;
     }
 }

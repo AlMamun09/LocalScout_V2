@@ -24,9 +24,8 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Role</th>
+                            <th class="text-center">Email Confirmed</th>
                             <th>Joined Date</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -43,18 +42,21 @@
                                 </td>
 
                                 <td>@user.Email</td>
-                                <td>
-                                    <span
-                                        class="badge @(user.Role == "Admin" ? "badge-danger" : (user.Role == "ServiceProvider" ? "badge-info" : "badge-secondary"))">
-                                        @user.Role
-                                    </span>
+                                <td class="text-center">
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-check-circle mr-1"></i>Confirmed
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>Not Confirmed
+                                        </span>
+                                    }
                                 </td>
                                 <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
-                                <td>
-                                    <span class="badge @(user.IsActive ? "badge-success" : "badge-warning") status-badge">
-                                        @(user.IsActive ? "Active" : "Blocked")
-                                    </span>
-                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-primary" onclick="viewUserDetails('@user.Id')">
                                         <i class="fas fa-eye"></i>

@@ -135,6 +135,17 @@ namespace LocalScout.Web.Controllers
             if (user == null)
                 return NotFound();
 
+            // Get booking statistics for this user
+            var userBookings = await _context.Bookings
+                .Where(b => b.UserId == id)
+                .ToListAsync();
+
+            ViewBag.TotalBookings = userBookings.Count;
+            ViewBag.CompletedBookings = userBookings.Count(b => b.Status == Domain.Enums.BookingStatus.Completed);
+            ViewBag.CancelledBookings = userBookings.Count(b => b.Status == Domain.Enums.BookingStatus.Cancelled || b.Status == Domain.Enums.BookingStatus.AutoCancelled);
+            ViewBag.PendingBookings = userBookings.Count(b => b.Status == Domain.Enums.BookingStatus.PendingProviderReview || b.Status == Domain.Enums.BookingStatus.PendingUserApproval || b.Status == Domain.Enums.BookingStatus.PendingProviderApproval);
+            ViewBag.InProgressBookings = userBookings.Count(b => b.Status == Domain.Enums.BookingStatus.InProgress || b.Status == Domain.Enums.BookingStatus.AcceptedByProvider || b.Status == Domain.Enums.BookingStatus.PaymentReceived);
+
             return PartialView("User/_UserDetailsPartial", user);
         }
 
@@ -277,6 +288,29 @@ namespace LocalScout.Web.Controllers
 
             // 3. Pass it to the View using ViewBag
             ViewBag.VerificationRequest = verificationRequest;
+
+            // 4. Get provider statistics
+            var providerServices = await _context.Services.Where(s => s.Id == id).ToListAsync();
+            ViewBag.TotalServices = providerServices.Count;
+            ViewBag.ActiveServices = providerServices.Count(s => s.IsActive);
+
+            var providerBookings = await _context.Bookings.Where(b => b.ProviderId == id).ToListAsync();
+            ViewBag.TotalBookingsReceived = providerBookings.Count;
+            ViewBag.CompletedBookings = providerBookings.Count(b => b.Status == Domain.Enums.BookingStatus.Completed);
+            ViewBag.CancelledBookings = providerBookings.Count(b => b.Status == Domain.Enums.BookingStatus.Cancelled || b.Status == Domain.Enums.BookingStatus.AutoCancelled);
+            ViewBag.PendingBookings = providerBookings.Count(b => b.Status == Domain.Enums.BookingStatus.PendingProviderReview || b.Status == Domain.Enums.BookingStatus.PendingUserApproval);
+            ViewBag.InProgressBookings = providerBookings.Count(b => b.Status == Domain.Enums.BookingStatus.InProgress || b.Status == Domain.Enums.BookingStatus.AcceptedByProvider || b.Status == Domain.Enums.BookingStatus.PaymentReceived);
+
+            // 5. Calculate total earnings from completed bookings
+            var totalEarnings = providerBookings
+                .Where(b => b.Status == Domain.Enums.BookingStatus.Completed && b.NegotiatedPrice.HasValue)
+                .Sum(b => b.NegotiatedPrice!.Value);
+            ViewBag.TotalEarnings = totalEarnings;
+
+            // 6. Get average rating
+            var reviews = await _context.Reviews.Where(r => r.ProviderId == id).ToListAsync();
+            ViewBag.TotalReviews = reviews.Count;
+            ViewBag.AverageRating = reviews.Any() ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
 
             return PartialView("Provider/_ProviderDetailsPartial", provider);
         }
@@ -456,14 +490,24 @@ namespace LocalScout.Web.Controllers
                 StartDate = startDate,
                 EndDate = endDate,
                 Page = page,
-                PageSize = 25
+                PageSize = 25,
+                SkipCount = true // Skip COUNT for fast initial load
             };
 
             var result = await _auditLogRepository.GetLogsAsync(filter);
             
-            // Get distinct values for filters
-            ViewBag.Categories = await _auditLogRepository.GetDistinctCategoriesAsync();
-            ViewBag.Actions = await _auditLogRepository.GetDistinctActionsAsync();
+            // Use hardcoded filter options for fast load (these are known values)
+            ViewBag.Categories = new List<string> { 
+                "Authentication", "UserManagement", "ProviderManagement", 
+                "Booking", "Payment", "Service", "Review", "Report", "Category" 
+            };
+            ViewBag.Actions = new List<string> { 
+                "Login", "Logout", "Register", "UserBlocked", "UserUnblocked",
+                "ProviderBlocked", "ProviderUnblocked", "BookingCreated", "BookingCancelled",
+                "BookingAccepted", "BookingCompleted", "PaymentInitiated", "PaymentSuccess",
+                "PaymentFailed", "ServiceCreated", "ServiceUpdated", "ServiceDeleted",
+                "ReviewCreated", "ReportGenerated", "CategoryRequested", "CategoryApproved"
+            };
             
             return View(result);
         }
@@ -495,6 +539,39 @@ namespace LocalScout.Web.Controllers
             var result = await _auditLogRepository.GetLogsAsync(filter);
             
             return PartialView("_AuditLogTable", result);
+        }
+
+        /// <summary>
+        /// Returns just the table rows for infinite scroll (no wrapper, no pagination)
+        /// </summary>
+        public async Task<IActionResult> GetAuditLogsChunk(
+            string? search = null,
+            string? category = null,
+            string? actionFilter = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            int page = 1)
+        {
+            if (endDate.HasValue)
+            {
+                endDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            }
+
+            var filter = new AuditLogFilterDto
+            {
+                SearchQuery = search,
+                Category = category,
+                Action = actionFilter,
+                StartDate = startDate,
+                EndDate = endDate,
+                Page = page,
+                PageSize = 25,
+                SkipCount = true // Skip COUNT for faster chunk loading
+            };
+
+            var result = await _auditLogRepository.GetLogsAsync(filter);
+            
+            return PartialView("_AuditLogRows", result);
         }
     }
 }

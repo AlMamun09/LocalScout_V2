@@ -54,5 +54,10 @@ namespace LocalScout.Application.Interfaces
         /// Get all reviews received by a provider
         /// </summary>
         Task<List<ProviderReviewListDto>> GetProviderReviewsAsync(string providerId);
+
+        /// <summary>
+        /// Get all reviews for admin reports
+        /// </summary>
+        Task<List<Review>> GetAllReviewsAsync();
     }
 }

@@ -29,71 +29,75 @@ namespace LocalScout.Infrastructure.Repositories
 
         public async Task<AuditLogPagedResultDto> GetLogsAsync(AuditLogFilterDto filter)
         {
-            _logger.LogInformation($"GetLogsAsync called with filter: Search={filter.SearchQuery}, Category={filter.Category}, Action={filter.Action}, Page={filter.Page}");
+            _logger.LogInformation($"GetLogsAsync called with filter: Page={filter.Page}");
 
             try
             {
-                // First check if there are any audit logs at all
-                var totalInDb = await _context.AuditLogs.CountAsync();
-                _logger.LogInformation($"Total audit logs in database: {totalInDb}");
-
-                var query = _context.AuditLogs.AsQueryable();
+                // Build raw SQL for maximum performance
+                var offset = (filter.Page - 1) * filter.PageSize;
+                
+                var sql = @"
+                    SELECT TOP (@pageSize) 
+                        AuditLogId, Timestamp, UserId, UserName, UserEmail, 
+                        Action, Category, EntityType, EntityId, Details, IpAddress, IsSuccess
+                    FROM AuditLogs
+                    WHERE 1=1";
+                
+                var parameters = new List<Microsoft.Data.SqlClient.SqlParameter>
+                {
+                    new("@pageSize", filter.PageSize),
+                    new("@offset", offset)
+                };
 
                 // Apply filters
-                if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
-                {
-                    var searchLower = filter.SearchQuery.ToLower();
-                    query = query.Where(l => 
-                        (l.UserName != null && l.UserName.ToLower().Contains(searchLower)) ||
-                        (l.UserEmail != null && l.UserEmail.ToLower().Contains(searchLower)) ||
-                        l.Action.ToLower().Contains(searchLower) ||
-                        (l.Details != null && l.Details.ToLower().Contains(searchLower)));
-                }
-
                 if (!string.IsNullOrWhiteSpace(filter.Category))
                 {
-                    query = query.Where(l => l.Category == filter.Category);
+                    sql += " AND Category = @category";
+                    parameters.Add(new("@category", filter.Category));
                 }
-
+                
                 if (!string.IsNullOrWhiteSpace(filter.Action))
                 {
-                    query = query.Where(l => l.Action == filter.Action);
+                    sql += " AND Action = @action";
+                    parameters.Add(new("@action", filter.Action));
                 }
-
+                
                 if (!string.IsNullOrWhiteSpace(filter.UserId))
                 {
-                    query = query.Where(l => l.UserId == filter.UserId);
+                    sql += " AND UserId = @userId";
+                    parameters.Add(new("@userId", filter.UserId));
                 }
-
-                if (!string.IsNullOrWhiteSpace(filter.EntityType))
-                {
-                    query = query.Where(l => l.EntityType == filter.EntityType);
-                }
-
+                
                 if (filter.StartDate.HasValue)
                 {
-                    query = query.Where(l => l.Timestamp >= filter.StartDate.Value);
+                    sql += " AND Timestamp >= @startDate";
+                    parameters.Add(new("@startDate", filter.StartDate.Value));
                 }
-
+                
                 if (filter.EndDate.HasValue)
                 {
-                    query = query.Where(l => l.Timestamp <= filter.EndDate.Value);
+                    sql += " AND Timestamp <= @endDate";
+                    parameters.Add(new("@endDate", filter.EndDate.Value));
                 }
-
-                if (filter.IsSuccess.HasValue)
+                
+                if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
                 {
-                    query = query.Where(l => l.IsSuccess == filter.IsSuccess.Value);
+                    sql += " AND (UserName LIKE @search OR UserEmail LIKE @search OR Action LIKE @search)";
+                    parameters.Add(new("@search", $"%{filter.SearchQuery}%"));
                 }
 
-                // Get total count
-                var totalCount = await query.CountAsync();
-                _logger.LogInformation($"Filtered count: {totalCount}");
+                sql += " ORDER BY Timestamp DESC";
+                
+                // Add OFFSET only if not first page
+                if (filter.Page > 1)
+                {
+                    sql = sql.Replace("TOP (@pageSize)", "");
+                    sql += " OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY";
+                }
 
-                // Apply pagination
-                var items = await query
-                    .OrderByDescending(l => l.Timestamp)
-                    .Skip((filter.Page - 1) * filter.PageSize)
-                    .Take(filter.PageSize)
+                var items = await _context.AuditLogs
+                    .FromSqlRaw(sql, parameters.ToArray())
+                    .AsNoTracking()
                     .Select(l => new AuditLogDto
                     {
                         AuditLogId = l.AuditLogId,
@@ -116,7 +120,7 @@ namespace LocalScout.Infrastructure.Repositories
                 return new AuditLogPagedResultDto
                 {
                     Items = items,
-                    TotalCount = totalCount,
+                    TotalCount = -1, // Skip count for speed
                     Page = filter.Page,
                     PageSize = filter.PageSize,
                     AppliedFilters = filter
@@ -133,6 +137,7 @@ namespace LocalScout.Infrastructure.Repositories
         {
             _logger.LogInformation($"GetLogsByUserAsync called for userId: {userId}, take: {take}");
             return await _context.AuditLogs
+                .AsNoTracking()
                 .Where(l => l.UserId == userId)
                 .OrderByDescending(l => l.Timestamp)
                 .Take(take)
@@ -143,6 +148,7 @@ namespace LocalScout.Infrastructure.Repositories
         {
             _logger.LogInformation($"GetLogsByEntityAsync called for entityType: {entityType}, entityId: {entityId}, take: {take}");
             return await _context.AuditLogs
+                .AsNoTracking()
                 .Where(l => l.EntityType == entityType && l.EntityId == entityId)
                 .OrderByDescending(l => l.Timestamp)
                 .Take(take)
@@ -152,6 +158,7 @@ namespace LocalScout.Infrastructure.Repositories
         public async Task<List<string>> GetDistinctCategoriesAsync()
         {
             var categories = await _context.AuditLogs
+                .AsNoTracking()
                 .Select(l => l.Category)
                 .Distinct()
                 .OrderBy(c => c)
@@ -164,6 +171,7 @@ namespace LocalScout.Infrastructure.Repositories
         public async Task<List<string>> GetDistinctActionsAsync()
         {
             var actions = await _context.AuditLogs
+                .AsNoTracking()
                 .Select(l => l.Action)
                 .Distinct()
                 .OrderBy(a => a)

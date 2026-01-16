@@ -1,0 +1,95 @@
+@model LocalScout.Application.DTOs.AuditDTOs.AuditLogPagedResultDto
+
+@if (Model?.Items != null && Model.Items.Any())
+{
+    foreach (var log in Model.Items)
+    {
+        var categoryBadge = log.Category switch
+        {
+            "Authentication" => "badge-primary",
+            "UserManagement" => "badge-info",
+            "ProviderManagement" => "badge-success",
+            "Booking" => "badge-warning",
+            "Payment" => "badge-danger",
+            "Service" => "badge-secondary",
+            "Review" => "badge-info",
+            "Report" => "badge-dark",
+            _ => "badge-light"
+        };
+
+        <tr>
+            <td class="text-nowrap">
+                <small>
+                    @log.Timestamp.ToLocalTime().ToString("MMM dd, yyyy")<br/>
+                    <span class="text-muted">@log.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                </small>
+            </td>
+            <td>
+                @if (!string.IsNullOrEmpty(log.UserName))
+                {
+                    <span class="font-weight-bold">@log.UserName</span>
+                    <br/><small class="text-muted">@log.UserEmail</small>
+                }
+                else
+                {
+                    <span class="text-muted">System</span>
+                }
+            </td>
+            <td>
+                <span class="badge @categoryBadge badge-category">@log.Category</span>
+            </td>
+            <td>
+                <strong>@log.Action</strong>
+            </td>
+            <td>
+                @if (!string.IsNullOrEmpty(log.EntityType))
+                {
+                    <span class="badge badge-light">@log.EntityType</span>
+                    @if (!string.IsNullOrEmpty(log.EntityId))
+                    {
+                        <br/><small class="text-muted" title="@log.EntityId">
+                            @(log.EntityId.Length > 12 ? log.EntityId.Substring(0, 12) + "..." : log.EntityId)
+                        </small>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted">-</span>
+                }
+            </td>
+            <td class="audit-details" title="Click to view full details">
+                @(string.IsNullOrEmpty(log.Details) ? "-" : (log.Details.Length > 50 ? log.Details.Substring(0, 50) + "..." : log.Details))
+            </td>
+            <td>
+                <small class="text-muted">@(log.IpAddress ?? "-")</small>
+            </td>
+            <td>
+                @if (log.IsSuccess)
+                {
+                    <span class="badge badge-success"><i class="fas fa-check"></i></span>
+                }
+                else
+                {
+                    <span class="badge badge-danger"><i class="fas fa-times"></i></span>
+                }
+            </td>
+            <td>
+                <button type="button" class="btn btn-xs btn-info view-log-details"
+                        data-log-id="@log.AuditLogId"
+                        data-timestamp="@log.Timestamp.ToLocalTime().ToString("MMM dd, yyyy HH:mm:ss")"
+                        data-user-name="@log.UserName"
+                        data-user-email="@log.UserEmail"
+                        data-category="@log.Category"
+                        data-action="@log.Action"
+                        data-entity-type="@log.EntityType"
+                        data-entity-id="@log.EntityId"
+                        data-details="@log.Details"
+                        data-ip="@log.IpAddress"
+                        data-success="@log.IsSuccess.ToString().ToLower()"
+                        title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    }
+}

@@ -14,9 +14,28 @@ namespace LocalScout.Application.DTOs.ReportDTOs
         public int NewUsersInPeriod { get; set; }
         public int NewProvidersInPeriod { get; set; }
         
+        // NEW: Blocked & Pending Stats
+        public int BlockedUsers { get; set; }
+        public int BlockedProviders { get; set; }
+        public int PendingVerifications { get; set; }
+        
+        // NEW: Service Stats
+        public int TotalServices { get; set; }
+        public int ActiveServices { get; set; }
+        public int NewServicesInPeriod { get; set; }
+        
         // Revenue & Booking Stats
         public decimal TotalRevenue { get; set; }
         public int TotalBookings { get; set; }
         public int CompletedBookings { get; set; }
+        
+        // NEW: Detailed Booking Stats
+        public int CancelledBookings { get; set; }
+        public int PendingBookings { get; set; }
+        public int InProgressBookings { get; set; }
+        
+        // NEW: Review Stats
+        public int TotalReviews { get; set; }
+        public double AverageRating { get; set; }
     }
 }

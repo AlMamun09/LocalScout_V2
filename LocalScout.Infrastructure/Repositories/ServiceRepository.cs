@@ -170,5 +170,13 @@ namespace LocalScout.Infrastructure.Repositories
             return await _context.Services
                 .CountAsync(s => s.Id == providerId && s.IsActive && !s.IsDeleted);
         }
+
+        public async Task<IEnumerable<Service>> GetAllServicesAsync()
+        {
+            return await _context.Services
+                .Where(s => !s.IsDeleted)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

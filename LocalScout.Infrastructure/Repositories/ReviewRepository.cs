@@ -230,5 +230,12 @@ namespace LocalScout.Infrastructure.Repositories
                 };
             }).ToList();
         }
+
+        public async Task<List<Review>> GetAllReviewsAsync()
+        {
+            return await _context.Reviews
+                .Where(r => !r.IsDeleted)
+                .ToListAsync();
+        }
     }
 }

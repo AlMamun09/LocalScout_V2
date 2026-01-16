@@ -17,5 +17,10 @@ namespace LocalScout.Application.Interfaces
         Task<IEnumerable<Service>> GetOtherServicesByProviderAsync(string providerId, Guid excludeServiceId, int maxResults = 4);
         Task<IEnumerable<Service>> GetRelatedServicesAsync(Guid categoryId, string excludeProviderId, int maxResults = 6);
         Task<int> GetProviderActiveServiceCountAsync(string providerId);
+        
+        /// <summary>
+        /// Get all services for admin reports
+        /// </summary>
+        Task<IEnumerable<Service>> GetAllServicesAsync();
     }
 }
