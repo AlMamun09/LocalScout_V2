@@ -10,6 +10,7 @@ namespace LocalScout.Application.Interfaces
     {
         Task AddLogAsync(AuditLog log);
         Task<AuditLogPagedResultDto> GetLogsAsync(AuditLogFilterDto filter);
+        Task<int> GetTotalCountAsync();
         Task<List<AuditLog>> GetLogsByUserAsync(string userId, int take = 50);
         Task<List<AuditLog>> GetLogsByEntityAsync(string entityType, string entityId, int take = 50);
         Task<List<string>> GetDistinctCategoriesAsync();

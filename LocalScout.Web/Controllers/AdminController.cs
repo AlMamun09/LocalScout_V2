@@ -512,6 +512,66 @@ namespace LocalScout.Web.Controllers
             return View(result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAuditLogsData(
+            string? searchTerm = null,
+            string? category = null,
+            string? actionFilter = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            bool? isSuccess = null,
+            int start = 0,
+            int length = 25,
+            int draw = 1)
+        {
+            if (endDate.HasValue)
+            {
+                endDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            }
+
+            var pageSize = length <= 0 ? 25 : length;
+            var page = (start / pageSize) + 1;
+
+            var filter = new AuditLogFilterDto
+            {
+                SearchQuery = searchTerm,
+                Category = category,
+                Action = actionFilter,
+                StartDate = startDate,
+                EndDate = endDate,
+                IsSuccess = isSuccess,
+                Page = page,
+                PageSize = pageSize,
+                SkipCount = false
+            };
+
+            var result = await _auditLogRepository.GetLogsAsync(filter);
+
+            var data = result.Items.Select(l => new
+            {
+                auditLogId = l.AuditLogId,
+                timestampDate = l.Timestamp.ToLocalTime().ToString("MMM dd, yyyy"),
+                timestampTime = l.Timestamp.ToLocalTime().ToString("HH:mm:ss"),
+                userName = string.IsNullOrEmpty(l.UserName) ? "System" : l.UserName,
+                userEmail = l.UserEmail,
+                category = l.Category,
+                action = l.Action,
+                entityType = l.EntityType,
+                entityId = l.EntityId,
+                details = l.Details,
+                ipAddress = l.IpAddress,
+                isSuccess = l.IsSuccess
+            });
+
+            return Json(new
+            {
+                draw,
+                recordsTotal = result.TotalCount,
+                recordsFiltered = result.TotalCount,
+                data
+            });
+        }
+
         public async Task<IActionResult> GetAuditLogsTable(
             string? search = null,
             string? category = null,
@@ -533,7 +593,8 @@ namespace LocalScout.Web.Controllers
                 StartDate = startDate,
                 EndDate = endDate,
                 Page = page,
-                PageSize = 25
+                PageSize = 25,
+                SkipCount = true
             };
 
             var result = await _auditLogRepository.GetLogsAsync(filter);

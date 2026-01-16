@@ -33,71 +33,62 @@ namespace LocalScout.Infrastructure.Repositories
 
             try
             {
-                // Build raw SQL for maximum performance
-                var offset = (filter.Page - 1) * filter.PageSize;
-                
-                var sql = @"
-                    SELECT TOP (@pageSize) 
-                        AuditLogId, Timestamp, UserId, UserName, UserEmail, 
-                        Action, Category, EntityType, EntityId, Details, IpAddress, IsSuccess
-                    FROM AuditLogs
-                    WHERE 1=1";
-                
-                var parameters = new List<Microsoft.Data.SqlClient.SqlParameter>
-                {
-                    new("@pageSize", filter.PageSize),
-                    new("@offset", offset)
-                };
+                var page = filter.Page < 1 ? 1 : filter.Page;
+                var pageSize = filter.PageSize <= 0 ? 25 : filter.PageSize;
 
-                // Apply filters
+                var query = _context.AuditLogs.AsNoTracking().AsQueryable();
+
                 if (!string.IsNullOrWhiteSpace(filter.Category))
                 {
-                    sql += " AND Category = @category";
-                    parameters.Add(new("@category", filter.Category));
+                    query = query.Where(x => x.Category == filter.Category);
                 }
-                
+
                 if (!string.IsNullOrWhiteSpace(filter.Action))
                 {
-                    sql += " AND Action = @action";
-                    parameters.Add(new("@action", filter.Action));
+                    query = query.Where(x => x.Action == filter.Action);
                 }
-                
+
                 if (!string.IsNullOrWhiteSpace(filter.UserId))
                 {
-                    sql += " AND UserId = @userId";
-                    parameters.Add(new("@userId", filter.UserId));
+                    query = query.Where(x => x.UserId == filter.UserId);
                 }
-                
+
+                if (!string.IsNullOrWhiteSpace(filter.EntityType))
+                {
+                    query = query.Where(x => x.EntityType == filter.EntityType);
+                }
+
+                if (filter.IsSuccess.HasValue)
+                {
+                    query = query.Where(x => x.IsSuccess == filter.IsSuccess.Value);
+                }
+
                 if (filter.StartDate.HasValue)
                 {
-                    sql += " AND Timestamp >= @startDate";
-                    parameters.Add(new("@startDate", filter.StartDate.Value));
+                    query = query.Where(x => x.Timestamp >= filter.StartDate.Value);
                 }
-                
+
                 if (filter.EndDate.HasValue)
                 {
-                    sql += " AND Timestamp <= @endDate";
-                    parameters.Add(new("@endDate", filter.EndDate.Value));
+                    query = query.Where(x => x.Timestamp <= filter.EndDate.Value);
                 }
-                
+
                 if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
                 {
-                    sql += " AND (UserName LIKE @search OR UserEmail LIKE @search OR Action LIKE @search)";
-                    parameters.Add(new("@search", $"%{filter.SearchQuery}%"));
+                    var search = filter.SearchQuery.Trim();
+                    query = query.Where(x =>
+                        (x.UserName != null && x.UserName.Contains(search)) ||
+                        (x.UserEmail != null && x.UserEmail.Contains(search)) ||
+                        x.Action.Contains(search) ||
+                        (x.Details != null && x.Details.Contains(search)));
                 }
 
-                sql += " ORDER BY Timestamp DESC";
-                
-                // Add OFFSET only if not first page
-                if (filter.Page > 1)
-                {
-                    sql = sql.Replace("TOP (@pageSize)", "");
-                    sql += " OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY";
-                }
+                var totalCount = filter.SkipCount ? -1 : await query.CountAsync();
 
-                var items = await _context.AuditLogs
-                    .FromSqlRaw(sql, parameters.ToArray())
-                    .AsNoTracking()
+                var items = await query
+                    .OrderByDescending(x => x.Timestamp)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .Select(l => new AuditLogDto
                     {
                         AuditLogId = l.AuditLogId,
@@ -120,9 +111,9 @@ namespace LocalScout.Infrastructure.Repositories
                 return new AuditLogPagedResultDto
                 {
                     Items = items,
-                    TotalCount = -1, // Skip count for speed
-                    Page = filter.Page,
-                    PageSize = filter.PageSize,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
                     AppliedFilters = filter
                 };
             }
@@ -131,6 +122,11 @@ namespace LocalScout.Infrastructure.Repositories
                 _logger.LogError(ex, "Error in GetLogsAsync");
                 throw;
             }
+        }
+
+        public async Task<int> GetTotalCountAsync()
+        {
+            return await _context.AuditLogs.AsNoTracking().CountAsync();
         }
 
         public async Task<List<AuditLog>> GetLogsByUserAsync(string userId, int take = 50)

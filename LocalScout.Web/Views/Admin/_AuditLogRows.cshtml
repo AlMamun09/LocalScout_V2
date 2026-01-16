@@ -41,27 +41,8 @@
             <td>
                 <strong>@log.Action</strong>
             </td>
-            <td>
-                @if (!string.IsNullOrEmpty(log.EntityType))
-                {
-                    <span class="badge badge-light">@log.EntityType</span>
-                    @if (!string.IsNullOrEmpty(log.EntityId))
-                    {
-                        <br/><small class="text-muted" title="@log.EntityId">
-                            @(log.EntityId.Length > 12 ? log.EntityId.Substring(0, 12) + "..." : log.EntityId)
-                        </small>
-                    }
-                }
-                else
-                {
-                    <span class="text-muted">-</span>
-                }
-            </td>
             <td class="audit-details" title="Click to view full details">
                 @(string.IsNullOrEmpty(log.Details) ? "-" : (log.Details.Length > 50 ? log.Details.Substring(0, 50) + "..." : log.Details))
-            </td>
-            <td>
-                <small class="text-muted">@(log.IpAddress ?? "-")</small>
             </td>
             <td>
                 @if (log.IsSuccess)

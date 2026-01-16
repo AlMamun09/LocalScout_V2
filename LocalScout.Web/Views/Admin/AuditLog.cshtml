@@ -121,7 +121,22 @@
 
         <!-- Results Card -->
         <div class="card" id="audit-log-card">
-            <partial name="_AuditLogTable" model="Model" />
+            <div class="card-body table-responsive p-2">
+                <table id="auditLogsTable" class="table table-bordered table-hover audit-table w-100">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Category</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </section>
@@ -153,38 +168,95 @@
         $(document).ready(function () {
             var searchTimer = null;
 
-            // Function to load table via AJAX
-            function loadTable(page) {
-                var data = {
-                    search: $('#search-input').val(),
-                    category: $('#category-select').val(),
-                    actionFilter: $('#action-select').val(),
-                    startDate: $('#start-date').val(),
-                    endDate: $('#end-date').val(),
-                    page: page || 1
-                };
+            const encode = function (val) {
+                return $('<div/>').text(val ?? '').html();
+            };
 
-                $('#audit-log-card').css('opacity', '0.6');
-
-                $.ajax({
-                    url: '@Url.Action("GetAuditLogsTable", "Admin")',
+            var table = $('#auditLogsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                paging: true,
+                pageLength: 25,
+                lengthChange: false,
+                searching: false,
+                order: [],
+                responsive: true,
+                autoWidth: false,
+                ajax: {
+                    url: '@Url.Action("GetAuditLogsData", "Admin")',
                     type: 'GET',
-                    data: data,
-                    success: function (result) {
-                        $('#audit-log-card').html(result);
-                        $('#audit-log-card').css('opacity', '1');
-                    },
-                    error: function () {
-                        toastr.error('Error loading audit logs.');
-                        $('#audit-log-card').css('opacity', '1');
+                    data: function (d) {
+                        d.searchTerm = $('#search-input').val();
+                        d.category = $('#category-select').val();
+                        d.actionFilter = $('#action-select').val();
+                        d.startDate = $('#start-date').val();
+                        d.endDate = $('#end-date').val();
                     }
-                });
+                },
+                columns: [
+                    {
+                        data: null,
+                        render: function (data) {
+                            return `<small>${encode(data.timestampDate)}<br/><span class="text-muted">${encode(data.timestampTime)}</span></small>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function (data) {
+                            if (!data.userName || data.userName === 'System') {
+                                return '<span class="text-muted">System</span>';
+                            }
+                            var email = data.userEmail ? `<br/><small class="text-muted">${encode(data.userEmail)}</small>` : '';
+                            return `<span class="font-weight-bold">${encode(data.userName)}</span>${email}`;
+                        }
+                    },
+                    {
+                        data: 'category',
+                        render: function (data) {
+                            return `<span class="badge badge-category badge-secondary">${encode(data)}</span>`;
+                        }
+                    },
+                    {
+                        data: 'action',
+                        render: function (data) {
+                            return `<strong>${encode(data)}</strong>`;
+                        }
+                    },
+                    {
+                        data: 'details',
+                        render: function (data) {
+                            if (!data) return '-';
+                            var shortText = data.length > 50 ? data.substring(0, 50) + '...' : data;
+                            return `<span class="audit-details" title="Click to view full details">${encode(shortText)}</span>`;
+                        }
+                    },
+                    {
+                        data: 'isSuccess',
+                        render: function (data) {
+                            return data
+                                ? '<span class="badge badge-success"><i class="fas fa-check"></i></span>'
+                                : '<span class="badge badge-danger"><i class="fas fa-times"></i></span>';
+                        },
+                        className: 'text-center'
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        render: function () {
+                            return '<button type="button" class="btn btn-xs btn-info view-log-details" title="View Details"><i class="fas fa-eye"></i></button>';
+                        }
+                    }
+                ]
+            });
+
+            function reloadTable() {
+                table.ajax.reload(null, true);
             }
 
             // Form submit (filter button click)
             $('#audit-filter-form').on('submit', function (e) {
                 e.preventDefault();
-                loadTable(1);
+                reloadTable();
             });
 
             // Clear filters
@@ -194,105 +266,37 @@
                 $('#action-select').val('');
                 $('#start-date').val('');
                 $('#end-date').val('');
-                loadTable(1);
+                reloadTable();
             });
 
             // Auto-filter on select change
             $('#category-select, #action-select').on('change', function () {
-                loadTable(1);
+                reloadTable();
             });
 
             // Debounced search on input
             $('#search-input').on('input', function () {
                 clearTimeout(searchTimer);
                 searchTimer = setTimeout(function () {
-                    loadTable(1);
-                }, 500);
+                    reloadTable();
+                }, 400);
             });
 
             // Date change
             $('#start-date, #end-date').on('change', function () {
-                loadTable(1);
-            });
-
-            // Load More button click (delegated for dynamic content)
-            $(document).on('click', '#load-more-btn', function (e) {
-                e.preventDefault();
-                var btn = $(this);
-                var page = btn.data('page');
-                
-                // Show loading state
-                btn.addClass('d-none');
-                $('#loading-spinner').removeClass('d-none');
-                
-                var data = {
-                    search: $('#search-input').val(),
-                    category: $('#category-select').val(),
-                    actionFilter: $('#action-select').val(),
-                    startDate: $('#start-date').val(),
-                    endDate: $('#end-date').val(),
-                    page: page
-                };
-
-                $.ajax({
-                    url: '@Url.Action("GetAuditLogsChunk", "Admin")',
-                    type: 'GET',
-                    data: data,
-                    success: function (result) {
-                        var $result = $(result);
-                        var rowCount = $result.filter('tr').length;
-                        
-                        if (rowCount > 0) {
-                            // Append new rows to tbody
-                            $('#audit-log-tbody').append(result);
-                            
-                            // Update count
-                            var currentCount = parseInt($('#events-count').text()) || 0;
-                            $('#events-count').text(currentCount + rowCount);
-                            
-                            // Update page number for next load
-                            btn.data('page', page + 1);
-                            
-                            // Show button again if we got a full page
-                            if (rowCount >= 25) {
-                                btn.removeClass('d-none');
-                            } else {
-                                // Less than full page means no more data
-                                $('#no-more-data').removeClass('d-none');
-                            }
-                        } else {
-                            // No more data
-                            $('#no-more-data').removeClass('d-none');
-                        }
-                        
-                        $('#loading-spinner').addClass('d-none');
-                    },
-                    error: function () {
-                        toastr.error('Error loading more audit logs.');
-                        btn.removeClass('d-none');
-                        $('#loading-spinner').addClass('d-none');
-                    }
-                });
+                reloadTable();
             });
 
             // View details click (delegated for dynamic content)
-            $(document).on('click', '.view-log-details', function () {
-                var logId = $(this).data('log-id');
-                var timestamp = $(this).data('timestamp');
-                var userName = $(this).data('user-name') || 'System';
-                var userEmail = $(this).data('user-email') || '-';
-                var category = $(this).data('category');
-                var action = $(this).data('action');
-                var entityType = $(this).data('entity-type') || '-';
-                var entityId = $(this).data('entity-id') || '-';
-                var details = $(this).data('details') || 'No additional details';
-                var ipAddress = $(this).data('ip') || '-';
-                var isSuccess = $(this).data('success') === true || $(this).data('success') === 'true';
+            $('#auditLogsTable').on('click', '.view-log-details', function () {
+                var rowData = table.row($(this).closest('tr')).data();
+                if (!rowData) return;
 
-                var statusBadge = isSuccess 
+                var statusBadge = rowData.isSuccess
                     ? '<span class="badge badge-success"><i class="fas fa-check mr-1"></i>Success</span>'
                     : '<span class="badge badge-danger"><i class="fas fa-times mr-1"></i>Failed</span>';
 
+                var detailsSafe = encode(rowData.details || 'No additional details');
                 var content = `
                     <div class="row">
                         <div class="col-md-6">
@@ -300,7 +304,7 @@
                                 <span class="info-box-icon bg-primary"><i class="fas fa-clock"></i></span>
                                 <div class="info-box-content">
                                     <span class="info-box-text">Timestamp</span>
-                                    <span class="info-box-number">${timestamp}</span>
+                                    <span class="info-box-number">${encode(rowData.timestampDate)} ${encode(rowData.timestampTime)}</span>
                                 </div>
                             </div>
                         </div>
@@ -309,8 +313,8 @@
                                 <span class="info-box-icon bg-info"><i class="fas fa-user"></i></span>
                                 <div class="info-box-content">
                                     <span class="info-box-text">User</span>
-                                    <span class="info-box-number">${userName}</span>
-                                    <small class="text-muted">${userEmail}</small>
+                                    <span class="info-box-number">${encode(rowData.userName || 'System')}</span>
+                                    <small class="text-muted">${encode(rowData.userEmail || '-')}</small>
                                 </div>
                             </div>
                         </div>
@@ -322,27 +326,27 @@
                         </tr>
                         <tr>
                             <th>Category</th>
-                            <td><span class="badge badge-secondary">${category}</span></td>
+                            <td><span class="badge badge-secondary">${encode(rowData.category)}</span></td>
                         </tr>
                         <tr>
                             <th>Action</th>
-                            <td><strong>${action}</strong></td>
+                            <td><strong>${encode(rowData.action)}</strong></td>
                         </tr>
                         <tr>
                             <th>Entity Type</th>
-                            <td>${entityType}</td>
+                            <td>${encode(rowData.entityType || '-')}</td>
                         </tr>
                         <tr>
                             <th>Entity ID</th>
-                            <td><code>${entityId}</code></td>
+                            <td><code>${encode(rowData.entityId || '-')}</code></td>
                         </tr>
                         <tr>
                             <th>IP Address</th>
-                            <td>${ipAddress}</td>
+                            <td>${encode(rowData.ipAddress || '-')}</td>
                         </tr>
                         <tr>
                             <th>Details</th>
-                            <td><pre style="white-space: pre-wrap; word-wrap: break-word; max-height: 200px; overflow-y: auto;">${details}</pre></td>
+                            <td><pre style="white-space: pre-wrap; word-wrap: break-word; max-height: 200px; overflow-y: auto;">${detailsSafe}</pre></td>
                         </tr>
                     </table>
                 `;
