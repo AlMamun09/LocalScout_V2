@@ -10,11 +10,23 @@
 @{
     var currentUser = await UserManager.GetUserAsync(User);
     var userRole = "User";
+    var roleClass = "role-user";
+    var roleIcon = "fas fa-user";
 
     if (SignInManager.IsSignedIn(User))
     {
-        if (User.IsInRole(RoleNames.Admin)) { userRole = "Administrator"; }
-        else if (User.IsInRole(RoleNames.ServiceProvider)) { userRole = "Service Provider"; }
+        if (User.IsInRole(RoleNames.Admin)) 
+        { 
+            userRole = "Administrator"; 
+            roleClass = "role-admin";
+            roleIcon = "fas fa-shield-alt";
+        }
+        else if (User.IsInRole(RoleNames.ServiceProvider)) 
+        { 
+            userRole = "Service Provider"; 
+            roleClass = "role-provider";
+            roleIcon = "fas fa-briefcase";
+        }
     }
 
     // Helper: initials fallback
@@ -87,11 +99,13 @@
                 <div class="avatar-fallback mr-2">@initials</div>
             }
 
-            <div class="d-none d-md-block text-left">
+            <div class="d-none d-md-flex flex-column align-items-center ml-2">
                 <div class="small text-dark font-weight-bold" style="line-height:1;">
                     @(currentUser?.FullName ?? "User")
                 </div>
-                <div class="badge badge-primary bg-primary role-badge" style="line-height:1;">@userRole</div>
+                <div class="role-badge light @roleClass mt-1" style="line-height:1;">
+                    <i class="@roleIcon mr-1"></i> @userRole
+                </div>
             </div>
         </a>
 
@@ -110,7 +124,7 @@
                 <div class="flex-grow-1">
                     <h6 class="m-0 font-weight-bold text-truncate">@currentUser?.FullName</h6>
                     <small class="text-white-50 d-block text-truncate">@currentUser?.Email</small>
-                    <span class="badge badge-primary bg-primary role-badge mt-2">@userRole</span>
+                    <span class="role-badge @roleClass mt-2">@userRole</span>
                 </div>
                 <div class="ml-2">
                     <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-sm btn-outline-light">
@@ -143,7 +157,7 @@
                     <i class="fas fa-chart-pie fa-fw mr-2 text-purple" style="color: #6f42c1;"></i> Platform Analytics
                 </a>
                 <a asp-area="" asp-controller="Admin" asp-action="AuditLog" class="dropdown-item py-2">
-                    <i class="fas fa-clipboard-list fa-fw mr-2 text-secondary"></i> Audit Log
+                    <i class="fas fa-clipboard-list fa-fw mr-2" style="color:cornflowerblue"></i> Audit Log
                 </a>
             }
 

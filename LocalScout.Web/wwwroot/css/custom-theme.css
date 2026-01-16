@@ -255,6 +255,13 @@ footer .btn-outline-secondary:hover {
   position: relative !important;
 }
 
+/* Dashboard Statistics Cards */
+.dashboard-stat-number {
+  font-size: 2.5rem !important;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 /* Left section - hamburger menu */
 .main-header .navbar-nav:first-child {
   flex: 0 0 auto;
@@ -614,12 +621,21 @@ body.layout-navbar-fixed .wrapper .content-wrapper,
 .role-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center; /* Center text */
   padding: 0.15rem 0.5rem;
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   border-radius: 3px;
+  min-width: 80px; /* Optional: Ensure consistent width for centering effect if desired */
+  text-align: center;
+}
+
+/* Use high specificity to override .navbar-nav .nav-link i (1.5rem) */
+.navbar-nav .nav-link .role-badge i {
+  font-size: 0.85em !important; /* Make icon slightly smaller than text */
+  vertical-align: 0px;
 }
 
 .role-badge.role-admin {
@@ -638,6 +654,25 @@ body.layout-navbar-fixed .wrapper .content-wrapper,
   background-color: rgba(40, 167, 69, 0.2);
   color: #8ed4a1;
   border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+/* Light Mode Badges (For White Navbar) */
+.role-badge.light.role-admin {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545; /* Darker Red */
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.role-badge.light.role-provider {
+  background-color: rgba(63, 114, 175, 0.1);
+  color: #3f72af; /* Darker Blue */
+  border: 1px solid rgba(63, 114, 175, 0.2);
+}
+
+.role-badge.light.role-user {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: #28a745; /* Darker Green */
+  border: 1px solid rgba(40, 167, 69, 0.2);
 }
 
 /* --- Navigation Header Styling --- */
