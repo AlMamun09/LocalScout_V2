@@ -43,6 +43,12 @@ builder
     .AddDefaultTokenProviders()
     .AddDefaultUI();
 
+// Configure Token Lifespan (15 minutes)
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+{
+    options.TokenLifespan = TimeSpan.FromMinutes(15);
+});
+
 // Register EmailSender
 builder.Services.AddTransient<IEmailSender, EmailService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();

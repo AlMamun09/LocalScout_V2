@@ -38,6 +38,13 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
     /// </summary>
     public bool IsProvider { get; set; }
 
+    /// <summary>
+    ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
+    ///     directly from your code. This API may change or be removed in future releases.
+    /// </summary>
+    [TempData]
+    public string StatusMessage { get; set; }
+
     public async Task<IActionResult> OnGetAsync(string email, string returnUrl = null, string userType = null)
     {
       if (email == null)
@@ -59,6 +66,47 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
       IsProvider = userType?.ToLower() == "provider" || await _userManager.IsInRoleAsync(user, "Provider");
 
       return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync(string email)
+    {
+        if (email == null)
+        {
+            return RedirectToPage("/Index");
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return NotFound($"Unable to load user with email '{email}'.");
+        }
+
+        Email = email;
+        var userId = await _userManager.GetUserIdAsync(user);
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = Url.Page(
+            "/Account/ConfirmEmail",
+            pageHandler: null,
+            values: new { area = "Identity", userId = userId, code = code },
+            protocol: Request.Scheme
+        );
+
+        var emailBody = Infrastructure.Services.EmailService.GetConfirmationEmailTemplate(
+            user.FullName ?? "User",
+            System.Text.Encodings.Web.HtmlEncoder.Default.Encode(callbackUrl),
+            await _userManager.IsInRoleAsync(user, "Provider") ? "Provider" : "User"
+        );
+
+        await _sender.SendEmailAsync(
+            email,
+            "Welcome to Neighbourly - Please Confirm Your Email",
+            emailBody
+        );
+
+        StatusMessage = "Verification email sent. Please check your email.";
+        IsProvider = await _userManager.IsInRoleAsync(user, "Provider");
+        return Page();
     }
   }
 }

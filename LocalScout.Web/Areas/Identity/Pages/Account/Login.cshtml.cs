@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace LocalScout.Web.Areas.Identity.Pages.Account
 {
@@ -166,6 +167,55 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
                         isSuccess: false
                     );
                     return RedirectToPage("./Lockout");
+                }
+                else if (result.IsNotAllowed)
+                {
+                    var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
+                    if (user != null && !await _signInManager.UserManager.IsEmailConfirmedAsync(user))
+                    {
+                        // Check if password is correct before sending email/redirecting
+                        if (await _signInManager.UserManager.CheckPasswordAsync(user, Input.Password))
+                        {
+                            _logger.LogWarning("User attempted to log in with unconfirmed email.");
+                            
+                            // Generate new confirmation token
+                            var userId = await _signInManager.UserManager.GetUserIdAsync(user);
+                            var code = await _signInManager.UserManager.GenerateEmailConfirmationTokenAsync(user);
+                            code = WebEncoders.Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(code));
+                            var callbackUrl = Url.Page(
+                                "/Account/ConfirmEmail",
+                                pageHandler: null,
+                                values: new
+                                {
+                                    area = "Identity",
+                                    userId = userId,
+                                    code = code,
+                                    returnUrl = returnUrl,
+                                },
+                                protocol: Request.Scheme
+                            );
+
+                            // Send email
+                            var isProvider = await _signInManager.UserManager.IsInRoleAsync(user, "Provider");
+                            var emailBody = LocalScout.Infrastructure.Services.EmailService.GetConfirmationEmailTemplate(
+                                user.FullName ?? "User",
+                                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(callbackUrl),
+                                isProvider ? "Provider" : "User"
+                            );
+
+                            var emailSender = HttpContext.RequestServices.GetService<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender>();
+                            await emailSender.SendEmailAsync(
+                                Input.Email,
+                                "Welcome to Neighbourly - Please Confirm Your Email",
+                                emailBody
+                            );
+
+                            return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
+                        }
+                    }
+
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    return Page();
                 }
                 else
                 {
