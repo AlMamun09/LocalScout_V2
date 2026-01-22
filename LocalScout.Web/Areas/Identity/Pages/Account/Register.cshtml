@@ -74,7 +74,8 @@
 
                 <div class="form-group mb-3.5 relative">
                     <label asp-for="Input.Email" class="font-semibold text-gray-700 mb-1 text-xs block">Email
-                        Address</label>
+                        Address <span class="text-red-500">*</span>
+                    </label>
                     <div class="relative">
                         <i class="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
                         <input asp-for="Input.Email"
@@ -103,7 +104,7 @@
 
                 <div class="form-group mb-3.5 relative">
                     <label asp-for="Input.ConfirmPassword"
-                        class="font-semibold text-gray-700 mb-1 text-xs block">Confirm Password</label>
+                           class="font-semibold text-gray-700 mb-1 text-xs block">Confirm Password <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
                         <input asp-for="Input.ConfirmPassword"
@@ -151,7 +152,8 @@
 
                     <div class="form-group relative">
                         <label asp-for="Input.PhoneNumber" class="font-semibold text-gray-700 mb-1 text-xs block">Phone
-                            Number</label>
+                            Number <span class="text-red-500">*</span>
+                        </label>
                         <div class="relative">
                             <i class="fas fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
                             <input asp-for="Input.PhoneNumber"
@@ -164,7 +166,7 @@
 
                 <div class="form-group mb-3.5 relative">
                     <label asp-for="Input.Address"
-                        class="font-semibold text-gray-700 mb-1 text-xs block">Address</label>
+                           class="font-semibold text-gray-700 mb-1 text-xs block">Address <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <i
                             class="fas fa-map-marker-alt absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>

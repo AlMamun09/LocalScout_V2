@@ -13,12 +13,18 @@ namespace LocalScout.Application.Utilities
             var lat1Rad = ToRadians(lat1);
             var lat2Rad = ToRadians(lat2);
 
+            //Calculate 'a' using the Haversine formula components
+            // a = sin²(Δlat / 2) + cos(lat1) × cos(lat2) × sin²(Δlon / 2)
             var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
                     Math.Sin(dLon / 2) * Math.Sin(dLon / 2) *
                     Math.Cos(lat1Rad) * Math.Cos(lat2Rad);
 
+            // Calculate the central angle 'c'
+            // c = 2 × tan^(-1)(√a / √(1 − a))
             var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
+            // Calculate the final distance
+            // Distance = R × c
             return EarthRadiusKm * c;
         }
 
