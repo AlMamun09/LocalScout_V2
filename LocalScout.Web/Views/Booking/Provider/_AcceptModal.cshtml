@@ -102,3 +102,47 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        // Set minimum date to today
+        var today = new Date().toISOString().split('T')[0];
+        $('#confirmedDate').attr('min', today);
+        $('#confirmedEndDate').attr('min', today);
+
+        // Validation function
+        function validateProviderTime() {
+            var startDateVal = $('#confirmedDate').val();
+            var startTimeVal = $('#confirmedStartTime').val();
+            var msgDiv = $('#timeValidationMsg');
+            var submitBtn = $('#acceptSubmitBtn');
+
+            if (startDateVal && startTimeVal) {
+                var selectedDateTime = new Date(startDateVal + 'T' + startTimeVal);
+                var now = new Date();
+
+                if (selectedDateTime < now) {
+                    msgDiv.html('<i class="fas fa-exclamation-triangle mr-1"></i> Cannot set a start time in the past.')
+                          .removeClass('alert-success')
+                          .addClass('alert alert-danger')
+                          .show();
+                    submitBtn.prop('disabled', true);
+                } else {
+                    msgDiv.hide();
+                    submitBtn.prop('disabled', false);
+                }
+            } else {
+                msgDiv.hide();
+                // Don't enable here, let form validation handle required fields
+            }
+        }
+
+        // Attach listeners
+        $('#confirmedDate, #confirmedStartTime').on('change', validateProviderTime);
+
+        // Also ensure End Date >= Start Date
+        $('#confirmedDate').on('change', function() {
+            $('#confirmedEndDate').attr('min', $(this).val());
+        });
+    });
+</script>

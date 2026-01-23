@@ -1565,7 +1565,6 @@ namespace LocalScout.Web.Controllers
                     });
                 }
 
-                // Validate end date is not before start date
                 if (dto.ConfirmedEndDate.Date < dto.ConfirmedDate.Date)
                 {
                     return BadRequest(new { message = "End date cannot be before start date." });
@@ -1574,6 +1573,12 @@ namespace LocalScout.Web.Controllers
                 // Combine confirmed date and time (use ConfirmedEndDate for end datetime to support multi-day)
                 var confirmedStartDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedDate, dto.ConfirmedStartTime);
                 var confirmedEndDateTime = _schedulingService.CombineDateAndTime(dto.ConfirmedEndDate, dto.ConfirmedEndTime);
+
+                // Validation: Cannot accept in the past
+                if (confirmedStartDateTime < DateTime.Now)
+                {
+                    return BadRequest(new { message = "Cannot accept booking with a past date/time." });
+                }
 
                 // Validate confirmed time
                 if (confirmedEndDateTime <= confirmedStartDateTime)
@@ -2099,7 +2104,10 @@ namespace LocalScout.Web.Controllers
                 AcceptedAt = booking.AcceptedAt,
                 PaymentReceivedAt = booking.PaymentReceivedAt,
                 JobDoneAt = booking.JobDoneAt,
-                CompletedAt = booking.CompletedAt
+                CompletedAt = booking.CompletedAt,
+
+                ConfirmedStartDateTime = booking.ConfirmedStartDateTime,
+                ConfirmedEndDateTime = booking.ConfirmedEndDateTime
             };
         }
 
@@ -2234,7 +2242,10 @@ namespace LocalScout.Web.Controllers
                 AcceptedAt = booking.AcceptedAt,
                 PaymentReceivedAt = booking.PaymentReceivedAt,
                 JobDoneAt = booking.JobDoneAt,
-                CompletedAt = booking.CompletedAt
+                CompletedAt = booking.CompletedAt,
+
+                ConfirmedStartDateTime = booking.ConfirmedStartDateTime,
+                ConfirmedEndDateTime = booking.ConfirmedEndDateTime
             };
         }
 

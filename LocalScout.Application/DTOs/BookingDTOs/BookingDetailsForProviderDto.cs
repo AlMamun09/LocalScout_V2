@@ -41,6 +41,27 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public DateTime? JobDoneAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 
+        public DateTime? ConfirmedStartDateTime { get; set; }
+        public DateTime? ConfirmedEndDateTime { get; set; }
+
+        public string? ConfirmedScheduleFormatted
+        {
+            get
+            {
+                if (!ConfirmedStartDateTime.HasValue || !ConfirmedEndDateTime.HasValue)
+                    return null;
+
+                if (ConfirmedStartDateTime.Value.Date == ConfirmedEndDateTime.Value.Date)
+                {
+                    return $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:h:mm tt}";
+                }
+                else
+                {
+                    return $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:MMM dd, yyyy} • {ConfirmedEndDateTime.Value:h:mm tt}";
+                }
+            }
+        }
+
         // Actions available
         public bool CanAcceptAndSetPrice => Status == BookingStatus.PendingProviderReview;
         public bool CanStartJob => Status == BookingStatus.AcceptedByProvider;

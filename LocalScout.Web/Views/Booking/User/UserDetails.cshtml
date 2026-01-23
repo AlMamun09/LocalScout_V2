@@ -154,6 +154,15 @@
                         @Model.CreatedAt.ToString("MMM dd, yyyy · hh:mm tt")
                     </div>
 
+                    @if (!string.IsNullOrEmpty(Model.ConfirmedScheduleFormatted))
+                    {
+                        <div class="w-full md:w-1/2 mb-2">
+                            <i class="fas fa-check-circle text-success mr-1"></i>
+                            <span class="font-semibold">Confirmed:</span>
+                            <span class="text-success">@Model.ConfirmedScheduleFormatted</span>
+                        </div>
+                    }
+
                     <div class="w-full md:w-1/2 mb-2">
                         <i class="fas fa-map-marker-alt text-danger mr-1"></i>
                         <span class="font-semibold">Location:</span>

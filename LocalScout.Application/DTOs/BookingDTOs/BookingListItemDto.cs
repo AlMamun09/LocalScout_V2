@@ -84,9 +84,25 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         // Check if user provided end time
         public bool HasRequestedEndTime => RequestedEndTime.HasValue && RequestedEndTime.Value != RequestedStartTime;
             
-        public string? ConfirmedScheduleFormatted => ConfirmedStartDateTime.HasValue && ConfirmedEndDateTime.HasValue
-            ? $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:h:mm tt}"
-            : null;
+        public string? ConfirmedScheduleFormatted
+        {
+            get
+            {
+                if (!ConfirmedStartDateTime.HasValue || !ConfirmedEndDateTime.HasValue)
+                    return null;
+
+                if (ConfirmedStartDateTime.Value.Date == ConfirmedEndDateTime.Value.Date)
+                {
+                    // Same day: "Jan 23, 2026 • 9:00 AM - 5:00 PM"
+                    return $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:h:mm tt}";
+                }
+                else
+                {
+                    // Different days: "Jan 23, 2026 • 9:00 AM - Jan 25, 2026 • 5:00 PM"
+                    return $"{ConfirmedStartDateTime.Value:MMM dd, yyyy} • {ConfirmedStartDateTime.Value:h:mm tt} - {ConfirmedEndDateTime.Value:MMM dd, yyyy} • {ConfirmedEndDateTime.Value:h:mm tt}";
+                }
+            }
+        }
 
         // Proposed Schedule (for PendingUserApproval/PendingProviderApproval)
         public DateTime? ProposedStartDateTime { get; set; }
@@ -95,9 +111,26 @@ namespace LocalScout.Application.DTOs.BookingDTOs
         public string? ProposedNotes { get; set; }
         public string? ProposedBy { get; set; }
         
-        public string? ProposedScheduleFormatted => ProposedStartDateTime.HasValue && ProposedEndDateTime.HasValue
-            ? $"{ProposedStartDateTime.Value:MMM dd, yyyy} • {ProposedStartDateTime.Value:h:mm tt} - {ProposedEndDateTime.Value:h:mm tt}"
-            : ProposedStartDateTime.HasValue ? $"{ProposedStartDateTime.Value:MMM dd, yyyy h:mm tt}" : null;
+        public string? ProposedScheduleFormatted
+        {
+            get
+            {
+                if (!ProposedStartDateTime.HasValue)
+                    return null;
+
+                if (!ProposedEndDateTime.HasValue)
+                    return $"{ProposedStartDateTime.Value:MMM dd, yyyy h:mm tt}";
+
+                if (ProposedStartDateTime.Value.Date == ProposedEndDateTime.Value.Date)
+                {
+                    return $"{ProposedStartDateTime.Value:MMM dd, yyyy} • {ProposedStartDateTime.Value:h:mm tt} - {ProposedEndDateTime.Value:h:mm tt}";
+                }
+                else
+                {
+                    return $"{ProposedStartDateTime.Value:MMM dd, yyyy} • {ProposedStartDateTime.Value:h:mm tt} - {ProposedEndDateTime.Value:MMM dd, yyyy} • {ProposedEndDateTime.Value:h:mm tt}";
+                }
+            }
+        }
         
         public bool HasProposal => ProposedStartDateTime.HasValue;
 
