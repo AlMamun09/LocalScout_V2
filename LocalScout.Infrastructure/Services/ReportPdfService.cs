@@ -257,78 +257,57 @@ namespace LocalScout.Infrastructure.Services
         {
             container.PaddingVertical(20).Column(column =>
             {
-                // User Statistics
-                column.Item().Text("User Statistics").FontSize(14).SemiBold().FontColor(Colors.Blue.Darken2);
-                column.Item().PaddingTop(10).Row(row =>
+                // Row 1: Services & Users
+                column.Item().Row(row =>
                 {
-                    row.RelativeItem().Element(c => StatCard(c, "Total Users", report.TotalUsers.ToString(), Colors.Blue.Lighten5, Colors.Blue.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Active Users", report.ActiveUsers.ToString(), Colors.Green.Lighten5, Colors.Green.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "New (Period)", report.NewUsersInPeriod.ToString(), Colors.Cyan.Lighten5, Colors.Cyan.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Blocked", report.BlockedUsers.ToString(), Colors.Red.Lighten5, Colors.Red.Darken2));
+                    // Services Table
+                    row.RelativeItem().Element(c => ComposeSummaryTable(c, "Services Statistics", Colors.Purple.Darken2, new Dictionary<string, string>
+                    {
+                        { "Total Services", report.TotalServices.ToString() },
+                        { "Active Services", report.ActiveServices.ToString() },
+                        { "New Services (Period)", $"+{report.NewServicesInPeriod}" }
+                    }));
+
+                    row.ConstantItem(20);
+
+                    // Users Table
+                    row.RelativeItem().Element(c => ComposeSummaryTable(c, "User Statistics", Colors.Blue.Darken2, new Dictionary<string, string>
+                    {
+                        { "Total Users", report.TotalUsers.ToString() },
+                        { "Active Users", report.ActiveUsers.ToString() },
+                        { "New Users (Period)", $"+{report.NewUsersInPeriod}" },
+                        { "Blocked Users", report.BlockedUsers.ToString() }
+                    }));
                 });
 
                 column.Item().Height(20);
 
-                // Provider Statistics
-                column.Item().Text("Provider Statistics").FontSize(14).SemiBold().FontColor(Colors.Teal.Darken2);
-                column.Item().PaddingTop(10).Row(row =>
+                // Row 2: Providers & Revenue
+                column.Item().Row(row =>
                 {
-                    row.RelativeItem().Element(c => StatCard(c, "Total Providers", report.TotalProviders.ToString(), Colors.Teal.Lighten5, Colors.Teal.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Verified", report.ActiveProviders.ToString(), Colors.Green.Lighten5, Colors.Green.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "New (Period)", report.NewProvidersInPeriod.ToString(), Colors.Cyan.Lighten5, Colors.Cyan.Darken2));
-                });
-                 column.Item().PaddingTop(10).Row(row =>
-                {
-                    row.RelativeItem().Element(c => StatCard(c, "Pending Verification", report.PendingVerifications.ToString(), Colors.Orange.Lighten5, Colors.Orange.Darken2));
-                    row.ConstantItem(10);
-                     row.RelativeItem().Element(c => StatCard(c, "Blocked", report.BlockedProviders.ToString(), Colors.Red.Lighten5, Colors.Red.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem();
-                    row.ConstantItem(10);
-                    row.RelativeItem();
-                });
+                    // Providers Table
+                    row.RelativeItem().Element(c => ComposeSummaryTable(c, "Provider Statistics", Colors.Teal.Darken2, new Dictionary<string, string>
+                    {
+                        { "Total Providers", report.TotalProviders.ToString() },
+                        { "Active Providers", report.ActiveProviders.ToString() },
+                        { "Verified Providers", report.ActiveProviders.ToString() },
+                        { "Pending Verification", report.PendingVerifications.ToString() },
+                        { "New Providers (Period)", $"+{report.NewProvidersInPeriod}" },
+                        { "Blocked Providers", report.BlockedProviders.ToString() }
+                    }));
 
-                column.Item().Height(20);
+                    row.ConstantItem(20);
 
-                // Services Statistics
-                column.Item().Text("Services Overview").FontSize(14).SemiBold().FontColor(Colors.Purple.Darken2);
-                column.Item().PaddingTop(10).Row(row =>
-                {
-                    row.RelativeItem().Element(c => StatCard(c, "Total Services", report.TotalServices.ToString(), Colors.Purple.Lighten5, Colors.Purple.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Active", report.ActiveServices.ToString(), Colors.Green.Lighten5, Colors.Green.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "New (Period)", report.NewServicesInPeriod.ToString(), Colors.Cyan.Lighten5, Colors.Cyan.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem();
-                });
-
-                column.Item().Height(20);
-
-                // Revenue & Bookings
-                column.Item().Text("Revenue & Bookings").FontSize(14).SemiBold().FontColor(Colors.Green.Darken2);
-                column.Item().PaddingTop(10).Row(row =>
-                {
-                    row.RelativeItem().Element(c => StatCard(c, "Total Revenue", $"Tk {report.TotalRevenue:N0}", Colors.Green.Lighten5, Colors.Green.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Total Bookings", report.TotalBookings.ToString(), Colors.Blue.Lighten5, Colors.Blue.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Completed", report.CompletedBookings.ToString(), Colors.Teal.Lighten5, Colors.Teal.Darken2));
-                });
-                column.Item().PaddingTop(10).Row(row =>
-                {
-                    row.RelativeItem().Element(c => StatCard(c, "Cancelled", report.CancelledBookings.ToString(), Colors.Red.Lighten5, Colors.Red.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "Pending", report.PendingBookings.ToString(), Colors.Orange.Lighten5, Colors.Orange.Darken2));
-                     row.ConstantItem(10);
-                    row.RelativeItem().Element(c => StatCard(c, "In Progress", report.InProgressBookings.ToString(), Colors.Cyan.Lighten5, Colors.Cyan.Darken2));
-                    row.ConstantItem(10);
-                    row.RelativeItem();
+                    // Revenue Table
+                    row.RelativeItem().Element(c => ComposeSummaryTable(c, "Revenue & Bookings", Colors.Green.Darken2, new Dictionary<string, string>
+                    {
+                        { "Total Revenue (Period)", $"Tk {report.TotalRevenue:N0}" },
+                        { "Total Bookings (Period)", report.TotalBookings.ToString() },
+                        { "Completed Jobs", report.CompletedBookings.ToString() },
+                        { "In Progress", report.InProgressBookings.ToString() },
+                        { "Pending", report.PendingBookings.ToString() },
+                        { "Cancelled", report.CancelledBookings.ToString() }
+                    }));
                 });
 
                 column.Item().Height(30);
@@ -354,6 +333,41 @@ namespace LocalScout.Infrastructure.Services
                     AddSummaryRow(table, "Total Revenue (in period)", $"Tk {report.TotalRevenue:N0}");
                     AddSummaryRow(table, "Average Platform Rating", $"{report.AverageRating}/5 ({report.TotalReviews} reviews)");
                 });
+            });
+        }
+
+        private void ComposeSummaryTable(IContainer container, string title, string headerColor, Dictionary<string, string> data)
+        {
+            container.Column(col =>
+            {
+                // Header
+                col.Item().Background(Colors.Grey.Lighten5).BorderBottom(2).BorderColor(headerColor).Padding(10).Row(row =>
+                {
+                    row.RelativeItem().Text(title).Bold().FontColor(Colors.Grey.Darken3).FontSize(12);
+                });
+
+                // Table
+                col.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(2);
+                        columns.RelativeColumn(1);
+                    });
+
+                    foreach (var item in data)
+                    {
+                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten4).Padding(8).Text(item.Key).FontSize(10).FontColor(Colors.Grey.Darken2);
+                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten4).Padding(8).AlignRight().Text(item.Value).Bold().FontSize(10).FontColor(Colors.Grey.Darken3);
+                    }
+                });
+                
+                // Card Border Wrapper
+                // Note: QuestPDF composition is inside-out. The container passed in is the "slot". 
+                // We typically style the container *before* calling .Column/Row inside logic calling this.
+                // But here we are building IN the container.
+                // To wrap everything in a border/card look, we should have decorated the container passed in.
+                // Let's rely on clean table look for now.
             });
         }
 

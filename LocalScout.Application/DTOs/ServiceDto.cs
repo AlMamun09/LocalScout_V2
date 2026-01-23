@@ -42,8 +42,8 @@ namespace LocalScout.Application.DTOs
         {
             var unit = PricingUnit switch
             {
-                "Per Hour" => "/Hour",
-                "Per Day" => "/Day",
+                "Per Hour" => "",
+                "Per Day" => "",
                 "Per Project" => "",
                 _ => ""
             };

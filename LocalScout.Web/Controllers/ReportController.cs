@@ -120,7 +120,7 @@ namespace LocalScout.Web.Controllers
                 "Report",
                 "UserReport",
                 null,
-                $"User activity report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Bookings: {report.TotalBookings}, Total Spent: {report.TotalSpent:C}"
+                $"User activity report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Bookings: {report.TotalBookings}, Total Spent: Tk {report.TotalSpent:N2}"
             );
             
             var pdfBytes = _reportPdfService.GenerateUserReport(report, user?.FullName ?? "User");
@@ -215,7 +215,7 @@ namespace LocalScout.Web.Controllers
                 "Report",
                 "ProviderReport",
                 null,
-                $"Provider earnings report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Bookings: {report.TotalBookings}, Total Earnings: {report.TotalEarnings:C}"
+                $"Provider earnings report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Bookings: {report.TotalBookings}, Total Earnings: Tk {report.TotalEarnings:N2}"
             );
             
             var pdfBytes = _reportPdfService.GenerateProviderReport(report, user?.FullName ?? user?.BusinessName ?? "Provider");
@@ -333,7 +333,7 @@ namespace LocalScout.Web.Controllers
                 "Report",
                 "AdminReport",
                 null,
-                $"Admin system report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Revenue: {report.TotalRevenue:C}, Total Bookings: {report.TotalBookings}"
+                $"Admin system report exported. Date Range: {report.StartDate:yyyy-MM-dd} to {report.EndDate:yyyy-MM-dd}, Total Revenue: Tk {report.TotalRevenue:N2}, Total Bookings: {report.TotalBookings}"
             );
             
             var pdfBytes = _reportPdfService.GenerateAdminReport(report);
