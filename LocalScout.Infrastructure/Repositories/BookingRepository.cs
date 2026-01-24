@@ -3,16 +3,19 @@ using LocalScout.Domain.Entities;
 using LocalScout.Domain.Enums;
 using LocalScout.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using LocalScout.Application.Services;
 
 namespace LocalScout.Infrastructure.Repositories
 {
     public class BookingRepository : IBookingRepository
     {
         private readonly ApplicationDbContext _context;
+        private readonly ITimeZoneService _timeZoneService;
 
-        public BookingRepository(ApplicationDbContext context)
+        public BookingRepository(ApplicationDbContext context, ITimeZoneService timeZoneService)
         {
             _context = context;
+            _timeZoneService = timeZoneService;
         }
 
         public async Task<Booking?> GetByIdAsync(Guid bookingId)
@@ -371,7 +374,7 @@ namespace LocalScout.Infrastructure.Repositories
                 ValidationId = b.ValidationId,
                 Amount = b.NegotiatedPrice ?? 0,
                 PaymentMethod = b.PaymentMethod,
-                PaymentDate = b.PaymentReceivedAt ?? b.UpdatedAt,
+                PaymentDate = _timeZoneService.ConvertUtcToBdTime(b.PaymentReceivedAt ?? b.UpdatedAt),
                 Status = b.PaymentStatus ?? "Success",
                 ServiceName = services.ContainsKey(b.ServiceId) ? services[b.ServiceId] ?? "Unknown Service" : "Unknown Service",
                 OtherPartyName = providers.ContainsKey(b.ProviderId) ? providers[b.ProviderId].FullName ?? "Unknown Provider" : "Unknown Provider",
@@ -412,7 +415,7 @@ namespace LocalScout.Infrastructure.Repositories
                 ValidationId = b.ValidationId,
                 Amount = b.NegotiatedPrice ?? 0,
                 PaymentMethod = b.PaymentMethod,
-                PaymentDate = b.PaymentReceivedAt ?? b.UpdatedAt,
+                PaymentDate = _timeZoneService.ConvertUtcToBdTime(b.PaymentReceivedAt ?? b.UpdatedAt),
                 Status = b.PaymentStatus ?? "Success",
                 ServiceName = services.ContainsKey(b.ServiceId) ? services[b.ServiceId] ?? "Unknown Service" : "Unknown Service",
                 OtherPartyName = users.ContainsKey(b.UserId) ? users[b.UserId].FullName ?? "Unknown User" : "Unknown User",
