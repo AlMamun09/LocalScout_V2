@@ -32,7 +32,7 @@ builder.Services.AddSingleton<LocalScout.Application.Services.ITimeZoneService,
 builder
     .Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedAccount = false;
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;

@@ -30,6 +30,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
         public string Username { get; set; } = string.Empty;
         public string? CurrentProfilePictureUrl { get; set; }
         public bool IsProvider { get; set; }
+        public bool IsAdmin { get; set; }
         public DateTime JoiningDate { get; set; }
 
         [TempData]
@@ -118,6 +119,7 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account.Manage
 
             var roles = await _userManager.GetRolesAsync(user);
             IsProvider = roles.Contains(RoleNames.ServiceProvider);
+            IsAdmin = roles.Contains(RoleNames.Admin);
 
             await LoadAsync(user);
             return Page();

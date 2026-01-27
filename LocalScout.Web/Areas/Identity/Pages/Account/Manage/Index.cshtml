@@ -13,7 +13,16 @@
                     <h2 class="h4 font-weight-bold mb-0 text-gray-800">Manage your profile</h2>
                     <div class="d-flex gap-2">
                         <a href="@Request.Path" class="btn btn-light text-muted font-weight-bold px-4 rounded-lg border-0">Reset</a>
-                        <button type="submit" form="profile-form" class="btn btn-primary font-weight-bold px-4 rounded-lg border-0">Save</button>
+                        @if (Model.IsAdmin)
+                        {
+                            <button type="button" class="btn btn-secondary font-weight-bold px-4 rounded-lg border-0" disabled title="Admin profile cannot be modified">
+                                <i class="fas fa-lock mr-1"></i> Save
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" form="profile-form" class="btn btn-primary font-weight-bold px-4 rounded-lg border-0">Save</button>
+                        }
                     </div>
                 </div>
                 

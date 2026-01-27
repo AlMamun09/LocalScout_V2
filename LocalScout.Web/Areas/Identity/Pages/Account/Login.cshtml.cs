@@ -3,6 +3,7 @@
 #nullable disable
 
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using LocalScout.Application.Interfaces;
 using LocalScout.Domain.Entities;
 using LocalScout.Infrastructure.Constants;
@@ -115,6 +116,13 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
+                // Demo Login: Check for demo credentials (for portfolio demonstration)
+                var demoResult = await TryDemoLoginAsync(returnUrl);
+                if (demoResult != null)
+                {
+                    return demoResult;
+                }
+
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
                 var result = await _signInManager.PasswordSignInAsync(
@@ -232,6 +240,62 @@ namespace LocalScout.Web.Areas.Identity.Pages.Account
 
             // If we got this far, something failed, redisplay form
             return Page();
+        }
+
+        /// <summary>
+        /// Attempts to log in with demo credentials for portfolio demonstration.
+        /// Returns null if the credentials don't match demo accounts.
+        /// </summary>
+        private async Task<IActionResult> TryDemoLoginAsync(string returnUrl)
+        {
+            // Demo account definitions (for portfolio showcase only)
+            var demoAccounts = new Dictionary<string, (string Password, string Role, string FullName, string UserId)>
+            {
+                { "admin@neighbourly.com", ("Admin@123", RoleNames.Admin, "Demo Admin", "demo-admin-id") },
+                { "provider@neighbourly.com", ("Provider@123", RoleNames.ServiceProvider, "Demo Provider", "demo-provider-id") },
+                { "user@neighbourly.com", ("User@123", RoleNames.User, "Demo User", "demo-user-id") }
+            };
+
+            var emailLower = Input.Email?.ToLowerInvariant();
+            if (emailLower != null && demoAccounts.TryGetValue(emailLower, out var account))
+            {
+                if (Input.Password == account.Password)
+                {
+                    // Create claims for the demo user
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, account.UserId),
+                        new Claim(ClaimTypes.Name, emailLower),
+                        new Claim(ClaimTypes.Email, emailLower),
+                        new Claim(ClaimTypes.GivenName, account.FullName),
+                        new Claim(ClaimTypes.Role, account.Role),
+                        new Claim("IsDemo", "true")
+                    };
+
+                    var identity = new ClaimsIdentity(claims, IdentityConstants.ApplicationScheme);
+                    var principal = new ClaimsPrincipal(identity);
+
+                    // Sign in with claims
+                    await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal,
+                        new AuthenticationProperties
+                        {
+                            IsPersistent = Input.RememberMe,
+                            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2)
+                        });
+
+                    _logger.LogInformation("Demo user {Email} logged in.", emailLower);
+
+                    // Redirect based on role
+                    if (account.Role == RoleNames.Admin)
+                    {
+                        return RedirectToAction("Index", "Admin", new { area = "" });
+                    }
+
+                    return LocalRedirect(returnUrl ?? Url.Content("~/"));
+                }
+            }
+
+            return null; // Not a demo login, proceed with normal authentication
         }
     }
 }
